@@ -4,9 +4,16 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { PrometheusModule } from 'nestjs-prometheus'; // Importa el módulo
 
 @Module({
   imports: [
+    PrometheusModule.register({ // Añade esta configuración
+      defaultLabels: {
+        app: 'viadca-backv1',
+        version: '0.0.1',
+      },
+    }),
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: `.env.${process.env.NODE_ENV}`,
@@ -24,8 +31,6 @@ import { AppService } from './app.service';
         password: configService.get<string>('DB_PASSWORD'),
         database: configService.get<string>('DB_NAME'),
         entities: [__dirname + '/../**/*.entity{.ts,.js}'],
-        
-
         synchronize: process.env.NODE_ENV === 'dev',
       }),
     }),
