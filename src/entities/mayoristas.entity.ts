@@ -7,6 +7,7 @@ import {
 } from 'typeorm';
 import { Paquete } from '../paquetes/entidades/paquete.entity';
 import { Exclude } from 'class-transformer';
+
 @Entity('mayoristas')
 export class Mayoristas {
   @PrimaryGeneratedColumn({ type: 'bigint', unsigned: true })
@@ -20,6 +21,9 @@ export class Mayoristas {
 
   @Column({ type: 'varchar', length: 100 })
   tipo_producto: string;
+
+  @Column({ type: 'varchar', length: 255, unique: true }) // Clave única
+  clave: string;
 
   @ManyToOne(() => Paquete, (paquete) => paquete.mayoristas, {
     onDelete: 'CASCADE',

@@ -14,12 +14,12 @@ import { Mayoristas } from './entities/mayoristas.entity';
 import { Contacto } from './entities/contacto.entity';
 
 import { PaquetesModule } from './paquetes/paquetes.module';
+import { MayoristasModule } from './mayoristas/mayoristas.module'; // Importa el nuevo módulo
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-
       envFilePath: `.env.${process.env.NODE_ENV || 'dev'}`,
     }),
 
@@ -60,6 +60,7 @@ import { PaquetesModule } from './paquetes/paquetes.module';
       },
     }),
     PaquetesModule,
+    MayoristasModule, // Añade el módulo aquí
   ],
   controllers: [AppController],
   providers: [AppService],
