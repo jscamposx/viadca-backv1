@@ -57,26 +57,35 @@ export class Paquete {
 
   @CreateDateColumn({ name: 'creado_en' })
   creadoEn: Date;
-@UpdateDateColumn({ name: 'actualizado_en' })
+
+  @UpdateDateColumn({ name: 'actualizado_en' })
   actualizadoEn: Date;
 
-  @OneToMany(() => Itinerario, (itinerario) => itinerario.paquete)
+  @OneToMany(() => Itinerario, (itinerario) => itinerario.paquete, {
+    cascade: true,
+  })
   itinerarios: Itinerario[];
 
-  @OneToMany(() => Hotel, (hotel) => hotel.paquete)
+  @OneToMany(() => Hotel, (hotel) => hotel.paquete, {
+    cascade: true,
+  })
   hoteles: Hotel[];
 
-  @OneToMany(() => Destino, (destino) => destino.paquete)
+  @OneToMany(() => Destino, (destino) => destino.paquete, {
+    cascade: true,
+  })
   destinos: Destino[];
 
-  @OneToMany(() => Imagen, (imagen) => imagen.paquete)
+  @OneToMany(() => Imagen, (imagen) => imagen.paquete, {
+    cascade: true,
+  })
   imagenes: Imagen[];
 
   @ManyToMany(() => Mayoristas, (mayoristas) => mayoristas.paquetes, {
     cascade: true,
   })
   @JoinTable({
-    name: 'paquete_mayoristas', // nombre de la tabla intermedia
+    name: 'paquete_mayoristas',
     joinColumn: { name: 'paquete_id', referencedColumnName: 'id' },
     inverseJoinColumn: { name: 'mayorista_id', referencedColumnName: 'id' },
   })

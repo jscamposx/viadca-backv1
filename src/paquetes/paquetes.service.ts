@@ -22,7 +22,7 @@ export class PaquetesService {
     @InjectRepository(Itinerario)
     private readonly itinerarioRepository: Repository<Itinerario>,
     @InjectRepository(Mayoristas)
-    private readonly mayoristaRepository: Repository<Mayoristas>, // Repositorio de Mayoristas
+    private readonly mayoristaRepository: Repository<Mayoristas>,
   ) {}
 
   async create(createPaqueteDto: CreatePaqueteDto): Promise<Paquete> {
@@ -30,7 +30,7 @@ export class PaquetesService {
       destinos,
       imagenes,
       itinerario_texto,
-      mayoristasIds, // Obtenemos los IDs de los mayoristas
+      mayoristasIds,
       ...paqueteData
     } = createPaqueteDto;
 
@@ -45,9 +45,7 @@ export class PaquetesService {
       paquete.mayoristas = mayoristas;
     }
 
-    // El resto de la lógica se mantiene igual, pero ahora guardamos el paquete al final
-    // para asegurar que las relaciones se establezcan correctamente.
-
+    // Asignar destinos si existen
     if (destinos && destinos.length > 0) {
       paquete.destinos = destinos.map((dto) => {
         const destino = new Destino();
@@ -59,10 +57,13 @@ export class PaquetesService {
       });
     }
 
+    // Asignar imágenes si existen
     if (imagenes && imagenes.length > 0) {
       paquete.imagenes = imagenes.map((dto) => {
         const imagen = new Imagen();
-        imagen.hotel_id = dto.hotel_id ?? 0;
+        if (typeof dto.hotel_id === 'number') {
+          imagen.hotel_id = dto.hotel_id;
+        }
         imagen.orden = dto.orden ?? 0;
         imagen.tipo = dto.tipo;
         imagen.contenido = dto.contenido;
@@ -72,32 +73,31 @@ export class PaquetesService {
       });
     }
 
+    // --- LÓGICA CORREGIDA Y FLEXIBLE PARA EL ITINERARIO ---
     if (itinerario_texto) {
       const itinerariosCrudos = itinerario_texto.trim().split(/(?=DÍA\s+\d+)/g);
       const itinerariosEntities = itinerariosCrudos
         .map((textoDia) => {
-          if (!textoDia.trim()) return null;
+          const textoLimpio = textoDia.trim();
+          if (!textoLimpio) return null;
 
-          const lineas = textoDia.trim().split('\n');
-          const lineaTitulo = lineas.shift();
-          if (!lineaTitulo) return null;
-          const matchDia = lineaTitulo.match(/DÍA\s+(\d+)/);
+          const match = textoLimpio.match(/^DÍA\s+(\d+):?\s*([\s\S]*)/);
 
-          if (!matchDia) return null;
+          if (!match) return null;
 
           const itinerario = new Itinerario();
-          itinerario.dia_numero = parseInt(matchDia[1], 10);
-          itinerario.descripcion = lineas.join('\n').trim();
+          itinerario.dia_numero = parseInt(match[1], 10);
+          itinerario.descripcion = match[2].trim(); // Captura todo el texto después de "DÍA X:"
           return itinerario;
         })
-        .filter((itinerario): itinerario is Itinerario => itinerario !== null);
+        .filter((itinerario): itinerario is Itinerario => itinerario !== null && itinerario.descripcion !== '');
 
       if (itinerariosEntities.length > 0) {
         paquete.itinerarios = itinerariosEntities;
       }
     }
     
-    // Guardamos el paquete con todas sus relaciones anidadas
+    // Guardamos el paquete con todas sus relaciones anidadas a la vez
     return this.paqueteRepository.save(paquete);
   }
 
@@ -110,12 +110,10 @@ export class PaquetesService {
       ...createImagenDto,
       paquete,
     });
-
     return this.imagenRepository.save(nuevaImagen);
   }
 
   async findAll(): Promise<Paquete[]> {
-    // Añadimos la relación 'mayoristas' para que se muestre en el GET de todos los paquetes
     return this.paqueteRepository.find({ relations: ['destinos', 'mayoristas'] });
   }
 
@@ -143,7 +141,6 @@ export class PaquetesService {
     const { mayoristasIds, ...updateData } = updatePaqueteDto;
     const paquete = await this.findOne(id);
 
-    // Si se envían IDs de mayoristas, actualizamos la relación
     if (mayoristasIds) {
       if (mayoristasIds.length > 0) {
         const mayoristas = await this.mayoristaRepository.findBy({ id: In(mayoristasIds) });
@@ -152,7 +149,6 @@ export class PaquetesService {
         }
         paquete.mayoristas = mayoristas;
       } else {
-        // Si se envía un arreglo vacío, eliminamos todas las relaciones
         paquete.mayoristas = [];
       }
     }
