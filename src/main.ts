@@ -1,7 +1,9 @@
-import { NestFactory } from '@nestjs/core';
+// src/main.ts
+
+import { NestFactory, Reflector } from '@nestjs/core'; // Reflector es nuevo
 import { AppModule } from './app.module';
 import * as compression from 'compression';
-import { ValidationPipe } from '@nestjs/common'; // ¡Importa ValidationPipe!
+import { ValidationPipe, ClassSerializerInterceptor } from '@nestjs/common'; // ClassSerializerInterceptor es nuevo
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -9,11 +11,14 @@ async function bootstrap() {
   // Habilita el ValidationPipe globalmente
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true, // Remueve propiedades que no están en el DTO
-      forbidNonWhitelisted: true, // Lanza un error si se envían propiedades no permitidas
-      transform: true, // Transforma el payload a una instancia del DTO
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
     }),
   );
+  
+  // AÑADE ESTA LÍNEA PARA EL INTERCEPTOR
+  app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
 
   app.use(compression());
 

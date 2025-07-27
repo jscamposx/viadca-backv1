@@ -1,3 +1,5 @@
+// src/paquetes/paquetes.service.ts
+
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -5,6 +7,7 @@ import { Paquete } from './entidades/paquete.entity';
 import { CreatePaqueteDto } from './dto/create-paquete.dto';
 import { UpdatePaqueteDto } from './dto/update-paquete.dto';
 import { Destino } from '../entities/destino.entity';
+import { generarCodigo } from '../utils/generar-url.util'; // Importamos la utilidad
 
 @Injectable()
 export class PaquetesService {
@@ -17,11 +20,26 @@ export class PaquetesService {
 
   async create(createPaqueteDto: CreatePaqueteDto): Promise<Paquete> {
     const { destinos, ...paqueteData } = createPaqueteDto;
-    const paquete = this.paqueteRepository.create(paqueteData);
+
+    let slug: string;
+    let slugExistente: boolean;
+
+    // Bucle para asegurar que el slug sea único
+    do {
+      slug = generarCodigo(5); // Genera un código de 5 caracteres
+      const paqueteExistente = await this.paqueteRepository.findOneBy({ slug });
+      slugExistente = !!paqueteExistente;
+    } while (slugExistente);
+
+    const paquete = this.paqueteRepository.create({
+      ...paqueteData,
+      slug, // Asignamos el slug único generado
+    });
+
     await this.paqueteRepository.save(paquete);
 
     if (destinos && destinos.length > 0) {
-      const destinosEntities = destinos.map(dto => {
+      const destinosEntities = destinos.map((dto) => {
         const destino = new Destino();
         destino.destino = dto.destino;
         destino.destino_lng = dto.destino_lng;
@@ -34,7 +52,6 @@ export class PaquetesService {
       paquete.destinos = destinosEntities;
     }
 
-
     return paquete;
   }
 
@@ -43,20 +60,32 @@ export class PaquetesService {
   }
 
   async findOneBySlug(slug: string): Promise<Paquete> {
-    const paquete = await this.paqueteRepository.findOne({ 
-        where: { slug },
-        relations: ['destinos', 'itinerarios', 'hoteles', 'imagenes', 'mayoristas'],
+    const paquete = await this.paqueteRepository.findOne({
+      where: { slug },
+      relations: [
+        'destinos',
+        'itinerarios',
+        'hoteles',
+        'imagenes',
+        'mayoristas',
+      ],
     });
     if (!paquete) {
       throw new NotFoundException(`Paquete con slug "${slug}" no encontrado`);
     }
     return paquete;
   }
-  
+
   async findOneById(id: number): Promise<Paquete> {
-    const paquete = await this.paqueteRepository.findOne({ 
-        where: { id },
-        relations: ['destinos', 'itinerarios', 'hoteles', 'imagenes', 'mayoristas'],
+    const paquete = await this.paqueteRepository.findOne({
+      where: { id },
+      relations: [
+        'destinos',
+        'itinerarios',
+        'hoteles',
+        'imagenes',
+        'mayoristas',
+      ],
     });
     if (!paquete) {
       throw new NotFoundException(`Paquete con ID "${id}" no encontrado`);
@@ -64,7 +93,10 @@ export class PaquetesService {
     return paquete;
   }
 
-  async update(id: number, updatePaqueteDto: UpdatePaqueteDto): Promise<Paquete> {
+  async update(
+    id: number,
+    updatePaqueteDto: UpdatePaqueteDto,
+  ): Promise<Paquete> {
     const paquete = await this.findOneById(id);
     this.paqueteRepository.merge(paquete, updatePaqueteDto);
     return this.paqueteRepository.save(paquete);

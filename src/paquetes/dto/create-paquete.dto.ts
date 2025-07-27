@@ -1,3 +1,5 @@
+// src/paquetes/dto/create-paquete.dto.ts
+
 import {
   IsString,
   IsNotEmpty,
@@ -16,10 +18,6 @@ export class CreatePaqueteDto {
   @IsString()
   @IsNotEmpty()
   readonly titulo: string;
-
-  @IsString()
-  @IsNotEmpty()
-  readonly slug: string;
 
   @IsDateString()
   readonly fecha_inicio: Date;
