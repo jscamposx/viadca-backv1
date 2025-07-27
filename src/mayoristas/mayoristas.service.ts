@@ -15,13 +15,19 @@ export class MayoristasService {
   ) {}
 
   private generarClave(nombre: string, tipo_producto: string): string {
-    const nombreSlice = nombre.slice(0, 2).toUpperCase();
+    // Toma las dos primeras palabras, extrae sus 2 primeras letras
+    const nombreSlice = nombre
+      .split(' ')
+      .slice(0, 2) // Limita a las primeras dos palabras
+      .map(palabra => palabra.slice(0, 2))
+      .join('')
+      .toUpperCase();
+
     const tipoProductoSlice = tipo_producto.slice(0, 2).toUpperCase();
-    const fecha = new Date();
-    const anio = fecha.getFullYear();
-    const mes = (fecha.getMonth() + 1).toString().padStart(2, '0');
-    const dia = fecha.getDate().toString().padStart(2, '0');
-    return `${nombreSlice}${tipoProductoSlice}${dia}${mes}${anio}`;
+    const anio = new Date().getFullYear();
+
+    // Ejemplo de clave: METRCR2024
+    return `${nombreSlice}${tipoProductoSlice}${anio}`;
   }
 
   async create(createMayoristaDto: CreateMayoristaDto): Promise<Mayoristas> {
