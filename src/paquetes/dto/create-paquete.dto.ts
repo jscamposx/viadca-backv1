@@ -11,6 +11,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CreateDestinoDto } from './create-destino.dto';
+import { CreateImagenDto } from './create-imagen.dto';
 
 export class CreatePaqueteDto {
   @IsString()
@@ -64,4 +65,9 @@ export class CreatePaqueteDto {
   @ValidateNested({ each: true })
   @Type(() => CreateDestinoDto)
   readonly destinos?: CreateDestinoDto[];
+
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => CreateImagenDto)
+  readonly imagenes?: CreateImagenDto[];
 }
