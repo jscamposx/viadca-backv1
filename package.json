@@ -27,9 +27,11 @@
     "@nestjs/typeorm": "^11.0.0",
     "compression": "^1.8.1",
     "mysql": "^2.18.1",
+    "mysql2": "^3.14.2",
     "nestjs-prometheus": "^4.6.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
+    "typeorm": "^0.3.25",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
