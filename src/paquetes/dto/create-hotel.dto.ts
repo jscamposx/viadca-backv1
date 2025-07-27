@@ -1,4 +1,12 @@
-import { IsString, IsNotEmpty, IsNumber, IsBoolean, IsOptional, ValidateNested, IsArray } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsNumber,
+  IsBoolean,
+  IsOptional,
+  ValidateNested,
+  IsArray,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { CreateImagenDto } from './create-imagen.dto';
 

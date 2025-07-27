@@ -65,7 +65,7 @@ export class UpdatePaqueteDto {
   @IsBoolean()
   readonly activo?: boolean;
 
-    @IsOptional()
+  @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => UpdateHotelDto) // <-- Añade la validación para los hoteles

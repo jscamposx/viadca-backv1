@@ -42,9 +42,13 @@ export class PaquetesService {
 
     // Asignar mayoristas si se proporcionaron IDs
     if (mayoristasIds && mayoristasIds.length > 0) {
-      const mayoristas = await this.mayoristaRepository.findBy({ id: In(mayoristasIds) });
+      const mayoristas = await this.mayoristaRepository.findBy({
+        id: In(mayoristasIds),
+      });
       if (mayoristas.length !== mayoristasIds.length) {
-        throw new NotFoundException('Uno o más mayoristas no fueron encontrados.');
+        throw new NotFoundException(
+          'Uno o más mayoristas no fueron encontrados.',
+        );
       }
       paquete.mayoristas = mayoristas;
     }
@@ -66,7 +70,7 @@ export class PaquetesService {
         return imagen;
       });
     }
-    
+
     // Asignar hoteles si existen
     if (hoteles && hoteles.length > 0) {
       paquete.hoteles = hoteles.map((dto) => {
@@ -78,11 +82,11 @@ export class PaquetesService {
         hotel.total_calificaciones = dto.total_calificaciones;
         hotel.descripcion = dto.descripcion;
         if (dto.imagenes && dto.imagenes.length > 0) {
-            hotel.imagenes = dto.imagenes.map(imgDto => {
-                const imagen = new Imagen();
-                Object.assign(imagen, imgDto);
-                return imagen;
-            });
+          hotel.imagenes = dto.imagenes.map((imgDto) => {
+            const imagen = new Imagen();
+            Object.assign(imagen, imgDto);
+            return imagen;
+          });
         }
         return hotel;
       });
@@ -104,18 +108,24 @@ export class PaquetesService {
           itinerario.descripcion = match[2].trim();
           return itinerario;
         })
-        .filter((itinerario): itinerario is Itinerario => itinerario !== null && itinerario.descripcion !== '');
+        .filter(
+          (itinerario): itinerario is Itinerario =>
+            itinerario !== null && itinerario.descripcion !== '',
+        );
 
       if (itinerariosEntities.length > 0) {
         paquete.itinerarios = itinerariosEntities;
       }
     }
-    
+
     // Guardamos el paquete con todas sus relaciones anidadas
     return this.paqueteRepository.save(paquete);
   }
 
-  async createImage(paqueteId: string, createImagenDto: CreateImagenDto): Promise<Imagen> {
+  async createImage(
+    paqueteId: string,
+    createImagenDto: CreateImagenDto,
+  ): Promise<Imagen> {
     const paquete = await this.findOne(paqueteId);
     const nuevaImagen = this.imagenRepository.create({
       ...createImagenDto,
@@ -125,7 +135,9 @@ export class PaquetesService {
   }
 
   async findAll(): Promise<Paquete[]> {
-    return this.paqueteRepository.find({ relations: ['destinos', 'mayoristas', 'hoteles'] });
+    return this.paqueteRepository.find({
+      relations: ['destinos', 'mayoristas', 'hoteles'],
+    });
   }
 
   async findOne(id: string): Promise<Paquete> {
@@ -137,7 +149,7 @@ export class PaquetesService {
         'hoteles',
         'imagenes',
         'mayoristas',
-        'hoteles.imagenes' // Para cargar también las imágenes de los hoteles
+        'hoteles.imagenes', // Para cargar también las imágenes de los hoteles
       ],
     });
     if (!paquete) {
@@ -146,33 +158,40 @@ export class PaquetesService {
     return paquete;
   }
 
-  async update(id: string, updatePaqueteDto: UpdatePaqueteDto): Promise<Paquete> {
+  async update(
+    id: string,
+    updatePaqueteDto: UpdatePaqueteDto,
+  ): Promise<Paquete> {
     const { mayoristasIds, hoteles, ...updateData } = updatePaqueteDto;
     const paquete = await this.findOne(id);
 
     // Actualizar mayoristas
     if (mayoristasIds) {
       if (mayoristasIds.length > 0) {
-        const mayoristas = await this.mayoristaRepository.findBy({ id: In(mayoristasIds) });
+        const mayoristas = await this.mayoristaRepository.findBy({
+          id: In(mayoristasIds),
+        });
         if (mayoristas.length !== mayoristasIds.length) {
-            throw new NotFoundException('Uno o más mayoristas no fueron encontrados.');
+          throw new NotFoundException(
+            'Uno o más mayoristas no fueron encontrados.',
+          );
         }
         paquete.mayoristas = mayoristas;
       } else {
         paquete.mayoristas = [];
       }
     }
-    
+
     // Actualizar hoteles: se eliminan los anteriores y se añaden los nuevos
     if (hoteles) {
       if (paquete.hoteles && paquete.hoteles.length > 0) {
         await this.hotelRepository.remove(paquete.hoteles);
       }
-      
-      const nuevosHoteles = hoteles.map(dto => {
+
+      const nuevosHoteles = hoteles.map((dto) => {
         const hotel = new Hotel();
         Object.assign(hotel, dto);
-        hotel.paquete_id = id; 
+        hotel.paquete_id = id;
         return hotel;
       });
       paquete.hoteles = nuevosHoteles;

@@ -1,4 +1,11 @@
-import { IsString, IsNumber, IsBoolean, IsOptional, ValidateNested, IsArray } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsBoolean,
+  IsOptional,
+  ValidateNested,
+  IsArray,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { CreateImagenDto } from './create-imagen.dto';
 import { UpdateImagenDto } from './update-imagen.dto'; // Asumiendo que exista o se cree un DTO para actualizar imagenes
