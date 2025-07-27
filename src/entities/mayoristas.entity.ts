@@ -2,19 +2,14 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
-  ManyToOne,
-  JoinColumn,
+  ManyToMany,
 } from 'typeorm';
 import { Paquete } from '../paquetes/entidades/paquete.entity';
-import { Exclude } from 'class-transformer';
 
 @Entity('mayoristas')
 export class Mayoristas {
   @PrimaryGeneratedColumn({ type: 'bigint', unsigned: true })
   id: number;
-
-  @Column()
-  paquete_id: string;
 
   @Column({ type: 'varchar', length: 255 })
   nombre: string;
@@ -25,10 +20,6 @@ export class Mayoristas {
   @Column({ type: 'varchar', length: 255, unique: true }) // Clave única
   clave: string;
 
-  @ManyToOne(() => Paquete, (paquete) => paquete.mayoristas, {
-    onDelete: 'CASCADE',
-  })
-  @JoinColumn({ name: 'paquete_id' })
-  @Exclude()
-  paquete: Paquete;
+  @ManyToMany(() => Paquete, (paquete) => paquete.mayoristas)
+  paquetes: Paquete[];
 }

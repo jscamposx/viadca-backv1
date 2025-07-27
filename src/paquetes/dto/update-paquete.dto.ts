@@ -6,6 +6,7 @@ import {
   IsBoolean,
   Min,
   IsPositive,
+  IsArray,
 } from 'class-validator';
 
 export class UpdatePaqueteDto {
@@ -60,4 +61,9 @@ export class UpdatePaqueteDto {
   @IsOptional()
   @IsBoolean()
   readonly activo?: boolean;
+
+  @IsOptional()
+  @IsArray()
+  @IsNumber({}, { each: true })
+  readonly mayoristasIds?: number[];
 }

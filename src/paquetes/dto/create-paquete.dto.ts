@@ -8,6 +8,7 @@ import {
   Min,
   IsPositive,
   ValidateNested,
+  IsArray,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CreateDestinoDto } from './create-destino.dto';
@@ -71,7 +72,12 @@ export class CreatePaqueteDto {
   @Type(() => CreateImagenDto)
   readonly imagenes?: CreateImagenDto[];
 
-  @IsOptional()
+   @IsOptional()
   @IsString()
   readonly itinerario_texto?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsNumber({}, { each: true })
+  readonly mayoristasIds?: number[];
 }

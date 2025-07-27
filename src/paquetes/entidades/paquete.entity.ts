@@ -5,6 +5,8 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToMany,
+  ManyToMany,
+  JoinTable,
 } from 'typeorm';
 import { Itinerario } from '../../entities/itinerario.entity';
 import { Hotel } from '../../entities/hotel.entity';
@@ -55,8 +57,7 @@ export class Paquete {
 
   @CreateDateColumn({ name: 'creado_en' })
   creadoEn: Date;
-
-  @UpdateDateColumn({ name: 'actualizado_en' })
+@UpdateDateColumn({ name: 'actualizado_en' })
   actualizadoEn: Date;
 
   @OneToMany(() => Itinerario, (itinerario) => itinerario.paquete)
@@ -71,6 +72,13 @@ export class Paquete {
   @OneToMany(() => Imagen, (imagen) => imagen.paquete)
   imagenes: Imagen[];
 
-  @OneToMany(() => Mayoristas, (mayoristas) => mayoristas.paquete)
+  @ManyToMany(() => Mayoristas, (mayoristas) => mayoristas.paquetes, {
+    cascade: true,
+  })
+  @JoinTable({
+    name: 'paquete_mayoristas', // nombre de la tabla intermedia
+    joinColumn: { name: 'paquete_id', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'mayorista_id', referencedColumnName: 'id' },
+  })
   mayoristas: Mayoristas[];
 }
