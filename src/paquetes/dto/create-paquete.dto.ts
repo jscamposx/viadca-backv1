@@ -13,6 +13,7 @@ import {
 import { Type } from 'class-transformer';
 import { CreateDestinoDto } from './create-destino.dto';
 import { CreateImagenDto } from './create-imagen.dto';
+import { CreateHotelDto } from './create-hotel.dto';
 
 export class CreatePaqueteDto {
   @IsString()
@@ -72,7 +73,13 @@ export class CreatePaqueteDto {
   @Type(() => CreateImagenDto)
   readonly imagenes?: CreateImagenDto[];
 
-   @IsOptional()
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateHotelDto) // <-- Añade la validación para los hoteles
+  readonly hoteles?: CreateHotelDto[];
+
+  @IsOptional()
   @IsString()
   readonly itinerario_texto?: string;
 

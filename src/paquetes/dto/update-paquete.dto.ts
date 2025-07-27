@@ -7,7 +7,10 @@ import {
   Min,
   IsPositive,
   IsArray,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
+import { UpdateHotelDto } from './update-hotel.dto';
 
 export class UpdatePaqueteDto {
   @IsOptional()
@@ -61,6 +64,12 @@ export class UpdatePaqueteDto {
   @IsOptional()
   @IsBoolean()
   readonly activo?: boolean;
+
+    @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => UpdateHotelDto) // <-- Añade la validación para los hoteles
+  readonly hoteles?: UpdateHotelDto[];
 
   @IsOptional()
   @IsArray()

@@ -9,6 +9,7 @@ import { Imagen } from '../entities/imagen.entity';
 import { CreateImagenDto } from './dto/create-imagen.dto';
 import { Itinerario } from '../entities/itinerario.entity';
 import { Mayoristas } from '../entities/mayoristas.entity';
+import { Hotel } from '../entities/hotel.entity'; // <-- Importación añadida
 
 @Injectable()
 export class PaquetesService {
@@ -23,6 +24,8 @@ export class PaquetesService {
     private readonly itinerarioRepository: Repository<Itinerario>,
     @InjectRepository(Mayoristas)
     private readonly mayoristaRepository: Repository<Mayoristas>,
+    @InjectRepository(Hotel) // <-- Inyección del repositorio de Hotel
+    private readonly hotelRepository: Repository<Hotel>,
   ) {}
 
   async create(createPaqueteDto: CreatePaqueteDto): Promise<Paquete> {
@@ -31,6 +34,7 @@ export class PaquetesService {
       imagenes,
       itinerario_texto,
       mayoristasIds,
+      hoteles, // <-- Se extraen los hoteles del DTO
       ...paqueteData
     } = createPaqueteDto;
 
@@ -49,10 +53,7 @@ export class PaquetesService {
     if (destinos && destinos.length > 0) {
       paquete.destinos = destinos.map((dto) => {
         const destino = new Destino();
-        destino.destino = dto.destino;
-        destino.destino_lng = dto.destino_lng;
-        destino.destino_lat = dto.destino_lat;
-        destino.orden = dto.orden;
+        Object.assign(destino, dto);
         return destino;
       });
     }
@@ -61,19 +62,33 @@ export class PaquetesService {
     if (imagenes && imagenes.length > 0) {
       paquete.imagenes = imagenes.map((dto) => {
         const imagen = new Imagen();
-        if (typeof dto.hotel_id === 'number') {
-          imagen.hotel_id = dto.hotel_id;
-        }
-        imagen.orden = dto.orden ?? 0;
-        imagen.tipo = dto.tipo;
-        imagen.contenido = dto.contenido;
-        imagen.mime_type = dto.mime_type;
-        imagen.nombre = dto.nombre;
+        Object.assign(imagen, dto);
         return imagen;
       });
     }
+    
+    // Asignar hoteles si existen
+    if (hoteles && hoteles.length > 0) {
+      paquete.hoteles = hoteles.map((dto) => {
+        const hotel = new Hotel();
+        hotel.placeId = dto.placeId;
+        hotel.nombre = dto.nombre;
+        hotel.estrellas = dto.estrellas;
+        hotel.isCustom = dto.isCustom;
+        hotel.total_calificaciones = dto.total_calificaciones;
+        hotel.descripcion = dto.descripcion;
+        if (dto.imagenes && dto.imagenes.length > 0) {
+            hotel.imagenes = dto.imagenes.map(imgDto => {
+                const imagen = new Imagen();
+                Object.assign(imagen, imgDto);
+                return imagen;
+            });
+        }
+        return hotel;
+      });
+    }
 
-    // --- LÓGICA CORREGIDA Y FLEXIBLE PARA EL ITINERARIO ---
+    // Lógica para el itinerario
     if (itinerario_texto) {
       const itinerariosCrudos = itinerario_texto.trim().split(/(?=DÍA\s+\d+)/g);
       const itinerariosEntities = itinerariosCrudos
@@ -82,12 +97,11 @@ export class PaquetesService {
           if (!textoLimpio) return null;
 
           const match = textoLimpio.match(/^DÍA\s+(\d+):?\s*([\s\S]*)/);
-
           if (!match) return null;
 
           const itinerario = new Itinerario();
           itinerario.dia_numero = parseInt(match[1], 10);
-          itinerario.descripcion = match[2].trim(); // Captura todo el texto después de "DÍA X:"
+          itinerario.descripcion = match[2].trim();
           return itinerario;
         })
         .filter((itinerario): itinerario is Itinerario => itinerario !== null && itinerario.descripcion !== '');
@@ -97,14 +111,11 @@ export class PaquetesService {
       }
     }
     
-    // Guardamos el paquete con todas sus relaciones anidadas a la vez
+    // Guardamos el paquete con todas sus relaciones anidadas
     return this.paqueteRepository.save(paquete);
   }
 
-  async createImage(
-    paqueteId: string,
-    createImagenDto: CreateImagenDto,
-  ): Promise<Imagen> {
+  async createImage(paqueteId: string, createImagenDto: CreateImagenDto): Promise<Imagen> {
     const paquete = await this.findOne(paqueteId);
     const nuevaImagen = this.imagenRepository.create({
       ...createImagenDto,
@@ -114,7 +125,7 @@ export class PaquetesService {
   }
 
   async findAll(): Promise<Paquete[]> {
-    return this.paqueteRepository.find({ relations: ['destinos', 'mayoristas'] });
+    return this.paqueteRepository.find({ relations: ['destinos', 'mayoristas', 'hoteles'] });
   }
 
   async findOne(id: string): Promise<Paquete> {
@@ -126,6 +137,7 @@ export class PaquetesService {
         'hoteles',
         'imagenes',
         'mayoristas',
+        'hoteles.imagenes' // Para cargar también las imágenes de los hoteles
       ],
     });
     if (!paquete) {
@@ -134,13 +146,11 @@ export class PaquetesService {
     return paquete;
   }
 
-  async update(
-    id: string,
-    updatePaqueteDto: UpdatePaqueteDto,
-  ): Promise<Paquete> {
-    const { mayoristasIds, ...updateData } = updatePaqueteDto;
+  async update(id: string, updatePaqueteDto: UpdatePaqueteDto): Promise<Paquete> {
+    const { mayoristasIds, hoteles, ...updateData } = updatePaqueteDto;
     const paquete = await this.findOne(id);
 
+    // Actualizar mayoristas
     if (mayoristasIds) {
       if (mayoristasIds.length > 0) {
         const mayoristas = await this.mayoristaRepository.findBy({ id: In(mayoristasIds) });
@@ -151,6 +161,21 @@ export class PaquetesService {
       } else {
         paquete.mayoristas = [];
       }
+    }
+    
+    // Actualizar hoteles: se eliminan los anteriores y se añaden los nuevos
+    if (hoteles) {
+      if (paquete.hoteles && paquete.hoteles.length > 0) {
+        await this.hotelRepository.remove(paquete.hoteles);
+      }
+      
+      const nuevosHoteles = hoteles.map(dto => {
+        const hotel = new Hotel();
+        Object.assign(hotel, dto);
+        hotel.paquete_id = id; 
+        return hotel;
+      });
+      paquete.hoteles = nuevosHoteles;
     }
 
     this.paqueteRepository.merge(paquete, updateData);
