@@ -6,7 +6,7 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { Paquete } from '../paquetes/entidades/paquete.entity';
-
+import { Exclude } from 'class-transformer';
 @Entity('mayoristas')
 export class Mayoristas {
   @PrimaryGeneratedColumn({ type: 'bigint', unsigned: true })
@@ -25,5 +25,6 @@ export class Mayoristas {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'paquete_id' })
+  @Exclude()
   paquete: Paquete;
 }

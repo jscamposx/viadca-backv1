@@ -7,6 +7,7 @@ import {
 } from 'typeorm';
 import { Paquete } from '../paquetes/entidades/paquete.entity';
 import { Hotel } from './hotel.entity';
+import { Exclude } from 'class-transformer';
 
 @Entity('imagenes')
 export class Imagen {
@@ -42,11 +43,13 @@ export class Imagen {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'paquete_id' })
+  @Exclude()
   paquete: Paquete;
 
   @ManyToOne(() => Hotel, (hotel) => hotel.imagenes, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'hotel_id' })
+  @Exclude()
   hotel: Hotel;
 }

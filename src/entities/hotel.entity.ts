@@ -8,7 +8,7 @@ import {
 } from 'typeorm';
 import { Paquete } from '../paquetes/entidades/paquete.entity';
 import { Imagen } from './imagen.entity';
-
+import { Exclude } from 'class-transformer';
 @Entity('hoteles')
 export class Hotel {
   @PrimaryGeneratedColumn({ type: 'bigint', unsigned: true })
@@ -39,6 +39,7 @@ export class Hotel {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'paquete_id' })
+  @Exclude()
   paquete: Paquete;
 
   @OneToMany(() => Imagen, (imagen) => imagen.hotel)

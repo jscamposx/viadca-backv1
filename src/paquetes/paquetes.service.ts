@@ -1,5 +1,3 @@
-
-
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -24,9 +22,8 @@ export class PaquetesService {
     let slug: string;
     let slugExistente: boolean;
 
-  
     do {
-      slug = generarCodigo(5); 
+      slug = generarCodigo(5);
       const paqueteExistente = await this.paqueteRepository.findOneBy({ slug });
       slugExistente = !!paqueteExistente;
     } while (slugExistente);
