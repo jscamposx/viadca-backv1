@@ -7,6 +7,7 @@ import { UpdatePaqueteDto } from './dto/update-paquete.dto';
 import { Destino } from '../entities/destino.entity';
 import { Imagen } from '../entities/imagen.entity';
 import { CreateImagenDto } from './dto/create-imagen.dto';
+import { Itinerario } from '../entities/itinerario.entity';
 
 @Injectable()
 export class PaquetesService {
@@ -17,10 +18,13 @@ export class PaquetesService {
     private readonly destinoRepository: Repository<Destino>,
     @InjectRepository(Imagen)
     private readonly imagenRepository: Repository<Imagen>,
+    @InjectRepository(Itinerario)
+    private readonly itinerarioRepository: Repository<Itinerario>,
   ) {}
 
   async create(createPaqueteDto: CreatePaqueteDto): Promise<Paquete> {
-    const { destinos, imagenes, ...paqueteData } = createPaqueteDto;
+    const { destinos, imagenes, itinerario_texto, ...paqueteData } =
+      createPaqueteDto;
 
     const paquete = this.paqueteRepository.create({
       ...paqueteData,
@@ -56,6 +60,38 @@ export class PaquetesService {
       });
       await this.imagenRepository.save(imagenesEntities);
       paquete.imagenes = imagenesEntities;
+    }
+
+    if (itinerario_texto) {
+      const itinerariosCrudos = itinerario_texto
+        .trim()
+        .split(/(?=DÍA\s+\d+)/g);
+
+      const itinerariosEntities = itinerariosCrudos.map((textoDia) => {
+        if (!textoDia.trim()) return null;
+
+        const lineas = textoDia.trim().split('\n');
+        const lineaTitulo = lineas.shift();
+        if (!lineaTitulo) return null;
+        const matchDia = lineaTitulo.match(/DÍA\s+(\d+)/);
+
+        if (!matchDia) return null;
+
+        const itinerario = new Itinerario();
+        itinerario.dia_numero = parseInt(matchDia[1], 10);
+        itinerario.descripcion = lineas.join('\n').trim();
+        itinerario.paquete = paquete;
+        return itinerario;
+      });
+
+      const itinerariosEntitiesFiltered = itinerariosEntities.filter(
+        (itinerario): itinerario is Itinerario => itinerario !== null
+      );
+
+      if (itinerariosEntitiesFiltered.length > 0) {
+        await this.itinerarioRepository.save(itinerariosEntitiesFiltered);
+        paquete.itinerarios = itinerariosEntitiesFiltered;
+      }
     }
 
     return paquete;

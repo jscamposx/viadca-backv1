@@ -58,3 +58,4 @@ export class PaquetesController {
     return this.paquetesService.remove(id);
   }
 }
+

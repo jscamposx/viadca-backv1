@@ -70,4 +70,8 @@ export class CreatePaqueteDto {
   @ValidateNested({ each: true })
   @Type(() => CreateImagenDto)
   readonly imagenes?: CreateImagenDto[];
+
+  @IsOptional()
+  @IsString()
+  readonly itinerario_texto?: string;
 }

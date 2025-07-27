@@ -5,9 +5,10 @@ import { PaquetesController } from '../paquetes/paquetes.controller';
 import { PaquetesService } from '../paquetes/paquetes.service';
 import { Destino } from '../entities/destino.entity';
 import { Imagen } from '../entities/imagen.entity';
+import { Itinerario } from '../entities/itinerario.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Paquete, Destino, Imagen])],
+  imports: [TypeOrmModule.forFeature([Paquete, Destino, Imagen, Itinerario])],
   controllers: [PaquetesController],
   providers: [PaquetesService],
 })
