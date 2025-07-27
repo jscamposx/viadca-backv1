@@ -1,0 +1,21 @@
+{
+  "conventional-commits.scopes": [
+    "auth",
+    "usuarios", 
+    "paquetes",
+    "destinos",
+    "hoteles",
+    "mayoristas",
+    "contacto",
+    "excel",
+    "utils"
+  ],
+  "conventional-commits.showNewVersionNotes": false,
+  "conventional-commits.promptBody": true,
+  "conventional-commits.promptFooter": false,
+  "conventional-commits.promptScope": true,
+  "conventional-commits.promptBreaking": true,
+  "conventional-commits.lineBreak": "\\n",
+  "conventional-commits.gitmoji": false,
+  "conventional-commits.editor": "text"
+}

@@ -1,0 +1,18 @@
+# Tipo: Descripción breve en español
+#
+# Tipos de cambios:
+# feat: Nueva funcionalidad
+# fix: Corrección de errores
+# docs: Documentación
+# style: Formateo, punto y coma faltantes, etc.
+# refactor: Refactorización del código
+# test: Agregar pruebas
+# chore: Tareas de mantenimiento
+#
+# Ejemplo:
+# feat: Agregar validación de correo electrónico en registro de usuario
+#
+# Descripción detallada (opcional):
+# - Implementar validación con regex
+# - Agregar mensajes de error en español
+# - Actualizar tests correspondientes
