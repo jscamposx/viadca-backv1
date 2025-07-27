@@ -7,7 +7,10 @@ import {
   IsBoolean,
   Min,
   IsPositive,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
+import { CreateDestinoDto } from './create-destino.dto';
 
 export class CreatePaqueteDto {
   @IsString()
@@ -60,4 +63,9 @@ export class CreatePaqueteDto {
   @IsOptional()
   @IsBoolean()
   readonly activo?: boolean;
+
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => CreateDestinoDto)
+  readonly destinos?: CreateDestinoDto[];
 }
