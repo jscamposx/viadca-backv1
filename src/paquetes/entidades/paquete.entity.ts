@@ -14,14 +14,11 @@ import { Mayoristas } from '../../entities/mayoristas.entity';
 
 @Entity('paquetes')
 export class Paquete {
-  @PrimaryGeneratedColumn({ type: 'bigint', unsigned: true })
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @Column({ type: 'varchar', length: 255 })
   titulo: string;
-
-  @Column({ type: 'varchar', length: 255, unique: true })
-  slug: string;
 
   @Column({ type: 'date' })
   fecha_inicio: Date;

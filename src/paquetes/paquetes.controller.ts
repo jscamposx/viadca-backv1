@@ -8,6 +8,7 @@ import {
   Delete,
   HttpCode,
   HttpStatus,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { PaquetesService } from './paquetes.service';
 import { CreatePaqueteDto } from './dto/create-paquete.dto';
@@ -28,19 +29,22 @@ export class PaquetesController {
     return this.paquetesService.findAll();
   }
 
-  @Get(':slug')
-  findOneBySlug(@Param('slug') slug: string) {
-    return this.paquetesService.findOneBySlug(slug);
+  @Get(':id')
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
+    return this.paquetesService.findOne(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updatePaqueteDto: UpdatePaqueteDto) {
-    return this.paquetesService.update(+id, updatePaqueteDto);
+  update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() updatePaqueteDto: UpdatePaqueteDto,
+  ) {
+    return this.paquetesService.update(id, updatePaqueteDto);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id') id: string) {
-    return this.paquetesService.remove(+id);
+  remove(@Param('id', ParseUUIDPipe) id: string) {
+    return this.paquetesService.remove(id);
   }
 }

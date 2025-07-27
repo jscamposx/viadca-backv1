@@ -13,8 +13,8 @@ export class Itinerario {
   @PrimaryGeneratedColumn({ type: 'bigint', unsigned: true })
   id: number;
 
-  @Column({ type: 'bigint', unsigned: true })
-  paquete_id: number;
+  @Column()
+  paquete_id: string;
 
   @Column({ type: 'int', unsigned: true })
   dia_numero: number;

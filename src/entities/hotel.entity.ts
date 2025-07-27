@@ -14,8 +14,8 @@ export class Hotel {
   @PrimaryGeneratedColumn({ type: 'bigint', unsigned: true })
   id: number;
 
-  @Column({ type: 'bigint', unsigned: true })
-  paquete_id: number;
+  @Column()
+  paquete_id: string;
 
   @Column({ type: 'varchar', length: 100 })
   placeId: string;

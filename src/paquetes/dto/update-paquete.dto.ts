@@ -14,10 +14,6 @@ export class UpdatePaqueteDto {
   readonly titulo?: string;
 
   @IsOptional()
-  @IsString()
-  readonly slug?: string;
-
-  @IsOptional()
   @IsDateString()
   readonly fecha_inicio?: Date;
 

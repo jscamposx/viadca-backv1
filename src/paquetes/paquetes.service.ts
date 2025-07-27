@@ -5,7 +5,6 @@ import { Paquete } from './entidades/paquete.entity';
 import { CreatePaqueteDto } from './dto/create-paquete.dto';
 import { UpdatePaqueteDto } from './dto/update-paquete.dto';
 import { Destino } from '../entities/destino.entity';
-import { generarCodigo } from '../utils/generar-url.util';
 
 @Injectable()
 export class PaquetesService {
@@ -19,18 +18,8 @@ export class PaquetesService {
   async create(createPaqueteDto: CreatePaqueteDto): Promise<Paquete> {
     const { destinos, ...paqueteData } = createPaqueteDto;
 
-    let slug: string;
-    let slugExistente: boolean;
-
-    do {
-      slug = generarCodigo(5);
-      const paqueteExistente = await this.paqueteRepository.findOneBy({ slug });
-      slugExistente = !!paqueteExistente;
-    } while (slugExistente);
-
     const paquete = this.paqueteRepository.create({
       ...paqueteData,
-      slug,
     });
 
     await this.paqueteRepository.save(paquete);
@@ -56,24 +45,7 @@ export class PaquetesService {
     return this.paqueteRepository.find({ relations: ['destinos'] });
   }
 
-  async findOneBySlug(slug: string): Promise<Paquete> {
-    const paquete = await this.paqueteRepository.findOne({
-      where: { slug },
-      relations: [
-        'destinos',
-        'itinerarios',
-        'hoteles',
-        'imagenes',
-        'mayoristas',
-      ],
-    });
-    if (!paquete) {
-      throw new NotFoundException(`Paquete con slug "${slug}" no encontrado`);
-    }
-    return paquete;
-  }
-
-  async findOneById(id: number): Promise<Paquete> {
+  async findOne(id: string): Promise<Paquete> {
     const paquete = await this.paqueteRepository.findOne({
       where: { id },
       relations: [
@@ -91,16 +63,16 @@ export class PaquetesService {
   }
 
   async update(
-    id: number,
+    id: string,
     updatePaqueteDto: UpdatePaqueteDto,
   ): Promise<Paquete> {
-    const paquete = await this.findOneById(id);
+    const paquete = await this.findOne(id);
     this.paqueteRepository.merge(paquete, updatePaqueteDto);
     return this.paqueteRepository.save(paquete);
   }
 
-  async remove(id: number): Promise<void> {
-    const paquete = await this.findOneById(id);
+  async remove(id: string): Promise<void> {
+    const paquete = await this.findOne(id);
     await this.paqueteRepository.remove(paquete);
   }
 }

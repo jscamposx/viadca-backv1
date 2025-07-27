@@ -14,8 +14,8 @@ export class Imagen {
   @PrimaryGeneratedColumn({ type: 'bigint', unsigned: true })
   id: number;
 
-  @Column({ type: 'bigint', unsigned: true, nullable: true })
-  paquete_id: number;
+  @Column({ nullable: true })
+  paquete_id: string;
 
   @Column({ type: 'bigint', unsigned: true, nullable: true })
   hotel_id: number;
