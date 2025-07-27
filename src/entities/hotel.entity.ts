@@ -42,6 +42,9 @@ export class Hotel {
   @Exclude()
   paquete: Paquete;
 
-  @OneToMany(() => Imagen, (imagen) => imagen.hotel)
+ // 👇 ¡AQUÍ ESTÁ EL CAMBIO! 👇
+  @OneToMany(() => Imagen, (imagen) => imagen.hotel, {
+    cascade: true, // <-- AÑADE ESTO
+  })
   imagenes: Imagen[];
 }
