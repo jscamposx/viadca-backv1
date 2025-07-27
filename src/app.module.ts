@@ -4,24 +4,24 @@ import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
-// --- Importa tus Entidades aquí ---
+
 import { Usuario } from './entities/usuario.entity';
 import { Paquete } from './paquetes/entidades/paquete.entity';
 import { Itinerario } from './entities/itinerario.entity';
 import { Hotel } from './entities/hotel.entity';
 import { Destino } from './entities/destino.entity';
 import { Imagen } from './entities/imagen.entity';
-import { Mayorista } from './entities/mayorista.entity';
+import { Mayoristas } from './entities/mayoristas.entity';
 import { Contacto } from './entities/contacto.entity';
 
-// --- Importa tus Módulos aquí ---
+
 import { PaquetesModule } from './paquetes/paquetes.module'; 
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      // Carga el archivo .env.dev si estás en desarrollo
+  
       envFilePath: `.env.${process.env.NODE_ENV || 'dev'}`,
     }),
 
@@ -37,7 +37,7 @@ import { PaquetesModule } from './paquetes/paquetes.module';
           password: configService.get<string>('DB_PASSWORD'),
           database: configService.get<string>('DB_NAME'),
 
-          // --- Lista las entidades importadas aquí ---
+       
           entities: [
             Usuario,
             Paquete,
@@ -45,11 +45,11 @@ import { PaquetesModule } from './paquetes/paquetes.module';
             Hotel,
             Destino,
             Imagen,
-            Mayorista,
+            Mayoristas,
             Contacto,
           ],
 
-          // Sincroniza la base de datos solo en entorno de desarrollo
+       
           synchronize: process.env.NODE_ENV === 'dev',
         };
 
@@ -63,7 +63,7 @@ import { PaquetesModule } from './paquetes/paquetes.module';
         return dbConfig;
       },
     }),
-    PaquetesModule, // <-- Módulo añadido
+    PaquetesModule, 
   ],
   controllers: [AppController],
   providers: [AppService],

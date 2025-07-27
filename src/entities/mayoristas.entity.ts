@@ -7,8 +7,8 @@ import {
 } from 'typeorm';
 import { Paquete } from '../paquetes/entidades/paquete.entity';
 
-@Entity('mayorista')
-export class Mayorista {
+@Entity('mayoristas')
+export class Mayoristas {
   @PrimaryGeneratedColumn({ type: 'bigint', unsigned: true })
   id: number;
 

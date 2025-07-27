@@ -10,7 +10,7 @@ import { Itinerario } from '../../entities/itinerario.entity';
 import { Hotel } from '../../entities/hotel.entity';
 import { Destino } from '../../entities/destino.entity';
 import { Imagen } from '../../entities/imagen.entity';
-import { Mayorista } from '../../entities/mayorista.entity';
+import { Mayoristas } from '../../entities/mayoristas.entity';
 
 @Entity('paquetes')
 export class Paquete {
@@ -74,6 +74,6 @@ export class Paquete {
   @OneToMany(() => Imagen, (imagen) => imagen.paquete)
   imagenes: Imagen[];
 
-  @OneToMany(() => Mayorista, (mayorista) => mayorista.paquete)
-  mayoristas: Mayorista[];
+  @OneToMany(() => Mayoristas, (mayoristas) => mayoristas.paquete)
+  mayoristas: Mayoristas[];
 }
