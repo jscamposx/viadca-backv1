@@ -5,7 +5,7 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
-import { Paquete } from './paquete.entity';
+import { Paquete } from '../paquetes/entidades/paquete.entity';
 
 @Entity('destinos')
 export class Destino {

@@ -6,13 +6,16 @@ import { AppService } from './app.service';
 
 // --- Importa tus Entidades aquí ---
 import { Usuario } from './entities/usuario.entity';
-import { Paquete } from './entities/paquete.entity';
+import { Paquete } from './paquetes/entidades/paquete.entity';
 import { Itinerario } from './entities/itinerario.entity';
 import { Hotel } from './entities/hotel.entity';
 import { Destino } from './entities/destino.entity';
 import { Imagen } from './entities/imagen.entity';
 import { Mayorista } from './entities/mayorista.entity';
 import { Contacto } from './entities/contacto.entity';
+
+// --- Importa tus Módulos aquí ---
+import { PaquetesModule } from './paquetes/paquetes.module'; 
 
 @Module({
   imports: [
@@ -60,6 +63,7 @@ import { Contacto } from './entities/contacto.entity';
         return dbConfig;
       },
     }),
+    PaquetesModule, // <-- Módulo añadido
   ],
   controllers: [AppController],
   providers: [AppService],

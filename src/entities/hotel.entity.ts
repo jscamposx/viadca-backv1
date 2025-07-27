@@ -6,7 +6,7 @@ import {
   JoinColumn,
   OneToMany,
 } from 'typeorm';
-import { Paquete } from './paquete.entity';
+import { Paquete } from '../paquetes/entidades/paquete.entity';
 import { Imagen } from './imagen.entity';
 
 @Entity('hoteles')

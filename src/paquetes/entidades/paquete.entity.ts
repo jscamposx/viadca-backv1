@@ -6,11 +6,11 @@ import {
   UpdateDateColumn,
   OneToMany,
 } from 'typeorm';
-import { Itinerario } from './itinerario.entity';
-import { Hotel } from './hotel.entity';
-import { Destino } from './destino.entity';
-import { Imagen } from './imagen.entity';
-import { Mayorista } from './mayorista.entity';
+import { Itinerario } from '../../entities/itinerario.entity';
+import { Hotel } from '../../entities/hotel.entity';
+import { Destino } from '../../entities/destino.entity';
+import { Imagen } from '../../entities/imagen.entity';
+import { Mayorista } from '../../entities/mayorista.entity';
 
 @Entity('paquetes')
 export class Paquete {
@@ -52,9 +52,6 @@ export class Paquete {
 
   @Column({ type: 'text', nullable: true })
   notas: string;
-
-  @Column({ type: 'text' })
-  descripcion: string;
 
   @Column({ type: 'boolean', default: true })
   activo: boolean;
