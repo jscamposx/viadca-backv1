@@ -1,4 +1,4 @@
-// src/paquetes/paquetes.service.ts
+
 
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -7,7 +7,7 @@ import { Paquete } from './entidades/paquete.entity';
 import { CreatePaqueteDto } from './dto/create-paquete.dto';
 import { UpdatePaqueteDto } from './dto/update-paquete.dto';
 import { Destino } from '../entities/destino.entity';
-import { generarCodigo } from '../utils/generar-url.util'; // Importamos la utilidad
+import { generarCodigo } from '../utils/generar-url.util';
 
 @Injectable()
 export class PaquetesService {
@@ -24,16 +24,16 @@ export class PaquetesService {
     let slug: string;
     let slugExistente: boolean;
 
-    // Bucle para asegurar que el slug sea único
+  
     do {
-      slug = generarCodigo(5); // Genera un código de 5 caracteres
+      slug = generarCodigo(5); 
       const paqueteExistente = await this.paqueteRepository.findOneBy({ slug });
       slugExistente = !!paqueteExistente;
     } while (slugExistente);
 
     const paquete = this.paqueteRepository.create({
       ...paqueteData,
-      slug, // Asignamos el slug único generado
+      slug,
     });
 
     await this.paqueteRepository.save(paquete);

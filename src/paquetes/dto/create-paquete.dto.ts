@@ -1,4 +1,4 @@
-// src/paquetes/dto/create-paquete.dto.ts
+
 
 import {
   IsString,

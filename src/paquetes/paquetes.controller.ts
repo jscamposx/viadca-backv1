@@ -1,4 +1,3 @@
-
 import {
   Controller,
   Get,
@@ -14,7 +13,7 @@ import { PaquetesService } from './paquetes.service';
 import { CreatePaqueteDto } from './dto/create-paquete.dto';
 import { UpdatePaqueteDto } from './dto/update-paquete.dto';
 
-@Controller('admin/paquetes') 
+@Controller('admin/paquetes')
 export class PaquetesController {
   constructor(private readonly paquetesService: PaquetesService) {}
 

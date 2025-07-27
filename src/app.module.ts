@@ -4,7 +4,6 @@ import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
-
 import { Usuario } from './entities/usuario.entity';
 import { Paquete } from './paquetes/entidades/paquete.entity';
 import { Itinerario } from './entities/itinerario.entity';
@@ -14,14 +13,13 @@ import { Imagen } from './entities/imagen.entity';
 import { Mayoristas } from './entities/mayoristas.entity';
 import { Contacto } from './entities/contacto.entity';
 
-
-import { PaquetesModule } from './paquetes/paquetes.module'; 
+import { PaquetesModule } from './paquetes/paquetes.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-  
+
       envFilePath: `.env.${process.env.NODE_ENV || 'dev'}`,
     }),
 
@@ -37,7 +35,6 @@ import { PaquetesModule } from './paquetes/paquetes.module';
           password: configService.get<string>('DB_PASSWORD'),
           database: configService.get<string>('DB_NAME'),
 
-       
           entities: [
             Usuario,
             Paquete,
@@ -49,7 +46,6 @@ import { PaquetesModule } from './paquetes/paquetes.module';
             Contacto,
           ],
 
-       
           synchronize: process.env.NODE_ENV === 'dev',
         };
 
@@ -63,7 +59,7 @@ import { PaquetesModule } from './paquetes/paquetes.module';
         return dbConfig;
       },
     }),
-    PaquetesModule, 
+    PaquetesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
