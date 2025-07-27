@@ -9,7 +9,8 @@ import { Imagen } from '../entities/imagen.entity';
 import { CreateImagenDto } from './dto/create-imagen.dto';
 import { Itinerario } from '../entities/itinerario.entity';
 import { Mayoristas } from '../entities/mayoristas.entity';
-import { Hotel } from '../entities/hotel.entity'; // <-- Importación añadida
+import { Hotel } from '../entities/hotel.entity';
+import { CreateHotelDto } from './dto/create-hotel.dto';
 
 @Injectable()
 export class PaquetesService {
@@ -24,7 +25,7 @@ export class PaquetesService {
     private readonly itinerarioRepository: Repository<Itinerario>,
     @InjectRepository(Mayoristas)
     private readonly mayoristaRepository: Repository<Mayoristas>,
-    @InjectRepository(Hotel) // <-- Inyección del repositorio de Hotel
+    @InjectRepository(Hotel)
     private readonly hotelRepository: Repository<Hotel>,
   ) {}
 
@@ -34,13 +35,12 @@ export class PaquetesService {
       imagenes,
       itinerario_texto,
       mayoristasIds,
-      hoteles, // <-- Se extraen los hoteles del DTO
+      hoteles,
       ...paqueteData
     } = createPaqueteDto;
 
     const paquete = this.paqueteRepository.create(paqueteData);
 
-    // Asignar mayoristas si se proporcionaron IDs
     if (mayoristasIds && mayoristasIds.length > 0) {
       const mayoristas = await this.mayoristaRepository.findBy({
         id: In(mayoristasIds),
@@ -53,7 +53,6 @@ export class PaquetesService {
       paquete.mayoristas = mayoristas;
     }
 
-    // Asignar destinos si existen
     if (destinos && destinos.length > 0) {
       paquete.destinos = destinos.map((dto) => {
         const destino = new Destino();
@@ -62,7 +61,6 @@ export class PaquetesService {
       });
     }
 
-    // Asignar imágenes si existen
     if (imagenes && imagenes.length > 0) {
       paquete.imagenes = imagenes.map((dto) => {
         const imagen = new Imagen();
@@ -71,7 +69,6 @@ export class PaquetesService {
       });
     }
 
-    // Asignar hoteles si existen
     if (hoteles && hoteles.length > 0) {
       paquete.hoteles = hoteles.map((dto) => {
         const hotel = new Hotel();
@@ -92,7 +89,6 @@ export class PaquetesService {
       });
     }
 
-    // Lógica para el itinerario
     if (itinerario_texto) {
       const itinerariosCrudos = itinerario_texto.trim().split(/(?=DÍA\s+\d+)/g);
       const itinerariosEntities = itinerariosCrudos
@@ -118,7 +114,6 @@ export class PaquetesService {
       }
     }
 
-    // Guardamos el paquete con todas sus relaciones anidadas
     return this.paqueteRepository.save(paquete);
   }
 
@@ -149,7 +144,7 @@ export class PaquetesService {
         'hoteles',
         'imagenes',
         'mayoristas',
-        'hoteles.imagenes', // Para cargar también las imágenes de los hoteles
+        'hoteles.imagenes',
       ],
     });
     if (!paquete) {
@@ -165,7 +160,6 @@ export class PaquetesService {
     const { mayoristasIds, hoteles, ...updateData } = updatePaqueteDto;
     const paquete = await this.findOne(id);
 
-    // Actualizar mayoristas
     if (mayoristasIds) {
       if (mayoristasIds.length > 0) {
         const mayoristas = await this.mayoristaRepository.findBy({
@@ -182,7 +176,6 @@ export class PaquetesService {
       }
     }
 
-    // Actualizar hoteles: se eliminan los anteriores y se añaden los nuevos
     if (hoteles) {
       if (paquete.hoteles && paquete.hoteles.length > 0) {
         await this.hotelRepository.remove(paquete.hoteles);
@@ -198,6 +191,23 @@ export class PaquetesService {
     }
 
     this.paqueteRepository.merge(paquete, updateData);
+    return this.paqueteRepository.save(paquete);
+  }
+
+  async updateHoteles(
+    id: string,
+    hotelesDto: CreateHotelDto[],
+  ): Promise<Paquete> {
+    const paquete = await this.findOne(id);
+
+    if (paquete.hoteles && paquete.hoteles.length > 0) {
+      await this.hotelRepository.remove(paquete.hoteles);
+    }
+
+    const nuevosHoteles = this.hotelRepository.create(hotelesDto);
+
+    paquete.hoteles = nuevosHoteles;
+
     return this.paqueteRepository.save(paquete);
   }
 

@@ -68,7 +68,7 @@ export class UpdatePaqueteDto {
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => UpdateHotelDto) // <-- Añade la validación para los hoteles
+  @Type(() => UpdateHotelDto)
   readonly hoteles?: UpdateHotelDto[];
 
   @IsOptional()

@@ -8,7 +8,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CreateImagenDto } from './create-imagen.dto';
-import { UpdateImagenDto } from './update-imagen.dto'; // Asumiendo que exista o se cree un DTO para actualizar imagenes
+import { UpdateImagenDto } from './update-imagen.dto';
 
 export class UpdateHotelDto {
   @IsOptional()
@@ -38,13 +38,13 @@ export class UpdateHotelDto {
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => UpdateImagenDto) // Se usaría un UpdateImagenDto para la actualización
+  @Type(() => UpdateImagenDto)
   readonly imagenes?: UpdateImagenDto[];
 
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => UpdateHotelDto) // <-- Añade la validación para los hoteles
+  @Type(() => UpdateHotelDto)
   readonly hoteles?: UpdateHotelDto[];
 
   @IsOptional()

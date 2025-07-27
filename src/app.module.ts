@@ -14,7 +14,7 @@ import { Mayoristas } from './entities/mayoristas.entity';
 import { Contacto } from './entities/contacto.entity';
 
 import { PaquetesModule } from './paquetes/paquetes.module';
-import { MayoristasModule } from './mayoristas/mayoristas.module'; // Importa el nuevo módulo
+import { MayoristasModule } from './mayoristas/mayoristas.module';
 
 @Module({
   imports: [
@@ -60,7 +60,7 @@ import { MayoristasModule } from './mayoristas/mayoristas.module'; // Importa el
       },
     }),
     PaquetesModule,
-    MayoristasModule, // Añade el módulo aquí
+    MayoristasModule,
   ],
   controllers: [AppController],
   providers: [AppService],

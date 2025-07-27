@@ -76,7 +76,7 @@ export class CreatePaqueteDto {
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => CreateHotelDto) // <-- Añade la validación para los hoteles
+  @Type(() => CreateHotelDto)
   readonly hoteles?: CreateHotelDto[];
 
   @IsOptional()

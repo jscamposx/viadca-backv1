@@ -14,7 +14,7 @@ import { PaquetesService } from './paquetes.service';
 import { CreatePaqueteDto } from './dto/create-paquete.dto';
 import { UpdatePaqueteDto } from './dto/update-paquete.dto';
 import { CreateImagenDto } from './dto/create-imagen.dto';
-
+import { UpdatePaqueteHotelesDto } from './dto/update-paquete-hoteles.dto';
 @Controller('admin/paquetes')
 export class PaquetesController {
   constructor(private readonly paquetesService: PaquetesService) {}
@@ -42,6 +42,17 @@ export class PaquetesController {
   @Get(':id')
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.paquetesService.findOne(id);
+  }
+
+  @Patch(':id/hoteles')
+  updateHoteles(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() updatePaqueteHotelesDto: UpdatePaqueteHotelesDto,
+  ) {
+    return this.paquetesService.updateHoteles(
+      id,
+      updatePaqueteHotelesDto.hoteles,
+    );
   }
 
   @Patch(':id')
