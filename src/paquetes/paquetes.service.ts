@@ -13,6 +13,7 @@ import { Hotel } from '../entities/hotel.entity';
 import { UpdateImagenDto } from './dto/update-imagen.dto';
 import { generarCodigo } from '../utils/generar-url.util';
 import { PaqueteListDto } from './dto/paquete-list.dto';
+import { UpdateHotelDto } from './dto/update-hotel.dto';
 
 @Injectable()
 export class PaquetesService {
@@ -244,7 +245,7 @@ export class PaquetesService {
 
   private async prepareHotelForSave(
     hotelExistente: Hotel | null,
-    hotelData: any,
+    hotelData: UpdateHotelDto,
   ): Promise<Hotel> {
     const { imagenes: imagenesDto, ...hotelDetails } = hotelData;
     const hotel = hotelExistente || this.hotelRepository.create();
