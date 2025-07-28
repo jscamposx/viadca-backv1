@@ -12,6 +12,7 @@ import { Mayoristas } from '../entities/mayoristas.entity';
 import { Hotel } from '../entities/hotel.entity';
 import { UpdateImagenDto } from './dto/update-imagen.dto';
 import { generarCodigo } from '../utils/generar-url.util';
+
 @Injectable()
 export class PaquetesService {
   constructor(
@@ -54,10 +55,10 @@ export class PaquetesService {
     }
     paquete.codigoUrl = codigoUrl;
 
-    if (Array.isArray(mayoristasIds) && mayoristasIds.length > 0) {
+    if (mayoristasIds && mayoristasIds.length > 0) {
       paquete.mayoristas = await this.findMayoristasByIds(mayoristasIds);
     }
-    if (Array.isArray(destinosDto) && destinosDto.length > 0) {
+    if (destinosDto && destinosDto.length > 0) {
       paquete.destinos = destinosDto.map((dto) =>
         Object.assign(new Destino(), dto),
       );
@@ -147,14 +148,12 @@ export class PaquetesService {
         imagenesDto,
       );
     }
-
     if (itinerario_texto !== undefined) {
       if (paquete.itinerarios?.length > 0) {
         await this.itinerarioRepository.remove(paquete.itinerarios);
       }
       paquete.itinerarios = this.parseItinerario(itinerario_texto);
     }
-
     if (destinosDto) {
       if (paquete.destinos?.length > 0) {
         await this.destinoRepository.remove(paquete.destinos);
