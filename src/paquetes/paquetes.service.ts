@@ -141,11 +141,10 @@ export class PaquetesService {
   }
 
   async removeImage(imagenId: number): Promise<void> {
-    const imagen = await this.imagenRepository.findOneBy({ id: imagenId });
-    if (!imagen) {
+    const result = await this.imagenRepository.delete(imagenId);
+    if (result.affected === 0) {
       throw new NotFoundException(`Imagen con ID "${imagenId}" no encontrada.`);
     }
-    await this.imagenRepository.remove(imagen);
   }
 
   private async findMayoristasByIds(ids: number[]): Promise<Mayoristas[]> {
@@ -216,8 +215,10 @@ export class PaquetesService {
 
       if (entidad instanceof Paquete) {
         imagen.paquete = entidad;
+        imagen.hotel = null;
       } else if (entidad instanceof Hotel) {
         imagen.hotel = entidad;
+        imagen.paquete = null;
       }
 
       imagenesAGuardar.push(Object.assign(imagen, dto));
