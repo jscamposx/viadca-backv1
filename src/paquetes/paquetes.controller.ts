@@ -44,16 +44,7 @@ export class PaquetesController {
     return this.paquetesService.findOne(id);
   }
 
-  @Patch(':id/hoteles')
-  updateHoteles(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() updatePaqueteHotelesDto: UpdatePaqueteHotelesDto,
-  ) {
-    return this.paquetesService.updateHoteles(
-      id,
-      updatePaqueteHotelesDto.hoteles,
-    );
-  }
+
 
   @Patch(':id')
   update(

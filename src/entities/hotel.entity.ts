@@ -2,20 +2,20 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
-  ManyToOne,
-  JoinColumn,
+  OneToOne,
+  JoinColumn, // Importante
   OneToMany,
 } from 'typeorm';
 import { Paquete } from '../paquetes/entidades/paquete.entity';
 import { Imagen } from './imagen.entity';
 import { Exclude } from 'class-transformer';
+
 @Entity('hoteles')
 export class Hotel {
   @PrimaryGeneratedColumn({ type: 'bigint', unsigned: true })
   id: number;
 
-  @Column()
-  paquete_id: string;
+  // Se elimina la columna 'paquete_id' manual, @JoinColumn la creará.
 
   @Column({ type: 'varchar', length: 100 })
   placeId: string;
@@ -35,10 +35,10 @@ export class Hotel {
   @Column({ type: 'text' })
   descripcion: string;
 
-  @ManyToOne(() => Paquete, (paquete) => paquete.hoteles, {
+  @OneToOne(() => Paquete, (paquete) => paquete.hotel, {
     onDelete: 'CASCADE',
   })
-  @JoinColumn({ name: 'paquete_id' })
+  @JoinColumn({ name: 'paquete_id' }) // <-- @JoinColumn va aquí.
   @Exclude()
   paquete: Paquete;
 

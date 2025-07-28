@@ -7,6 +7,7 @@ import {
   OneToMany,
   ManyToMany,
   JoinTable,
+  OneToOne,
 } from 'typeorm';
 import { Itinerario } from '../../entities/itinerario.entity';
 import { Hotel } from '../../entities/hotel.entity';
@@ -66,10 +67,11 @@ export class Paquete {
   })
   itinerarios: Itinerario[];
 
-  @OneToMany(() => Hotel, (hotel) => hotel.paquete, {
+  @OneToOne(() => Hotel, (hotel) => hotel.paquete, {
     cascade: true,
   })
-  hoteles: Hotel[];
+  // @JoinColumn() <-- SE ELIMINA DE AQUÍ
+  hotel: Hotel;
 
   @OneToMany(() => Destino, (destino) => destino.paquete, {
     cascade: true,
