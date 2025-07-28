@@ -23,6 +23,8 @@ export class PaquetesService {
     private readonly hotelRepository: Repository<Hotel>,
     @InjectRepository(Imagen)
     private readonly imagenRepository: Repository<Imagen>,
+    @InjectRepository(Itinerario) // Asegúrate de que este repositorio esté inyectado
+    private readonly itinerarioRepository: Repository<Itinerario>,
   ) {}
 
   async create(createPaqueteDto: CreatePaqueteDto): Promise<Paquete> {
@@ -40,19 +42,16 @@ export class PaquetesService {
     if (Array.isArray(mayoristasIds) && mayoristasIds.length > 0) {
       paquete.mayoristas = await this.findMayoristasByIds(mayoristasIds);
     }
-
     if (Array.isArray(destinosDto) && destinosDto.length > 0) {
       paquete.destinos = destinosDto.map((dto) =>
         Object.assign(new Destino(), dto),
       );
     }
-
     if (imagenesDto && imagenesDto.length > 0) {
       paquete.imagenes = imagenesDto.map((dto) =>
         Object.assign(new Imagen(), dto),
       );
     }
-
     if (hotelDto) {
       paquete.hotel = this.hotelRepository.create({
         ...hotelDto,
@@ -62,7 +61,6 @@ export class PaquetesService {
           ) || [],
       });
     }
-
     if (itinerario_texto) {
       paquete.itinerarios = this.parseItinerario(itinerario_texto);
     }
@@ -92,12 +90,7 @@ export class PaquetesService {
     const paquete = await this.paqueteRepository.findOne({
       where: { id },
       relations: [
-        'destinos',
-        'itinerarios',
-        'hotel',
-        'imagenes',
-        'mayoristas',
-        'hotel.imagenes',
+        'destinos', 'itinerarios', 'hotel', 'imagenes', 'mayoristas', 'hotel.imagenes',
       ],
     });
     if (!paquete) {
@@ -115,24 +108,30 @@ export class PaquetesService {
       mayoristasIds,
       hotel: hotelData,
       imagenes: imagenesDto,
+  
       ...paqueteDetails
     } = updatePaqueteDto;
 
-    Object.assign(paquete, paqueteDetails);
+    // 1. Actualiza los campos directos del paquete
+    if (Object.keys(paqueteDetails).length > 0) {
+        await this.paqueteRepository.update(id, paqueteDetails);
+    }
 
+    // 2. Sincroniza las relaciones
     if (mayoristasIds) {
       paquete.mayoristas = await this.findMayoristasByIds(mayoristasIds);
+      await this.paqueteRepository.save(paquete); // Guardar específicamente esta relación ManyToMany
     }
-
     if (hotelData) {
-      paquete.hotel = await this.sincronizarHotel(paquete.hotel, hotelData);
+      await this.sincronizarHotel(paquete.hotel, hotelData);
     }
-
     if (imagenesDto) {
       await this.sincronizarImagenes(paquete, imagenesDto);
     }
+   
 
-    return this.paqueteRepository.save(paquete);
+    // 3. Devuelve la entidad completamente actualizada
+    return this.findOne(id);
   }
 
   async remove(id: string): Promise<void> {
@@ -148,14 +147,10 @@ export class PaquetesService {
   }
 
   private async findMayoristasByIds(ids: number[]): Promise<Mayoristas[]> {
-    if (!ids || ids.length === 0) {
-      return [];
-    }
+    if (!ids || ids.length === 0) return [];
     const mayoristas = await this.mayoristaRepository.findBy({ id: In(ids) });
     if (mayoristas.length !== ids.length) {
-      throw new NotFoundException(
-        'Uno o más mayoristas no fueron encontrados.',
-      );
+      throw new NotFoundException('Uno o más mayoristas no fueron encontrados.');
     }
     return mayoristas;
   }
@@ -167,7 +162,6 @@ export class PaquetesService {
       .map((textoDia) => {
         const match = textoDia.trim().match(/^DÍA\s+(\d+):?\s*([\s\S]*)/);
         if (!match) return null;
-
         const itinerario = new Itinerario();
         itinerario.dia_numero = parseInt(match[1], 10);
         itinerario.descripcion = match[2].trim();
@@ -179,53 +173,35 @@ export class PaquetesService {
   private async sincronizarHotel(
     hotelExistente: Hotel | null,
     hotelData: any,
-  ): Promise<Hotel> {
+  ): Promise<void> {
     const { imagenes: imagenesDto, ...hotelDetails } = hotelData;
     const hotel = hotelExistente || this.hotelRepository.create();
-
     Object.assign(hotel, hotelDetails);
+    
+    const savedHotel = await this.hotelRepository.save(hotel);
 
     if (imagenesDto) {
-      await this.sincronizarImagenes(hotel, imagenesDto);
+      await this.sincronizarImagenes(savedHotel, imagenesDto);
     }
-
-    return hotel;
   }
 
   private async sincronizarImagenes(
     entidad: Paquete | Hotel,
     imagenesDto: UpdateImagenDto[],
   ): Promise<void> {
-    const imagenesAGuardar: Imagen[] = [];
-
     for (const dto of imagenesDto) {
-      let imagen: Imagen | null;
-
-      if (dto.id) {
-        imagen = await this.imagenRepository.findOneBy({ id: dto.id });
-        if (!imagen) {
-          console.warn(
-            `Se intentó actualizar la imagen con ID ${dto.id}, pero no se encontró. Se omitirá.`,
-          );
-          continue;
-        }
+      const { id, ...updateData } = dto;
+      
+      if (id) {
+        await this.imagenRepository.update(id, updateData);
       } else {
-        imagen = this.imagenRepository.create();
+        const nuevaImagen = this.imagenRepository.create({
+          ...updateData,
+          ...(entidad instanceof Paquete && { paquete: { id: entidad.id } as Paquete }),
+          ...(entidad instanceof Hotel && { hotel: { id: entidad.id } as Hotel }),
+        });
+        await this.imagenRepository.save(nuevaImagen);
       }
-
-      if (entidad instanceof Paquete) {
-        imagen.paquete = entidad;
-        imagen.hotel = null;
-      } else if (entidad instanceof Hotel) {
-        imagen.hotel = entidad;
-        imagen.paquete = null;
-      }
-
-      imagenesAGuardar.push(Object.assign(imagen, dto));
-    }
-
-    if (imagenesAGuardar.length > 0) {
-      await this.imagenRepository.save(imagenesAGuardar);
     }
   }
 }
