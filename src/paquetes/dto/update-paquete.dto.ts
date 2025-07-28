@@ -12,6 +12,8 @@ import {
 import { Type } from 'class-transformer';
 import { UpdateHotelDto } from './update-hotel.dto';
 import { UpdateImagenDto } from './update-imagen.dto';
+import { CreateDestinoDto } from './create-destino.dto';
+
 export class UpdatePaqueteDto {
   @IsOptional()
   @IsString()
@@ -75,11 +77,19 @@ export class UpdatePaqueteDto {
   @IsNumber({}, { each: true })
   readonly mayoristasIds?: number[];
 
-  // --- AÑADIR ESTA NUEVA PROPIEDAD ---
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => UpdateImagenDto)
   readonly imagenes?: UpdateImagenDto[];
-  // ------------------------------------
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateDestinoDto)
+  readonly destinos?: CreateDestinoDto[];
+
+  @IsOptional()
+  @IsString()
+  readonly itinerario_texto?: string;
 }

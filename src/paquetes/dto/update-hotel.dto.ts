@@ -7,7 +7,6 @@ import {
   IsArray,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { CreateImagenDto } from './create-imagen.dto';
 import { UpdateImagenDto } from './update-imagen.dto';
 
 export class UpdateHotelDto {
@@ -40,15 +39,4 @@ export class UpdateHotelDto {
   @ValidateNested({ each: true })
   @Type(() => UpdateImagenDto)
   readonly imagenes?: UpdateImagenDto[];
-
-  @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => UpdateHotelDto)
-  readonly hoteles?: UpdateHotelDto[];
-
-  @IsOptional()
-  @IsArray()
-  @IsNumber({}, { each: true })
-  readonly mayoristasIds?: number[];
 }
