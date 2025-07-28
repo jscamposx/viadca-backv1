@@ -77,6 +77,7 @@ export class UpdatePaqueteDto {
   @IsArray()
   @IsUUID('4', { each: true })
   readonly mayoristasIds?: string[];
+
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
