@@ -17,92 +17,54 @@ export class PaquetesService {
   constructor(
     @InjectRepository(Paquete)
     private readonly paqueteRepository: Repository<Paquete>,
-    @InjectRepository(Destino)
-    private readonly destinoRepository: Repository<Destino>,
-    @InjectRepository(Imagen)
-    private readonly imagenRepository: Repository<Imagen>,
-    @InjectRepository(Itinerario)
-    private readonly itinerarioRepository: Repository<Itinerario>,
     @InjectRepository(Mayoristas)
     private readonly mayoristaRepository: Repository<Mayoristas>,
     @InjectRepository(Hotel)
     private readonly hotelRepository: Repository<Hotel>,
+    @InjectRepository(Imagen)
+    private readonly imagenRepository: Repository<Imagen>,
   ) {}
 
   async create(createPaqueteDto: CreatePaqueteDto): Promise<Paquete> {
     const {
-      destinos,
-      imagenes,
-      itinerario_texto,
       mayoristasIds,
-      hotel,
+      destinos: destinosDto,
+      imagenes: imagenesDto,
+      hotel: hotelDto,
+      itinerario_texto,
       ...paqueteData
     } = createPaqueteDto;
 
     const paquete = this.paqueteRepository.create(paqueteData);
 
-    if (mayoristasIds && mayoristasIds.length > 0) {
-      const mayoristas = await this.mayoristaRepository.findBy({
-        id: In(mayoristasIds),
-      });
-      if (mayoristas.length !== mayoristasIds.length) {
-        throw new NotFoundException(
-          'Uno o más mayoristas no fueron encontrados.',
-        );
-      }
-      paquete.mayoristas = mayoristas;
+    if (Array.isArray(mayoristasIds) && mayoristasIds.length > 0) {
+      paquete.mayoristas = await this.findMayoristasByIds(mayoristasIds);
     }
 
-    if (destinos && destinos.length > 0) {
-      paquete.destinos = destinos.map((dto) => {
-        const destino = new Destino();
-        Object.assign(destino, dto);
-        return destino;
-      });
+    if (Array.isArray(destinosDto) && destinosDto.length > 0) {
+      paquete.destinos = destinosDto.map((dto) =>
+        Object.assign(new Destino(), dto),
+      );
     }
 
-    if (imagenes && imagenes.length > 0) {
-      paquete.imagenes = imagenes.map((dto) => {
-        const imagen = new Imagen();
-        Object.assign(imagen, dto);
-        return imagen;
-      });
+    if (imagenesDto && imagenesDto.length > 0) {
+      paquete.imagenes = imagenesDto.map((dto) =>
+        Object.assign(new Imagen(), dto),
+      );
     }
 
-    if (hotel) {
-      const nuevoHotel = this.hotelRepository.create({
-        ...hotel,
+    if (hotelDto) {
+      paquete.hotel = this.hotelRepository.create({
+        ...hotelDto,
         imagenes:
-          hotel.imagenes?.map((imgDto) =>
+          hotelDto.imagenes?.map((imgDto) =>
             this.imagenRepository.create(imgDto),
           ) || [],
       });
-      paquete.hotel = nuevoHotel;
     }
 
     if (itinerario_texto) {
-      const itinerariosCrudos = itinerario_texto.trim().split(/(?=DÍA\s+\d+)/g);
-      const itinerariosEntities = itinerariosCrudos
-        .map((textoDia) => {
-          const textoLimpio = textoDia.trim();
-          if (!textoLimpio) return null;
-
-          const match = textoLimpio.match(/^DÍA\s+(\d+):?\s*([\s\S]*)/);
-          if (!match) return null;
-
-          const itinerario = new Itinerario();
-          itinerario.dia_numero = parseInt(match[1], 10);
-          itinerario.descripcion = match[2].trim();
-          return itinerario;
-        })
-        .filter(
-          (itinerario): itinerario is Itinerario =>
-            itinerario !== null && itinerario.descripcion !== '',
-        );
-
-      if (itinerariosEntities.length > 0) {
-        paquete.itinerarios = itinerariosEntities;
-      }
+      paquete.itinerarios = this.parseItinerario(itinerario_texto);
     }
 
     return this.paqueteRepository.save(paquete);
@@ -148,109 +110,112 @@ export class PaquetesService {
     id: string,
     updatePaqueteDto: UpdatePaqueteDto,
   ): Promise<Paquete> {
+    const paquete = await this.findOne(id);
     const {
       mayoristasIds,
       hotel: hotelData,
+      imagenes: imagenesDto, // Corregido para que se extraiga del DTO
       ...paqueteDetails
     } = updatePaqueteDto;
 
-    const paquete = await this.paqueteRepository.findOne({
-      where: { id },
-      relations: ['hotel', 'hotel.imagenes', 'mayoristas'],
-    });
-
-    if (!paquete) {
-      throw new NotFoundException(`Paquete con ID "${id}" no encontrado`);
-    }
-
-    this.paqueteRepository.merge(paquete, paqueteDetails);
+    Object.assign(paquete, paqueteDetails);
 
     if (mayoristasIds) {
-      paquete.mayoristas = await this.mayoristaRepository.findBy({
-        id: In(mayoristasIds),
-      });
+      paquete.mayoristas = await this.findMayoristasByIds(mayoristasIds);
     }
 
     if (hotelData) {
-      const { imagenes: imagenesDto, ...hotelDetails } = hotelData;
+      paquete.hotel = await this.sincronizarHotel(paquete.hotel, hotelData);
+    }
 
-      const hotel = paquete.hotel ?? this.hotelRepository.create();
-      this.hotelRepository.merge(hotel, hotelDetails);
-
-      if (imagenesDto) {
-        const idsEntrantes = imagenesDto.map((dto) => dto.id).filter(Boolean);
-        const imagenesActuales = hotel.imagenes || [];
-        const imagenesAEliminar = imagenesActuales.filter(
-          (img) => !idsEntrantes.includes(img.id),
-        );
-
-        if (imagenesAEliminar.length > 0) {
-          await this.imagenRepository.remove(imagenesAEliminar);
-        }
-
-        const imagenesSincronizadas = imagenesDto.map((dto) => {
-          let imagen: Imagen;
-
-          if (dto.id) {
-            const existente = imagenesActuales.find((img) => img.id === dto.id);
-            imagen = existente ? existente : this.imagenRepository.create();
-          } else {
-            imagen = this.imagenRepository.create();
-          }
-
-          return this.imagenRepository.merge(imagen, dto);
-        });
-
-        hotel.imagenes = imagenesSincronizadas;
-      }
-      paquete.hotel = hotel;
+    if (imagenesDto) {
+      paquete.imagenes = await this.sincronizarImagenes(paquete, imagenesDto);
     }
 
     return this.paqueteRepository.save(paquete);
   }
 
+  async remove(id: string): Promise<void> {
+    const paquete = await this.findOne(id);
+    await this.paqueteRepository.remove(paquete);
+  }
+
+  private async findMayoristasByIds(ids: number[]): Promise<Mayoristas[]> {
+    if (!ids || ids.length === 0) {
+      return [];
+    }
+    const mayoristas = await this.mayoristaRepository.findBy({ id: In(ids) });
+    if (mayoristas.length !== ids.length) {
+      throw new NotFoundException('Uno o más mayoristas no fueron encontrados.');
+    }
+    return mayoristas;
+  }
+
+  private parseItinerario(itinerario_texto: string): Itinerario[] {
+    return itinerario_texto
+      .trim()
+      .split(/(?=DÍA\s+\d+)/g)
+      .map((textoDia) => {
+        const match = textoDia.trim().match(/^DÍA\s+(\d+):?\s*([\s\S]*)/);
+        if (!match) return null;
+
+        const itinerario = new Itinerario();
+        itinerario.dia_numero = parseInt(match[1], 10);
+        itinerario.descripcion = match[2].trim();
+        return itinerario;
+      })
+      .filter((it): it is Itinerario => it !== null && it.descripcion !== '');
+  }
+
+  private async sincronizarHotel(
+    hotelExistente: Hotel | null,
+    hotelData: any,
+  ): Promise<Hotel> {
+    const { imagenes: imagenesDto, ...hotelDetails } = hotelData;
+    const hotel = hotelExistente || this.hotelRepository.create();
+
+    Object.assign(hotel, hotelDetails);
+
+    if (imagenesDto) {
+      hotel.imagenes = await this.sincronizarImagenes(hotel, imagenesDto);
+    }
+
+    return hotel;
+  }
+
   private async sincronizarImagenes(
-    hotel: Hotel,
+    entidad: Paquete | Hotel,
     imagenesDto: UpdateImagenDto[],
-  ) {
-    const imagenesActuales = hotel.imagenes || [];
-    const idsDto = imagenesDto.map((dto) => dto.id).filter(Boolean);
+  ): Promise<Imagen[]> {
+    const imagenesActuales = entidad.imagenes || [];
+    const idsDto = new Set(imagenesDto.map((dto) => dto.id).filter(Boolean));
 
     const imagenesAEliminar = imagenesActuales.filter(
-      (img) => !idsDto.includes(img.id),
+      (img) => !idsDto.has(img.id),
     );
     if (imagenesAEliminar.length > 0) {
       await this.imagenRepository.remove(imagenesAEliminar);
     }
 
-    const imagenesAGuardar: Imagen[] = [];
-    for (const dto of imagenesDto) {
-      if (dto.id) {
-        const imagenExistente = imagenesActuales.find(
-          (img) => img.id === dto.id,
-        );
-        if (imagenExistente) {
-          imagenesAGuardar.push(
-            this.imagenRepository.merge(imagenExistente, dto),
-          );
+    return Promise.all(
+      imagenesDto.map(async (dto) => {
+        const imagen =
+          dto.id
+            ? imagenesActuales.find((img) => img.id === dto.id) ||
+              this.imagenRepository.create()
+            : this.imagenRepository.create();
+
+        // Asignar la relación correcta
+        if (entidad instanceof Paquete) {
+          imagen.paquete = entidad;
+          imagen.hotel = null;
+        } else if (entidad instanceof Hotel) {
+          imagen.hotel = entidad;
+          imagen.paquete = null;
         }
-      } else {
-        const nuevaImagen = this.imagenRepository.create({ ...dto, hotel });
-        imagenesAGuardar.push(nuevaImagen);
-      }
-    }
 
-    if (imagenesAGuardar.length > 0) {
-      await this.imagenRepository.save(imagenesAGuardar);
-    }
-
-    hotel.imagenes = await this.imagenRepository.findBy({
-      hotel: { id: hotel.id },
-    });
-  }
-
-  async remove(id: string): Promise<void> {
-    const paquete = await this.findOne(id);
-    await this.paqueteRepository.remove(paquete);
+        return Object.assign(imagen, dto);
+      }),
+    );
   }
 }

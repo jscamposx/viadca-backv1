@@ -11,7 +11,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { UpdateHotelDto } from './update-hotel.dto';
-
+import { UpdateImagenDto } from './update-imagen.dto';
 export class UpdatePaqueteDto {
   @IsOptional()
   @IsString()
@@ -74,4 +74,12 @@ export class UpdatePaqueteDto {
   @IsArray()
   @IsNumber({}, { each: true })
   readonly mayoristasIds?: number[];
+
+  // --- AÑADIR ESTA NUEVA PROPIEDAD ---
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => UpdateImagenDto)
+  readonly imagenes?: UpdateImagenDto[];
+  // ------------------------------------
 }
