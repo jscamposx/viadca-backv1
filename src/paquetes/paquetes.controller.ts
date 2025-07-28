@@ -19,6 +19,11 @@ import { ParseIntPipe } from '@nestjs/common/pipes/parse-int.pipe';
 export class PaquetesController {
   constructor(private readonly paquetesService: PaquetesService) {}
 
+  @Get('url/:codigoUrl')
+  findOneByCodigoUrl(@Param('codigoUrl') codigoUrl: string) {
+    return this.paquetesService.findOneByCodigoUrl(codigoUrl);
+  }
+
   @Post()
   @HttpCode(HttpStatus.CREATED)
   create(@Body() createPaqueteDto: CreatePaqueteDto) {

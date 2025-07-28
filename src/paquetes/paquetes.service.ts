@@ -106,7 +106,6 @@ export class PaquetesService {
     });
 
     return paquetes.map((paquete) => {
-    
       const imagenesOrdenadas = [...(paquete.imagenes || [])].sort(
         (a, b) => a.orden - b.orden,
       );
@@ -141,7 +140,6 @@ export class PaquetesService {
       throw new NotFoundException(`Paquete con ID "${id}" no encontrado`);
     }
 
-    // Ordenar destinos, imágenes e itinerarios
     if (paquete.destinos) {
       paquete.destinos.sort((a, b) => a.orden - b.orden);
     }
@@ -151,7 +149,7 @@ export class PaquetesService {
     if (paquete.hotel && paquete.hotel.imagenes) {
       paquete.hotel.imagenes.sort((a, b) => a.orden - b.orden);
     }
-   
+
     if (paquete.itinerarios) {
       paquete.itinerarios.sort((a, b) => a.dia_numero - b.dia_numero);
     }
@@ -259,6 +257,40 @@ export class PaquetesService {
       );
     }
     return hotel;
+  }
+
+  async findOneByCodigoUrl(codigoUrl: string): Promise<Paquete> {
+    const paquete = await this.paqueteRepository.findOne({
+      where: { codigoUrl },
+      relations: [
+        'destinos',
+        'itinerarios',
+        'hotel',
+        'imagenes',
+        'mayoristas',
+        'hotel.imagenes',
+      ],
+    });
+    if (!paquete) {
+      throw new NotFoundException(
+        `Paquete con codigoUrl "${codigoUrl}" no encontrado`,
+      );
+    }
+
+    if (paquete.destinos) {
+      paquete.destinos.sort((a, b) => a.orden - b.orden);
+    }
+    if (paquete.imagenes) {
+      paquete.imagenes.sort((a, b) => a.orden - b.orden);
+    }
+    if (paquete.hotel && paquete.hotel.imagenes) {
+      paquete.hotel.imagenes.sort((a, b) => a.orden - b.orden);
+    }
+    if (paquete.itinerarios) {
+      paquete.itinerarios.sort((a, b) => a.dia_numero - b.dia_numero);
+    }
+
+    return paquete;
   }
 
   private async prepareImagesForSave(
