@@ -3,7 +3,7 @@ import {
   PrimaryGeneratedColumn,
   Column,
   OneToOne,
-  JoinColumn, // Importante
+  JoinColumn,
   OneToMany,
 } from 'typeorm';
 import { Paquete } from '../paquetes/entidades/paquete.entity';
@@ -14,8 +14,6 @@ import { Exclude } from 'class-transformer';
 export class Hotel {
   @PrimaryGeneratedColumn({ type: 'bigint', unsigned: true })
   id: number;
-
-  // Se elimina la columna 'paquete_id' manual, @JoinColumn la creará.
 
   @Column({ type: 'varchar', length: 100 })
   placeId: string;
@@ -38,7 +36,7 @@ export class Hotel {
   @OneToOne(() => Paquete, (paquete) => paquete.hotel, {
     onDelete: 'CASCADE',
   })
-  @JoinColumn({ name: 'paquete_id' }) // <-- @JoinColumn va aquí.
+  @JoinColumn({ name: 'paquete_id' })
   @Exclude()
   paquete: Paquete;
 

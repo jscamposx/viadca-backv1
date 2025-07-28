@@ -73,11 +73,10 @@ export class CreatePaqueteDto {
   @Type(() => CreateImagenDto)
   readonly imagenes?: CreateImagenDto[];
 
- @IsOptional()
-  @ValidateNested() // Ya no se necesita 'each: true' porque no es un array
+  @IsOptional()
+  @ValidateNested()
   @Type(() => CreateHotelDto)
-  readonly hotel?: CreateHotelDto; // Cambiado de 'hoteles' a 'hotel' y de array a objeto
-  // --- FIN DE LA CORRECCIÓN ---
+  readonly hotel?: CreateHotelDto;
 
   @IsOptional()
   @IsString()

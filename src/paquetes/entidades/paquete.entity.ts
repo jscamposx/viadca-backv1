@@ -70,7 +70,6 @@ export class Paquete {
   @OneToOne(() => Hotel, (hotel) => hotel.paquete, {
     cascade: true,
   })
-  // @JoinColumn() <-- SE ELIMINA DE AQUÍ
   hotel: Hotel;
 
   @OneToMany(() => Destino, (destino) => destino.paquete, {

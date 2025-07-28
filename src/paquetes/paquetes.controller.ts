@@ -44,8 +44,6 @@ export class PaquetesController {
     return this.paquetesService.findOne(id);
   }
 
-
-
   @Patch(':id')
   update(
     @Param('id', ParseUUIDPipe) id: string,

@@ -1,11 +1,9 @@
 import { IsString, IsOptional, IsNumber, IsEnum } from 'class-validator';
 
 export class UpdateImagenDto {
-  // --- INICIO DE LA MODIFICACIÓN ---
   @IsOptional()
   @IsNumber()
-  id?: number; // Permite enviar el ID para actualizar una imagen existente
-  // --- FIN DE LA MODIFICACIÓN ---
+  id?: number;
 
   @IsOptional()
   @IsNumber()
