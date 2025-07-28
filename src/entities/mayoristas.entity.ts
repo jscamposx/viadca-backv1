@@ -4,7 +4,7 @@ import { Paquete } from '../paquetes/entidades/paquete.entity';
 @Entity('mayoristas')
 export class Mayoristas {
   @PrimaryGeneratedColumn('uuid')
-id: string;
+  id: string;
 
   @Column({ type: 'varchar', length: 255 })
   nombre: string;
@@ -12,7 +12,7 @@ id: string;
   @Column({ type: 'varchar', length: 100 })
   tipo_producto: string;
 
-  @Column({ type: 'varchar', length: 255, unique: true }) // Clave única
+  @Column({ type: 'varchar', length: 255, unique: true })
   clave: string;
 
   @ManyToMany(() => Paquete, (paquete) => paquete.mayoristas)

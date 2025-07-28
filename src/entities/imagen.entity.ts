@@ -11,14 +11,14 @@ import { Exclude } from 'class-transformer';
 
 @Entity('imagenes')
 export class Imagen {
- @PrimaryGeneratedColumn('uuid')
-id: string;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @Column({ nullable: true })
   paquete_id: string;
 
- @Column({ type: 'uuid', nullable: true })
-hotel_id: string;
+  @Column({ type: 'uuid', nullable: true })
+  hotel_id: string;
 
   @Column({ type: 'int', unsigned: true, default: 0 })
   orden: number;
@@ -45,7 +45,7 @@ hotel_id: string;
   })
   @JoinColumn({ name: 'paquete_id' })
   @Exclude()
-  paquete: Paquete | null; // <-- CORREGIDO
+  paquete: Paquete | null;
 
   @ManyToOne(() => Hotel, (hotel) => hotel.imagenes, {
     onDelete: 'CASCADE',
@@ -53,5 +53,5 @@ hotel_id: string;
   })
   @JoinColumn({ name: 'hotel_id' })
   @Exclude()
-  hotel: Hotel | null; // <-- CORREGIDO
+  hotel: Hotel | null;
 }

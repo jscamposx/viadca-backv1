@@ -73,10 +73,10 @@ export class UpdatePaqueteDto {
   @Type(() => UpdateHotelDto)
   readonly hotel?: UpdateHotelDto;
 
-@IsOptional()
-@IsArray()
-@IsUUID('4', { each: true }) // <-- Cambia IsNumber por IsUUID
-readonly mayoristasIds?: string[]; // <-- Cambia number[] por string[]
+  @IsOptional()
+  @IsArray()
+  @IsUUID('4', { each: true })
+  readonly mayoristasIds?: string[];
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })

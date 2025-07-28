@@ -83,8 +83,8 @@ export class CreatePaqueteDto {
   @IsString()
   readonly itinerario_texto?: string;
 
- @IsOptional()
-@IsArray()
-@IsUUID('4', { each: true }) // '4' especifica la versión del UUID
-readonly mayoristasIds?: string[];
+  @IsOptional()
+  @IsArray()
+  @IsUUID('4', { each: true })
+  readonly mayoristasIds?: string[];
 }

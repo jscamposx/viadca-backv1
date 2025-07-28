@@ -10,8 +10,8 @@ import { Exclude } from 'class-transformer';
 
 @Entity('itinerario')
 export class Itinerario {
- @PrimaryGeneratedColumn('uuid')
-id: string;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @Column()
   paquete_id: string;

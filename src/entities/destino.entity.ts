@@ -9,8 +9,8 @@ import { Paquete } from '../paquetes/entidades/paquete.entity';
 import { Exclude } from 'class-transformer';
 @Entity('destinos')
 export class Destino {
-@PrimaryGeneratedColumn('uuid')
-id: string;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @Column()
   paquete_id: string;

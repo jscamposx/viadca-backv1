@@ -43,8 +43,7 @@ export class MayoristasService {
     return this.mayoristaRepository.find();
   }
 
-async findByIds(ids: string[]): Promise<Mayoristas[]> { // <-- Cambia number[] a string[]
-  // Nota: findByIds está obsoleto. Es mejor usar `In` con `findBy`.
-  return this.mayoristaRepository.findBy({ id: In(ids) });
-}
+  async findByIds(ids: string[]): Promise<Mayoristas[]> {
+    return this.mayoristaRepository.findBy({ id: In(ids) });
+  }
 }

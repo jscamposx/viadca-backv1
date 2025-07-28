@@ -8,9 +8,9 @@ import {
 } from 'class-validator';
 
 export class CreateImagenDto {
- @IsOptional()
-@IsUUID('4')
-hotel_id?: string;
+  @IsOptional()
+  @IsUUID('4')
+  hotel_id?: string;
 
   @IsOptional()
   @IsNumber()

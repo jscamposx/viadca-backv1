@@ -13,7 +13,7 @@ import { Exclude } from 'class-transformer';
 @Entity('hoteles')
 export class Hotel {
   @PrimaryGeneratedColumn('uuid')
-id: string;
+  id: string;
 
   @Column({ type: 'varchar', length: 100 })
   placeId: string;
