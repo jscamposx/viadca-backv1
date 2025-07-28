@@ -4,12 +4,13 @@ import {
   IsOptional,
   IsNumber,
   IsEnum,
+  IsUUID,
 } from 'class-validator';
 
 export class CreateImagenDto {
-  @IsOptional()
-  @IsNumber()
-  hotel_id?: number;
+ @IsOptional()
+@IsUUID('4')
+hotel_id?: string;
 
   @IsOptional()
   @IsNumber()

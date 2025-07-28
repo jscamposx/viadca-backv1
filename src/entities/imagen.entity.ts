@@ -17,8 +17,8 @@ id: string;
   @Column({ nullable: true })
   paquete_id: string;
 
-  @Column({ type: 'bigint', unsigned: true, nullable: true })
-  hotel_id: number;
+ @Column({ type: 'uuid', nullable: true })
+hotel_id: string;
 
   @Column({ type: 'int', unsigned: true, default: 0 })
   orden: number;

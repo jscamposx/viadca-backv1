@@ -58,9 +58,9 @@ export class PaquetesController {
     return this.paquetesService.remove(id);
   }
 
-  @Delete('imagenes/:id')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  removeImage(@Param('id', ParseIntPipe) id: number) {
-    return this.paquetesService.removeImage(id);
-  }
+ @Delete('imagenes/:id')
+@HttpCode(HttpStatus.NO_CONTENT)
+removeImage(@Param('id', ParseUUIDPipe) id: string) {
+  return this.paquetesService.removeImage(id);
+}
 }

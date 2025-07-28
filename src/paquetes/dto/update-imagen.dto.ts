@@ -1,13 +1,13 @@
-import { IsString, IsOptional, IsNumber, IsEnum } from 'class-validator';
+import { IsString, IsOptional, IsNumber, IsEnum , IsUUID } from 'class-validator';
 
 export class UpdateImagenDto {
-  @IsOptional()
-  @IsNumber()
-  id?: number;
+ @IsOptional()
+@IsUUID('4')
+id?: string;
 
-  @IsOptional()
-  @IsNumber()
-  hotel_id?: number;
+@IsOptional()
+@IsUUID('4')
+hotel_id?: string;
 
   @IsOptional()
   @IsNumber()
