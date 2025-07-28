@@ -38,19 +38,20 @@ export class Imagen {
 
   @Column({ type: 'varchar', length: 255 })
   nombre: string;
+
   @ManyToOne(() => Paquete, (paquete) => paquete.imagenes, {
     onDelete: 'CASCADE',
-    nullable: true, // <-- AÑADIR ESTO
+    nullable: true,
   })
   @JoinColumn({ name: 'paquete_id' })
   @Exclude()
-  paquete: Paquete;
+  paquete: Paquete | null; // <-- CORREGIDO
 
   @ManyToOne(() => Hotel, (hotel) => hotel.imagenes, {
     onDelete: 'CASCADE',
-    nullable: true, // <-- AÑADIR ESTO
+    nullable: true,
   })
   @JoinColumn({ name: 'hotel_id' })
   @Exclude()
-  hotel: Hotel;
+  hotel: Hotel | null; // <-- CORREGIDO
 }

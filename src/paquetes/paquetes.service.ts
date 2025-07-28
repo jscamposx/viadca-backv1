@@ -114,7 +114,7 @@ export class PaquetesService {
     const {
       mayoristasIds,
       hotel: hotelData,
-      imagenes: imagenesDto, // Corregido para que se extraiga del DTO
+      imagenes: imagenesDto,
       ...paqueteDetails
     } = updatePaqueteDto;
 
@@ -129,7 +129,7 @@ export class PaquetesService {
     }
 
     if (imagenesDto) {
-      paquete.imagenes = await this.sincronizarImagenes(paquete, imagenesDto);
+      await this.sincronizarImagenes(paquete, imagenesDto);
     }
 
     return this.paqueteRepository.save(paquete);
@@ -140,13 +140,23 @@ export class PaquetesService {
     await this.paqueteRepository.remove(paquete);
   }
 
+  async removeImage(imagenId: number): Promise<void> {
+    const imagen = await this.imagenRepository.findOneBy({ id: imagenId });
+    if (!imagen) {
+      throw new NotFoundException(`Imagen con ID "${imagenId}" no encontrada.`);
+    }
+    await this.imagenRepository.remove(imagen);
+  }
+
   private async findMayoristasByIds(ids: number[]): Promise<Mayoristas[]> {
     if (!ids || ids.length === 0) {
       return [];
     }
     const mayoristas = await this.mayoristaRepository.findBy({ id: In(ids) });
     if (mayoristas.length !== ids.length) {
-      throw new NotFoundException('Uno o más mayoristas no fueron encontrados.');
+      throw new NotFoundException(
+        'Uno o más mayoristas no fueron encontrados.',
+      );
     }
     return mayoristas;
   }
@@ -177,7 +187,7 @@ export class PaquetesService {
     Object.assign(hotel, hotelDetails);
 
     if (imagenesDto) {
-      hotel.imagenes = await this.sincronizarImagenes(hotel, imagenesDto);
+      await this.sincronizarImagenes(hotel, imagenesDto);
     }
 
     return hotel;
@@ -186,36 +196,35 @@ export class PaquetesService {
   private async sincronizarImagenes(
     entidad: Paquete | Hotel,
     imagenesDto: UpdateImagenDto[],
-  ): Promise<Imagen[]> {
-    const imagenesActuales = entidad.imagenes || [];
-    const idsDto = new Set(imagenesDto.map((dto) => dto.id).filter(Boolean));
+  ): Promise<void> {
+    const imagenesAGuardar: Imagen[] = [];
 
-    const imagenesAEliminar = imagenesActuales.filter(
-      (img) => !idsDto.has(img.id),
-    );
-    if (imagenesAEliminar.length > 0) {
-      await this.imagenRepository.remove(imagenesAEliminar);
+    for (const dto of imagenesDto) {
+      let imagen: Imagen | null;
+
+      if (dto.id) {
+        imagen = await this.imagenRepository.findOneBy({ id: dto.id });
+        if (!imagen) {
+          console.warn(
+            `Se intentó actualizar la imagen con ID ${dto.id}, pero no se encontró. Se omitirá.`,
+          );
+          continue;
+        }
+      } else {
+        imagen = this.imagenRepository.create();
+      }
+
+      if (entidad instanceof Paquete) {
+        imagen.paquete = entidad;
+      } else if (entidad instanceof Hotel) {
+        imagen.hotel = entidad;
+      }
+
+      imagenesAGuardar.push(Object.assign(imagen, dto));
     }
 
-    return Promise.all(
-      imagenesDto.map(async (dto) => {
-        const imagen =
-          dto.id
-            ? imagenesActuales.find((img) => img.id === dto.id) ||
-              this.imagenRepository.create()
-            : this.imagenRepository.create();
-
-        // Asignar la relación correcta
-        if (entidad instanceof Paquete) {
-          imagen.paquete = entidad;
-          imagen.hotel = null;
-        } else if (entidad instanceof Hotel) {
-          imagen.hotel = entidad;
-          imagen.paquete = null;
-        }
-
-        return Object.assign(imagen, dto);
-      }),
-    );
+    if (imagenesAGuardar.length > 0) {
+      await this.imagenRepository.save(imagenesAGuardar);
+    }
   }
 }

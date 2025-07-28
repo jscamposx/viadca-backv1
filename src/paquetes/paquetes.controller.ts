@@ -15,6 +15,7 @@ import { CreatePaqueteDto } from './dto/create-paquete.dto';
 import { UpdatePaqueteDto } from './dto/update-paquete.dto';
 import { CreateImagenDto } from './dto/create-imagen.dto';
 import { UpdatePaqueteHotelesDto } from './dto/update-paquete-hoteles.dto';
+import { ParseIntPipe } from '@nestjs/common/pipes/parse-int.pipe';
 @Controller('admin/paquetes')
 export class PaquetesController {
   constructor(private readonly paquetesService: PaquetesService) {}
@@ -56,5 +57,11 @@ export class PaquetesController {
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.paquetesService.remove(id);
+  }
+
+  @Delete('imagenes/:id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  removeImage(@Param('id', ParseIntPipe) id: number) {
+    return this.paquetesService.removeImage(id);
   }
 }
