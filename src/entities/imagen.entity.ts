@@ -11,8 +11,8 @@ import { Exclude } from 'class-transformer';
 
 @Entity('imagenes')
 export class Imagen {
-  @PrimaryGeneratedColumn({ type: 'bigint', unsigned: true })
-  id: number;
+ @PrimaryGeneratedColumn('uuid')
+id: string;
 
   @Column({ nullable: true })
   paquete_id: string;

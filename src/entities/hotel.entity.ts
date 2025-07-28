@@ -12,8 +12,8 @@ import { Exclude } from 'class-transformer';
 
 @Entity('hoteles')
 export class Hotel {
-  @PrimaryGeneratedColumn({ type: 'bigint', unsigned: true })
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+id: string;
 
   @Column({ type: 'varchar', length: 100 })
   placeId: string;

@@ -3,8 +3,8 @@ import { Paquete } from '../paquetes/entidades/paquete.entity';
 
 @Entity('mayoristas')
 export class Mayoristas {
-  @PrimaryGeneratedColumn({ type: 'bigint', unsigned: true })
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+id: string;
 
   @Column({ type: 'varchar', length: 255 })
   nombre: string;

@@ -2,8 +2,8 @@ import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 
 @Entity('contacto')
 export class Contacto {
-  @PrimaryGeneratedColumn({ type: 'bigint', unsigned: true })
-  id: number;
+ @PrimaryGeneratedColumn('uuid')
+id: string;
 
   @Column({ type: 'varchar', length: 20 })
   num_telefono: string;
