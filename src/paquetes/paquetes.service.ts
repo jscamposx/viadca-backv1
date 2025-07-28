@@ -12,6 +12,7 @@ import { Mayoristas } from '../entities/mayoristas.entity';
 import { Hotel } from '../entities/hotel.entity';
 import { UpdateImagenDto } from './dto/update-imagen.dto';
 import { generarCodigo } from '../utils/generar-url.util';
+import { PaqueteListDto } from './dto/paquete-list.dto'; 
 
 @Injectable()
 export class PaquetesService {
@@ -96,11 +97,32 @@ export class PaquetesService {
     return this.imagenRepository.save(nuevaImagen);
   }
 
-  findAll(): Promise<Paquete[]> {
-    return this.paqueteRepository.find({
-      relations: ['destinos', 'mayoristas', 'hotel'],
+ async findAll(): Promise<PaqueteListDto[]> {
+    const paquetes = await this.paqueteRepository.find({
+      relations: ['imagenes', 'mayoristas'],
+      order: {
+        creadoEn: 'DESC', // Ordenar para obtener resultados consistentes
+      },
+    });
+
+    return paquetes.map((paquete) => {
+      // Ordenar imágenes por el campo 'orden' para obtener la primera
+      const imagenesOrdenadas = [...(paquete.imagenes || [])].sort((a, b) => a.orden - b.orden);
+      const primeraImagen = imagenesOrdenadas[0] || null;
+      const primerMayorista = paquete.mayoristas?.[0] || null;
+
+      return {
+        id: paquete.id,
+        primera_imagen: primeraImagen ? primeraImagen.contenido : null,
+        mayorista: primerMayorista ? primerMayorista.nombre : null,
+        url: paquete.codigoUrl,
+        titulo: paquete.titulo,
+        activo: paquete.activo,
+        precio_total: Number(paquete.precio_total), // Convertir a número
+      };
     });
   }
+
 
   async findOne(id: string): Promise<Paquete> {
     const paquete = await this.paqueteRepository.findOne({
