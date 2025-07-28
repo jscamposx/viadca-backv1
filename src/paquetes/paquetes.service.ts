@@ -193,14 +193,14 @@ export class PaquetesService {
     await this.paqueteRepository.remove(paquete);
   }
 
-  async removeImage(imagenId: number): Promise<void> {
+  async removeImage(imagenId: string): Promise<void> {
     const result = await this.imagenRepository.delete(imagenId);
     if (result.affected === 0) {
       throw new NotFoundException(`Imagen con ID "${imagenId}" no encontrada.`);
     }
   }
 
-  private async findMayoristasByIds(ids: number[]): Promise<Mayoristas[]> {
+  private async findMayoristasByIds(ids: string[]): Promise<Mayoristas[]> {
     if (!ids || ids.length === 0) return [];
     const mayoristas = await this.mayoristaRepository.findBy({ id: In(ids) });
     if (mayoristas.length !== ids.length) {

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { Mayoristas } from '../entities/mayoristas.entity';
 import { CreateMayoristaDto } from './dto/create-mayorista.dto';
 
@@ -43,7 +43,8 @@ export class MayoristasService {
     return this.mayoristaRepository.find();
   }
 
-  async findByIds(ids: number[]): Promise<Mayoristas[]> {
-    return this.mayoristaRepository.findByIds(ids);
-  }
+async findByIds(ids: string[]): Promise<Mayoristas[]> { // <-- Cambia number[] a string[]
+  // Nota: findByIds está obsoleto. Es mejor usar `In` con `findBy`.
+  return this.mayoristaRepository.findBy({ id: In(ids) });
+}
 }

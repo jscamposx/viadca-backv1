@@ -8,6 +8,7 @@ import {
   IsPositive,
   IsArray,
   ValidateNested,
+  IsUUID,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { UpdateHotelDto } from './update-hotel.dto';
@@ -72,11 +73,10 @@ export class UpdatePaqueteDto {
   @Type(() => UpdateHotelDto)
   readonly hotel?: UpdateHotelDto;
 
-  @IsOptional()
-  @IsArray()
-  @IsNumber({}, { each: true })
-  readonly mayoristasIds?: number[];
-
+@IsOptional()
+@IsArray()
+@IsUUID('4', { each: true }) // <-- Cambia IsNumber por IsUUID
+readonly mayoristasIds?: string[]; // <-- Cambia number[] por string[]
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
