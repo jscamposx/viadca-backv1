@@ -11,7 +11,7 @@ import { Itinerario } from '../entities/itinerario.entity';
 import { Mayoristas } from '../entities/mayoristas.entity';
 import { Hotel } from '../entities/hotel.entity';
 import { UpdateImagenDto } from './dto/update-imagen.dto';
-
+import { generarCodigo } from '../utils/generar-url.util';
 @Injectable()
 export class PaquetesService {
   constructor(
@@ -41,10 +41,23 @@ export class PaquetesService {
 
     const paquete = this.paqueteRepository.create(paqueteData);
 
-    if (mayoristasIds && mayoristasIds.length > 0) {
+    let codigoUrl: string = '';
+    let isCodeUnique = false;
+    while (!isCodeUnique) {
+      codigoUrl = generarCodigo(5);
+      const existingPaquete = await this.paqueteRepository.findOneBy({
+        codigoUrl,
+      });
+      if (!existingPaquete) {
+        isCodeUnique = true;
+      }
+    }
+    paquete.codigoUrl = codigoUrl;
+
+    if (Array.isArray(mayoristasIds) && mayoristasIds.length > 0) {
       paquete.mayoristas = await this.findMayoristasByIds(mayoristasIds);
     }
-    if (destinosDto && destinosDto.length > 0) {
+    if (Array.isArray(destinosDto) && destinosDto.length > 0) {
       paquete.destinos = destinosDto.map((dto) =>
         Object.assign(new Destino(), dto),
       );
