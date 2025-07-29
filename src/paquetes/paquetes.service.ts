@@ -44,6 +44,11 @@ export class PaquetesService {
       ...paqueteData
     } = createPaqueteDto;
 
+    // --- AÑADIDO: Validación para el descuento ---
+    if (paqueteData.descuento === null || paqueteData.descuento === undefined) {
+      paqueteData.descuento = 0;
+    }
+
     const paquete = this.paqueteRepository.create(paqueteData);
 
     const inicio = new Date(fecha_inicio);
@@ -183,6 +188,11 @@ export class PaquetesService {
       fecha_fin,
       ...paqueteDetails
     } = updatePaqueteDto;
+
+    // --- AÑADIDO: Validación para el descuento en la actualización ---
+    if (paqueteDetails.descuento === null || paqueteDetails.descuento === undefined) {
+      paqueteDetails.descuento = 0;
+    }
 
     this.paqueteRepository.merge(paquete, paqueteDetails);
 
