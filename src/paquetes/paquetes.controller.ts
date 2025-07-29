@@ -15,14 +15,23 @@ import { CreatePaqueteDto } from './dto/create-paquete.dto';
 import { UpdatePaqueteDto } from './dto/update-paquete.dto';
 import { CreateImagenDto } from './dto/create-imagen.dto';
 
+// Controlador para rutas públicas
+@Controller('paquetes')
+export class PaquetesPublicController {
+  constructor(private readonly paquetesService: PaquetesService) {}
+
+  @Get(':codigoUrl')
+  findOneByCodigoUrl(@Param('codigoUrl') codigoUrl: string) {
+    return this.paquetesService.findOneByCodigoUrl(codigoUrl);
+  }
+}
+
+// Controlador para rutas de administración
 @Controller('admin/paquetes')
 export class PaquetesController {
   constructor(private readonly paquetesService: PaquetesService) {}
 
-  @Get('url/:codigoUrl')
-  findOneByCodigoUrl(@Param('codigoUrl') codigoUrl: string) {
-    return this.paquetesService.findOneByCodigoUrl(codigoUrl);
-  }
+ 
 
   @Post()
   @HttpCode(HttpStatus.CREATED)

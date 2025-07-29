@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Paquete } from './entidades/paquete.entity';
-import { PaquetesController } from '../paquetes/paquetes.controller';
+import { PaquetesController, PaquetesPublicController } from '../paquetes/paquetes.controller';
 import { PaquetesService } from '../paquetes/paquetes.service';
 import { Destino } from '../entities/destino.entity';
 import { Imagen } from '../entities/imagen.entity';
@@ -20,7 +20,7 @@ import { Hotel } from '../entities/hotel.entity';
       Hotel,
     ]),
   ],
-  controllers: [PaquetesController],
+  controllers: [PaquetesController, PaquetesPublicController],
   providers: [PaquetesService],
 })
 export class PaquetesModule {}
