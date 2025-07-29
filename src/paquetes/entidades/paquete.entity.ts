@@ -19,10 +19,21 @@ import { Mayoristas } from '../../entities/mayoristas.entity';
 export class Paquete {
   @PrimaryGeneratedColumn('uuid')
   id: string;
+
   @Column({ type: 'varchar', length: 5, unique: true })
   codigoUrl: string;
+
   @Column({ type: 'varchar', length: 255 })
   titulo: string;
+
+  @Column({ type: 'varchar', length: 255 })
+  origen: string;
+
+  @Column({ type: 'decimal', precision: 10, scale: 7 })
+  origen_lat: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 7 })
+  origen_lng: number;
 
   @Column({ type: 'date' })
   fecha_inicio: Date;

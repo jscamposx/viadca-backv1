@@ -39,10 +39,20 @@ export class PaquetesService {
       imagenes: imagenesDto,
       hotel: hotelDto,
       itinerario_texto,
+      fecha_inicio,
+      fecha_fin,
       ...paqueteData
     } = createPaqueteDto;
 
     const paquete = this.paqueteRepository.create(paqueteData);
+
+    const inicio = new Date(fecha_inicio);
+    const fin = new Date(fecha_fin);
+    const diffTime = Math.abs(fin.getTime() - inicio.getTime());
+    paquete.duracion_dias = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    paquete.fecha_inicio = inicio;
+    paquete.fecha_fin = fin;
+
 
     let codigoUrl: string = '';
     let isCodeUnique = false;
@@ -116,9 +126,9 @@ export class PaquetesService {
       return {
         id: paquete.id,
         primera_imagen: primeraImagen ? primeraImagen.contenido : null,
-        mayorista: primerMayorista ? primerMayorista.nombre : null,
         url: paquete.codigoUrl,
         titulo: paquete.titulo,
+           clave_mayorista: primerMayorista ? primerMayorista.clave : null,
         activo: paquete.activo,
         precio_total: Number(paquete.precio_total),
       };
@@ -169,10 +179,22 @@ export class PaquetesService {
       imagenes: imagenesDto,
       destinos: destinosDto,
       itinerario_texto,
+      fecha_inicio,
+      fecha_fin,
       ...paqueteDetails
     } = updatePaqueteDto;
 
     this.paqueteRepository.merge(paquete, paqueteDetails);
+
+    if (fecha_inicio && fecha_fin) {
+      const inicio = new Date(fecha_inicio);
+      const fin = new Date(fecha_fin);
+      const diffTime = Math.abs(fin.getTime() - inicio.getTime());
+      paquete.duracion_dias = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+      paquete.fecha_inicio = inicio;
+      paquete.fecha_fin = fin;
+    }
+
 
     if (mayoristasIds) {
       paquete.mayoristas = await this.findMayoristasByIds(mayoristasIds);

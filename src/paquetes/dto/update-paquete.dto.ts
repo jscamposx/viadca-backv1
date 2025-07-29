@@ -21,17 +21,24 @@ export class UpdatePaqueteDto {
   readonly titulo?: string;
 
   @IsOptional()
+  @IsString()
+  readonly origen?: string;
+
+  @IsOptional()
+  @IsNumber()
+  readonly origen_lat?: number;
+
+  @IsOptional()
+  @IsNumber()
+  readonly origen_lng?: number;
+
+  @IsOptional()
   @IsDateString()
   readonly fecha_inicio?: Date;
 
   @IsOptional()
   @IsDateString()
   readonly fecha_fin?: Date;
-
-  @IsOptional()
-  @IsNumber()
-  @IsPositive()
-  readonly duracion_dias?: number;
 
   @IsOptional()
   @IsString()

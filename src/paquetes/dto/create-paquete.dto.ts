@@ -21,15 +21,21 @@ export class CreatePaqueteDto {
   @IsNotEmpty()
   readonly titulo: string;
 
+  @IsString()
+  @IsNotEmpty()
+  readonly origen: string;
+
+  @IsNumber()
+  readonly origen_lat: number;
+
+  @IsNumber()
+  readonly origen_lng: number;
+
   @IsDateString()
   readonly fecha_inicio: Date;
 
   @IsDateString()
   readonly fecha_fin: Date;
-
-  @IsNumber()
-  @IsPositive()
-  readonly duracion_dias: number;
 
   @IsString()
   @IsNotEmpty()
