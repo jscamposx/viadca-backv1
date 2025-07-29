@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { Mayoristas } from '../entities/mayoristas.entity';
 import { CreateMayoristaDto } from './dto/create-mayorista.dto';
+import { UpdateMayoristaDto } from './dto/update-mayorista.dto';
 
 @Injectable()
 export class MayoristasService {
@@ -45,5 +46,42 @@ export class MayoristasService {
 
   async findByIds(ids: string[]): Promise<Mayoristas[]> {
     return this.mayoristaRepository.findBy({ id: In(ids) });
+  }
+
+  async findOne(id: string): Promise<Mayoristas> {
+    const mayorista = await this.mayoristaRepository.findOneBy({ id });
+    if (!mayorista) {
+      throw new NotFoundException(`Mayorista con ID "${id}" no encontrado.`);
+    }
+    return mayorista;
+  }
+
+  async update(
+    id: string,
+    updateMayoristaDto: UpdateMayoristaDto,
+  ): Promise<Mayoristas> {
+    const mayorista = await this.findOne(id);
+
+    // Si se actualiza el nombre o tipo_producto, regenerar la clave
+    if (updateMayoristaDto.nombre || updateMayoristaDto.tipo_producto) {
+      const nuevoNombre = updateMayoristaDto.nombre || mayorista.nombre;
+      const nuevoTipoProducto =
+        updateMayoristaDto.tipo_producto || mayorista.tipo_producto;
+      const nuevaClave = this.generarClave(nuevoNombre, nuevoTipoProducto);
+
+      this.mayoristaRepository.merge(mayorista, {
+        ...updateMayoristaDto,
+        clave: nuevaClave,
+      });
+    } else {
+      this.mayoristaRepository.merge(mayorista, updateMayoristaDto);
+    }
+
+    return this.mayoristaRepository.save(mayorista);
+  }
+
+  async remove(id: string): Promise<void> {
+    const mayorista = await this.findOne(id);
+    await this.mayoristaRepository.remove(mayorista);
   }
 }

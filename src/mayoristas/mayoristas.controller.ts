@@ -3,11 +3,16 @@ import {
   Get,
   Post,
   Body,
+  Patch,
+  Param,
+  Delete,
   HttpCode,
   HttpStatus,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { MayoristasService } from './mayoristas.service';
 import { CreateMayoristaDto } from './dto/create-mayorista.dto';
+import { UpdateMayoristaDto } from './dto/update-mayorista.dto';
 
 @Controller('admin/mayoristas')
 export class MayoristasController {
@@ -22,5 +27,24 @@ export class MayoristasController {
   @Get()
   findAll() {
     return this.mayoristasService.findAll();
+  }
+
+  @Get(':id')
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
+    return this.mayoristasService.findOne(id);
+  }
+
+  @Patch(':id')
+  update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() updateMayoristaDto: UpdateMayoristaDto,
+  ) {
+    return this.mayoristasService.update(id, updateMayoristaDto);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  remove(@Param('id', ParseUUIDPipe) id: string) {
+    return this.mayoristasService.remove(id);
   }
 }
