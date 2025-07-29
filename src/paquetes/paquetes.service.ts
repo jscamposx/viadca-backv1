@@ -49,6 +49,23 @@ export class PaquetesService {
       paqueteData.descuento = 0;
     }
 
+    // --- AÑADIDO: Validación para campos que pueden ser null ---
+    if (paqueteData.incluye === undefined) {
+      paqueteData.incluye = null;
+    }
+    if (paqueteData.no_incluye === undefined) {
+      paqueteData.no_incluye = null;
+    }
+    if (paqueteData.requisitos === undefined) {
+      paqueteData.requisitos = null;
+    }
+    if (paqueteData.anticipo === undefined) {
+      paqueteData.anticipo = null;
+    }
+    if (paqueteData.notas === undefined) {
+      paqueteData.notas = null;
+    }
+
     const paquete = this.paqueteRepository.create(paqueteData);
 
     const inicio = new Date(fecha_inicio);
@@ -85,7 +102,7 @@ export class PaquetesService {
         Object.assign(new Imagen(), dto),
       );
     }
-    if (hotelDto) {
+    if (hotelDto !== null && hotelDto !== undefined) {
       paquete.hotel = this.hotelRepository.create({
         ...hotelDto,
         imagenes:
@@ -93,6 +110,8 @@ export class PaquetesService {
             this.imagenRepository.create(imgDto),
           ) || [],
       });
+    } else {
+      paquete.hotel = null;
     }
     if (itinerario_texto) {
       paquete.itinerarios = this.parseItinerario(itinerario_texto);
@@ -194,6 +213,23 @@ export class PaquetesService {
       paqueteDetails.descuento = 0;
     }
 
+    // --- AÑADIDO: Manejo de campos que pueden ser null en actualización ---
+    if ('incluye' in updatePaqueteDto) {
+      paqueteDetails.incluye = updatePaqueteDto.incluye;
+    }
+    if ('no_incluye' in updatePaqueteDto) {
+      paqueteDetails.no_incluye = updatePaqueteDto.no_incluye;
+    }
+    if ('requisitos' in updatePaqueteDto) {
+      paqueteDetails.requisitos = updatePaqueteDto.requisitos;
+    }
+    if ('anticipo' in updatePaqueteDto) {
+      paqueteDetails.anticipo = updatePaqueteDto.anticipo;
+    }
+    if ('notas' in updatePaqueteDto) {
+      paqueteDetails.notas = updatePaqueteDto.notas;
+    }
+
     this.paqueteRepository.merge(paquete, paqueteDetails);
 
     if (fecha_inicio && fecha_fin) {
@@ -209,8 +245,17 @@ export class PaquetesService {
     if (mayoristasIds) {
       paquete.mayoristas = await this.findMayoristasByIds(mayoristasIds);
     }
-    if (hotelData) {
-      paquete.hotel = await this.prepareHotelForSave(paquete.hotel, hotelData);
+    if ('hotel' in updatePaqueteDto) {
+      if (hotelData === null) {
+        // Si se pasa null explícitamente, eliminar el hotel
+        if (paquete.hotel) {
+          await this.hotelRepository.remove(paquete.hotel);
+          paquete.hotel = null;
+        }
+      } else if (hotelData) {
+        // Si se pasa un objeto hotel, actualizar/crear
+        paquete.hotel = await this.prepareHotelForSave(paquete.hotel, hotelData);
+      }
     }
     if (imagenesDto) {
       paquete.imagenes = await this.prepareImagesForSave(

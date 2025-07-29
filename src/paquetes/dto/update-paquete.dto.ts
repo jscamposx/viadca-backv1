@@ -9,6 +9,7 @@ import {
   IsArray,
   ValidateNested,
   IsUUID,
+  ValidateIf,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { UpdateHotelDto } from './update-hotel.dto';
@@ -41,16 +42,19 @@ export class UpdatePaqueteDto {
   readonly fecha_fin?: Date;
 
   @IsOptional()
+  @ValidateIf((o) => o.incluye !== null)
   @IsString()
-  readonly incluye?: string;
+  readonly incluye?: string | null;
 
   @IsOptional()
+  @ValidateIf((o) => o.no_incluye !== null)
   @IsString()
-  readonly no_incluye?: string;
+  readonly no_incluye?: string | null;
 
   @IsOptional()
+  @ValidateIf((o) => o.requisitos !== null)
   @IsString()
-  readonly requisitos?: string;
+  readonly requisitos?: string | null;
 
   @IsOptional()
   @IsNumber()
@@ -58,9 +62,10 @@ export class UpdatePaqueteDto {
   readonly descuento?: number;
 
   @IsOptional()
+  @ValidateIf((o) => o.anticipo !== null)
   @IsNumber()
   @IsPositive()
-  readonly anticipo?: number;
+  readonly anticipo?: number | null;
 
   @IsOptional()
   @IsNumber()
@@ -68,17 +73,19 @@ export class UpdatePaqueteDto {
   readonly precio_total?: number;
 
   @IsOptional()
+  @ValidateIf((o) => o.notas !== null)
   @IsString()
-  readonly notas?: string;
+  readonly notas?: string | null;
 
   @IsOptional()
   @IsBoolean()
   readonly activo?: boolean;
 
   @IsOptional()
+  @ValidateIf((o) => o.hotel !== null)
   @ValidateNested()
   @Type(() => UpdateHotelDto)
-  readonly hotel?: UpdateHotelDto;
+  readonly hotel?: UpdateHotelDto | null;
 
   @IsOptional()
   @IsArray()

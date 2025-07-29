@@ -44,26 +44,26 @@ export class Paquete {
   @Column({ type: 'int', unsigned: true })
   duracion_dias: number;
 
-  @Column({ type: 'text' })
-  incluye: string;
+  @Column({ type: 'text', nullable: true })
+  incluye: string | null;
 
-  @Column({ type: 'text' })
-  no_incluye: string;
+  @Column({ type: 'text', nullable: true })
+  no_incluye: string | null;
 
-  @Column({ type: 'text' })
-  requisitos: string;
+  @Column({ type: 'text', nullable: true })
+  requisitos: string | null;
 
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
   descuento: number;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
-  anticipo: number;
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  anticipo: number | null;
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   precio_total: number;
 
   @Column({ type: 'text', nullable: true })
-  notas: string;
+  notas: string | null;
 
   @Column({ type: 'boolean', default: true })
   activo: boolean;
@@ -81,8 +81,9 @@ export class Paquete {
 
   @OneToOne(() => Hotel, (hotel) => hotel.paquete, {
     cascade: true,
+    nullable: true,
   })
-  hotel: Hotel;
+  hotel: Hotel | null;
 
   @OneToMany(() => Destino, (destino) => destino.paquete, {
     cascade: true,

@@ -10,6 +10,7 @@ import {
   ValidateNested,
   IsArray,
   IsUUID,
+  ValidateIf,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CreateDestinoDto } from './create-destino.dto';
@@ -37,34 +38,40 @@ export class CreatePaqueteDto {
   @IsDateString()
   readonly fecha_fin: Date;
 
+  @IsOptional()
+  @ValidateIf((o) => o.incluye !== null)
   @IsString()
-  @IsNotEmpty()
-  readonly incluye: string;
+  readonly incluye?: string | null;
 
+  @IsOptional()
+  @ValidateIf((o) => o.no_incluye !== null)
   @IsString()
-  @IsNotEmpty()
-  readonly no_incluye: string;
+  readonly no_incluye?: string | null;
 
+  @IsOptional()
+  @ValidateIf((o) => o.requisitos !== null)
   @IsString()
-  @IsNotEmpty()
-  readonly requisitos: string;
+  readonly requisitos?: string | null;
 
   @IsOptional()
   @IsNumber()
   @Min(0)
   readonly descuento?: number;
 
+  @IsOptional()
+  @ValidateIf((o) => o.anticipo !== null)
   @IsNumber()
   @IsPositive()
-  readonly anticipo: number;
+  readonly anticipo?: number | null;
 
   @IsNumber()
   @IsPositive()
   readonly precio_total: number;
 
   @IsOptional()
+  @ValidateIf((o) => o.notas !== null)
   @IsString()
-  readonly notas?: string;
+  readonly notas?: string | null;
 
   @IsOptional()
   @IsBoolean()
@@ -81,9 +88,10 @@ export class CreatePaqueteDto {
   readonly imagenes?: CreateImagenDto[];
 
   @IsOptional()
+  @ValidateIf((o) => o.hotel !== null)
   @ValidateNested()
   @Type(() => CreateHotelDto)
-  readonly hotel?: CreateHotelDto;
+  readonly hotel?: CreateHotelDto | null;
 
   @IsOptional()
   @IsString()
