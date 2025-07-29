@@ -28,10 +28,6 @@ export class CreateHotelDto {
   @IsNumber()
   readonly total_calificaciones: number;
 
-  @IsString()
-  @IsNotEmpty()
-  readonly descripcion: string;
-
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })

@@ -30,9 +30,6 @@ export class Hotel {
   @Column({ type: 'int', unsigned: true, default: 0 })
   total_calificaciones: number;
 
-  @Column({ type: 'text' })
-  descripcion: string;
-
   @OneToOne(() => Paquete, (paquete) => paquete.hotel, {
     onDelete: 'CASCADE',
   })

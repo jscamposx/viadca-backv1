@@ -31,10 +31,6 @@ export class UpdateHotelDto {
   readonly total_calificaciones?: number;
 
   @IsOptional()
-  @IsString()
-  readonly descripcion?: string;
-
-  @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => UpdateImagenDto)
