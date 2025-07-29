@@ -46,7 +46,7 @@ import { MayoristasModule } from './mayoristas/mayoristas.module';
             Contacto,
           ],
 
-          synchronize: process.env.NODE_ENV === 'dev',
+          synchronize: true,
         };
 
         console.log('🔌 Usando configuración de base de datos:', {
