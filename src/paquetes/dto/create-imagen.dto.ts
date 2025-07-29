@@ -17,7 +17,7 @@ export class CreateImagenDto {
   orden?: number;
 
   @IsString()
-  @IsEnum(['base64', 'url'])
+  @IsEnum(['base64', 'url', 'google_places_url'])
   tipo: string;
 
   @IsString()
