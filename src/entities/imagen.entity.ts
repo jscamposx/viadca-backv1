@@ -25,7 +25,7 @@ export class Imagen {
 
   @Column({
     type: 'enum',
-    enum: ['base64', 'url'],
+    enum: ['base64', 'url', 'google_places_url'],
     default: 'url',
   })
   tipo: string;
