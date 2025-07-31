@@ -34,7 +34,7 @@ import { MayoristasModule } from './mayoristas/mayoristas.module';
         const dbConfig: TypeOrmModuleOptions = {
           type: 'mysql',
           host: configService.get<string>('DB_HOST'),
-          port: configService.get<number>('DB_PORT'),
+          port: parseInt(configService.get<string>('DB_PORT') || '3306', 10),
           username: configService.get<string>('DB_USERNAME'),
           password: configService.get<string>('DB_PASSWORD'),
           database: configService.get<string>('DB_DATABASE'),
