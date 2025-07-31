@@ -320,6 +320,18 @@ export class PaquetesService {
       // Asegurar formato consistente
       .replace(/DÍA\s*(\d+)\s*[:.]?\s*/gi, 'DÍA $1: ');
 
+    // Verificar si hay algún patrón de día en el texto
+    const tieneDias = /DÍA\s+\d+/i.test(textoNormalizado);
+    
+    // Si no hay ningún patrón de día, crear DÍA 1 con todo el texto
+    if (!tieneDias) {
+      const itinerario = new Itinerario();
+      itinerario.dia_numero = 1;
+      itinerario.descripcion = itinerario_texto.trim();
+      return [itinerario];
+    }
+
+    // Si hay patrones de día, procesar normalmente
     return textoNormalizado
       .trim()
       .split(/(?=DÍA\s+\d+)/g)
