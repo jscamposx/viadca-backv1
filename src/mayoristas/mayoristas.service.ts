@@ -62,7 +62,6 @@ export class MayoristasService {
   ): Promise<Mayoristas> {
     const mayorista = await this.findOne(id);
 
-    // Si se actualiza el nombre o tipo_producto, regenerar la clave
     if (updateMayoristaDto.nombre || updateMayoristaDto.tipo_producto) {
       const nuevoNombre = updateMayoristaDto.nombre || mayorista.nombre;
       const nuevoTipoProducto =

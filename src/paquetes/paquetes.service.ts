@@ -75,7 +75,6 @@ export class PaquetesService {
     paquete.fecha_inicio = inicio;
     paquete.fecha_fin = fin;
 
-
     let codigoUrl: string = '';
     let isCodeUnique = false;
     while (!isCodeUnique) {
@@ -207,12 +206,13 @@ export class PaquetesService {
       ...paqueteDetails
     } = updatePaqueteDto;
 
-    // --- AÑADIDO: Validación para el descuento en la actualización ---
-    if (paqueteDetails.descuento === null || paqueteDetails.descuento === undefined) {
+    if (
+      paqueteDetails.descuento === null ||
+      paqueteDetails.descuento === undefined
+    ) {
       paqueteDetails.descuento = 0;
     }
 
-    // --- AÑADIDO: Manejo de campos que pueden ser null en actualización ---
     if ('incluye' in updatePaqueteDto) {
       paqueteDetails.incluye = updatePaqueteDto.incluye;
     }
@@ -240,20 +240,20 @@ export class PaquetesService {
       paquete.fecha_fin = fin;
     }
 
-
     if (mayoristasIds) {
       paquete.mayoristas = await this.findMayoristasByIds(mayoristasIds);
     }
     if ('hotel' in updatePaqueteDto) {
       if (hotelData === null) {
-        // Si se pasa null explícitamente, eliminar el hotel
         if (paquete.hotel) {
           await this.hotelRepository.remove(paquete.hotel);
           paquete.hotel = null;
         }
       } else if (hotelData) {
-        // Si se pasa un objeto hotel, actualizar/crear
-        paquete.hotel = await this.prepareHotelForSave(paquete.hotel, hotelData);
+        paquete.hotel = await this.prepareHotelForSave(
+          paquete.hotel,
+          hotelData,
+        );
       }
     }
     if (imagenesDto) {

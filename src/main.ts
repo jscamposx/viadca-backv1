@@ -6,17 +6,13 @@ import { ValidationPipe, ClassSerializerInterceptor } from '@nestjs/common';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-
-  // Configuración segura de CORS para producción
   app.enableCors({
-    origin: process.env.NODE_ENV === 'production' 
-      ? [process.env.FRONTEND_URL] // Define tu frontend URL en .env
-      : true, // En desarrollo permite cualquier origen
+    origin:
+      process.env.NODE_ENV === 'production' ? [process.env.FRONTEND_URL] : true,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   });
-
 
   app.useGlobalPipes(
     new ValidationPipe({

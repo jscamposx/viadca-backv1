@@ -15,7 +15,6 @@ import { CreatePaqueteDto } from './dto/create-paquete.dto';
 import { UpdatePaqueteDto } from './dto/update-paquete.dto';
 import { CreateImagenDto } from './dto/create-imagen.dto';
 
-// Controlador para rutas públicas
 @Controller('paquetes')
 export class PaquetesPublicController {
   constructor(private readonly paquetesService: PaquetesService) {}
@@ -26,12 +25,9 @@ export class PaquetesPublicController {
   }
 }
 
-// Controlador para rutas de administración
 @Controller('admin/paquetes')
 export class PaquetesController {
   constructor(private readonly paquetesService: PaquetesService) {}
-
- 
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -60,11 +56,10 @@ export class PaquetesController {
 
   @Patch('/:id')
   update(
-    
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updatePaqueteDto: UpdatePaqueteDto,
   ) {
-      console.log('Payload recibido:', JSON.stringify(updatePaqueteDto, null, 2));
+    console.log('Payload recibido:', JSON.stringify(updatePaqueteDto, null, 2));
 
     return this.paquetesService.update(id, updatePaqueteDto);
   }
