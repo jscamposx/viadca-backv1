@@ -305,11 +305,26 @@ export class PaquetesService {
 
   private parseItinerario(itinerario_texto: string): Itinerario[] {
     if (!itinerario_texto) return [];
-    return itinerario_texto
+    
+    // Normalizar el texto: reemplazar diferentes variantes por el formato estándar
+    let textoNormalizado = itinerario_texto
+      .trim()
+      // Reemplazar variantes como "-dia 1", "- dia 1", etc.
+      .replace(/[-•*]\s*dia\s+(\d+)/gi, 'DÍA $1')
+      // Reemplazar "dia 1:", "Dia 1:", etc.
+      .replace(/\bdia\s+(\d+)\s*:?/gi, 'DÍA $1:')
+      // Reemplazar "day 1", "Day 1", etc. (por si usan inglés)
+      .replace(/\bday\s+(\d+)\s*:?/gi, 'DÍA $1:')
+      // Normalizar "día" sin tilde
+      .replace(/\bdia\s+(\d+)/gi, 'DÍA $1')
+      // Asegurar formato consistente
+      .replace(/DÍA\s*(\d+)\s*[:.]?\s*/gi, 'DÍA $1: ');
+
+    return textoNormalizado
       .trim()
       .split(/(?=DÍA\s+\d+)/g)
       .map((textoDia) => {
-        const match = textoDia.trim().match(/^DÍA\s+(\d+):?\s*([\s\S]*)/);
+        const match = textoDia.trim().match(/^DÍA\s+(\d+):?\s*([\s\S]*)/i);
         if (!match) return null;
         const itinerario = new Itinerario();
         itinerario.dia_numero = parseInt(match[1], 10);
