@@ -60,9 +60,12 @@ export class PaquetesController {
 
   @Patch('/:id')
   update(
+    
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updatePaqueteDto: UpdatePaqueteDto,
   ) {
+      console.log('Payload recibido:', JSON.stringify(updatePaqueteDto, null, 2));
+
     return this.paquetesService.update(id, updatePaqueteDto);
   }
 

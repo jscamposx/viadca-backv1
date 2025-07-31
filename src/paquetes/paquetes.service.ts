@@ -145,14 +145,13 @@ export class PaquetesService {
         (a, b) => a.orden - b.orden,
       );
       const primeraImagen = imagenesOrdenadas[0] || null;
-      const primerMayorista = paquete.mayoristas?.[0] || null;
 
       return {
         id: paquete.id,
         primera_imagen: primeraImagen ? primeraImagen.contenido : null,
         url: paquete.codigoUrl,
         titulo: paquete.titulo,
-           clave_mayorista: primerMayorista ? primerMayorista.clave : null,
+        mayoristas: paquete.mayoristas || [],
         activo: paquete.activo,
         precio_total: Number(paquete.precio_total),
       };
