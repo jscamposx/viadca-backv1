@@ -20,7 +20,11 @@ import { MayoristasModule } from './mayoristas/mayoristas.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: `.env.${process.env.NODE_ENV || 'dev'}`,
+      envFilePath: [
+        `.env.${process.env.NODE_ENV || 'development'}`,
+        '.env.local',
+        '.env'
+      ],
     }),
 
     TypeOrmModule.forRootAsync({
@@ -33,7 +37,7 @@ import { MayoristasModule } from './mayoristas/mayoristas.module';
           port: configService.get<number>('DB_PORT'),
           username: configService.get<string>('DB_USERNAME'),
           password: configService.get<string>('DB_PASSWORD'),
-          database: configService.get<string>('DB_NAME'),
+          database: configService.get<string>('DB_DATABASE'),
 
           entities: [
             Usuario,
@@ -53,7 +57,9 @@ import { MayoristasModule } from './mayoristas/mayoristas.module';
           host: dbConfig.host,
           port: dbConfig.port,
           database: dbConfig.database,
+          username: dbConfig.username,
           synchronize: dbConfig.synchronize,
+          NODE_ENV: process.env.NODE_ENV,
         });
 
         return dbConfig;
