@@ -9,11 +9,18 @@ import {
   HttpCode,
   HttpStatus,
   ParseUUIDPipe,
+  Query,
+  Req,
+  Res,
+  UseInterceptors,
 } from '@nestjs/common';
+import { Request, Response } from 'express';
 import { PaquetesService } from './paquetes.service';
 import { CreatePaqueteDto } from './dto/create-paquete.dto';
 import { UpdatePaqueteDto } from './dto/update-paquete.dto';
 import { CreateImagenDto } from './dto/create-imagen.dto';
+import { PaginationDto } from './dto/pagination.dto';
+import { LargePayloadInterceptor } from '../utils/large-payload.interceptor';
 
 @Controller('paquetes')
 export class PaquetesPublicController {
@@ -31,7 +38,11 @@ export class PaquetesController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  create(@Body() createPaqueteDto: CreatePaqueteDto) {
+  @UseInterceptors(LargePayloadInterceptor)
+  async create(@Body() createPaqueteDto: CreatePaqueteDto, @Req() req: Request) {
+    // Extender timeout para requests con muchas imágenes
+    req.setTimeout(600000); // 10 minutos
+    
     return this.paquetesService.create(createPaqueteDto);
   }
 
@@ -45,8 +56,8 @@ export class PaquetesController {
   }
 
   @Get()
-  findAll() {
-    return this.paquetesService.findAll();
+  findAll(@Query() paginationDto: PaginationDto) {
+    return this.paquetesService.findAllPaginated(paginationDto);
   }
 
   @Get(':id')
@@ -55,10 +66,15 @@ export class PaquetesController {
   }
 
   @Patch('/:id')
-  update(
+  @UseInterceptors(LargePayloadInterceptor)
+  async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updatePaqueteDto: UpdatePaqueteDto,
+    @Req() req: Request,
   ) {
+    // Extender timeout para requests con muchas imágenes
+    req.setTimeout(600000); // 10 minutos
+    
     console.log('Payload recibido:', JSON.stringify(updatePaqueteDto, null, 2));
 
     return this.paquetesService.update(id, updatePaqueteDto);

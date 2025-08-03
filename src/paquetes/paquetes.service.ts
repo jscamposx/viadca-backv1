@@ -14,6 +14,7 @@ import { UpdateImagenDto } from './dto/update-imagen.dto';
 import { generarCodigo } from '../utils/generar-url.util';
 import { PaqueteListDto } from './dto/paquete-list.dto';
 import { UpdateHotelDto } from './dto/update-hotel.dto';
+import { PaginationDto, PaginatedResponse } from './dto/pagination.dto';
 
 @Injectable()
 export class PaquetesService {
@@ -92,22 +93,21 @@ export class PaquetesService {
       paquete.mayoristas = await this.findMayoristasByIds(mayoristasIds);
     }
     if (destinosDto && destinosDto.length > 0) {
-      paquete.destinos = destinosDto.map((dto) =>
-        Object.assign(new Destino(), dto),
-      );
+      paquete.destinos = await this.processDestinosAsync(destinosDto);
     }
+    
+    // Procesar imágenes de forma asíncrona para evitar bloquear el hilo principal
     if (imagenesDto && imagenesDto.length > 0) {
-      paquete.imagenes = imagenesDto.map((dto) =>
-        Object.assign(new Imagen(), dto),
-      );
+      paquete.imagenes = await this.processImagenesAsync(imagenesDto);
     }
+    
     if (hotelDto !== null && hotelDto !== undefined) {
+      const hotelImagenes = hotelDto.imagenes ? 
+        await this.processHotelImagenesAsync(hotelDto.imagenes) : [];
+      
       paquete.hotel = this.hotelRepository.create({
         ...hotelDto,
-        imagenes:
-          hotelDto.imagenes?.map((imgDto) =>
-            this.imagenRepository.create(imgDto),
-          ) || [],
+        imagenes: hotelImagenes,
       });
     } else {
       paquete.hotel = null;
@@ -155,6 +155,53 @@ export class PaquetesService {
         precio_total: Number(paquete.precio_total),
       };
     });
+  }
+
+  async findAllPaginated(
+    paginationDto: PaginationDto,
+  ): Promise<PaginatedResponse<PaqueteListDto>> {
+    const { page = 1, limit = 10 } = paginationDto;
+    const skip = (page - 1) * limit;
+
+    const [paquetes, total] = await this.paqueteRepository.findAndCount({
+      relations: ['imagenes', 'mayoristas'],
+      order: {
+        creadoEn: 'DESC',
+      },
+      skip,
+      take: limit,
+    });
+
+    const paquetesTransformados = paquetes.map((paquete) => {
+      const imagenesOrdenadas = [...(paquete.imagenes || [])].sort(
+        (a, b) => a.orden - b.orden,
+      );
+      const primeraImagen = imagenesOrdenadas[0] || null;
+
+      return {
+        id: paquete.id,
+        primera_imagen: primeraImagen ? primeraImagen.contenido : null,
+        url: paquete.codigoUrl,
+        titulo: paquete.titulo,
+        mayoristas: paquete.mayoristas || [],
+        activo: paquete.activo,
+        precio_total: Number(paquete.precio_total),
+      };
+    });
+
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      data: paquetesTransformados,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalItems: total,
+        itemsPerPage: limit,
+        hasNextPage: page < totalPages,
+        hasPreviousPage: page > 1,
+      },
+    };
   }
 
   async findOne(id: string): Promise<Paquete> {
@@ -272,9 +319,8 @@ export class PaquetesService {
       if (paquete.destinos?.length > 0) {
         await this.destinoRepository.remove(paquete.destinos);
       }
-      paquete.destinos = destinosDto.map((dto) =>
-        Object.assign(new Destino(), dto),
-      );
+      // Procesar destinos de forma asíncrona para evitar bloquear el hilo principal
+      paquete.destinos = await this.processDestinosAsync(destinosDto);
     }
 
     return this.paqueteRepository.save(paquete);
@@ -412,12 +458,141 @@ export class PaquetesService {
       await this.imagenRepository.remove(imagenesAEliminar);
     }
 
-    return imagenesDto.map((dto) => {
-      const imagenExistente = dto.id
-        ? (imagenesActuales || []).find((img) => img.id === dto.id)
-        : undefined;
-      const imagen = imagenExistente || this.imagenRepository.create();
-      return Object.assign(imagen, dto);
-    });
+    // Procesar imágenes en lotes para evitar bloquear el hilo principal
+    const batchSize = 5;
+    const imagenes: Imagen[] = [];
+
+    for (let i = 0; i < imagenesDto.length; i += batchSize) {
+      const batch = imagenesDto.slice(i, i + batchSize);
+      
+      const batchPromises = batch.map(async (dto) => {
+        return new Promise<Imagen>((resolve) => {
+          setImmediate(() => {
+            const imagenExistente = dto.id
+              ? (imagenesActuales || []).find((img) => img.id === dto.id)
+              : undefined;
+            const imagen = imagenExistente || this.imagenRepository.create();
+            resolve(Object.assign(imagen, dto));
+          });
+        });
+      });
+
+      const batchResults = await Promise.all(batchPromises);
+      imagenes.push(...batchResults);
+
+      // Pequeña pausa entre lotes para permitir que el event loop procese otras tareas
+      if (i + batchSize < imagenesDto.length) {
+        await new Promise(resolve => setImmediate(resolve));
+      }
+    }
+
+    return imagenes;
+  }
+
+  /**
+   * Procesa imágenes de forma asíncrona para evitar bloquear el hilo principal
+   * Útil para requests grandes con múltiples imágenes en base64 o URLs
+   */
+  private async processImagenesAsync(imagenesDto: CreateImagenDto[]): Promise<Imagen[]> {
+    if (!imagenesDto || imagenesDto.length === 0) {
+      return [];
+    }
+
+    // Procesar en lotes pequeños para evitar sobrecarga de memoria
+    const batchSize = 5;
+    const imagenes: Imagen[] = [];
+
+    for (let i = 0; i < imagenesDto.length; i += batchSize) {
+      const batch = imagenesDto.slice(i, i + batchSize);
+      
+      const batchPromises = batch.map(async (dto) => {
+        // Usar setImmediate para permitir que otros procesos se ejecuten
+        return new Promise<Imagen>((resolve) => {
+          setImmediate(() => {
+            const imagen = Object.assign(new Imagen(), dto);
+            resolve(imagen);
+          });
+        });
+      });
+
+      const batchResults = await Promise.all(batchPromises);
+      imagenes.push(...batchResults);
+
+      // Pequeña pausa entre lotes para permitir que el event loop procese otras tareas
+      if (i + batchSize < imagenesDto.length) {
+        await new Promise(resolve => setImmediate(resolve));
+      }
+    }
+
+    return imagenes;
+  }
+
+  /**
+   * Procesa imágenes de hotel de forma asíncrona
+   */
+  private async processHotelImagenesAsync(imagenesDto: CreateImagenDto[]): Promise<Imagen[]> {
+    if (!imagenesDto || imagenesDto.length === 0) {
+      return [];
+    }
+
+    const batchSize = 5;
+    const imagenes: Imagen[] = [];
+
+    for (let i = 0; i < imagenesDto.length; i += batchSize) {
+      const batch = imagenesDto.slice(i, i + batchSize);
+      
+      const batchPromises = batch.map(async (imgDto) => {
+        return new Promise<Imagen>((resolve) => {
+          setImmediate(() => {
+            const imagen = this.imagenRepository.create(imgDto);
+            resolve(imagen);
+          });
+        });
+      });
+
+      const batchResults = await Promise.all(batchPromises);
+      imagenes.push(...batchResults);
+
+      if (i + batchSize < imagenesDto.length) {
+        await new Promise(resolve => setImmediate(resolve));
+      }
+    }
+
+    return imagenes;
+  }
+
+  /**
+   * Procesa destinos de forma asíncrona
+   */
+  private async processDestinosAsync(destinosDto: any[]): Promise<Destino[]> {
+    if (!destinosDto || destinosDto.length === 0) {
+      return [];
+    }
+
+    const batchSize = 10; // Los destinos son más livianos que las imágenes
+    const destinos: Destino[] = [];
+
+    for (let i = 0; i < destinosDto.length; i += batchSize) {
+      const batch = destinosDto.slice(i, i + batchSize);
+      
+      const batchPromises = batch.map(async (dto) => {
+        return new Promise<Destino>((resolve) => {
+          setImmediate(() => {
+            const destino = Object.assign(new Destino(), dto);
+            resolve(destino);
+          });
+        });
+      });
+
+      const batchResults = await Promise.all(batchPromises);
+      destinos.push(...batchResults);
+
+      // Pequeña pausa entre lotes
+      if (i + batchSize < destinosDto.length) {
+        await new Promise(resolve => setImmediate(resolve));
+      }
+    }
+
+    return destinos;
   }
 }

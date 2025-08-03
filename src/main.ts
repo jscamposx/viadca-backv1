@@ -2,9 +2,17 @@ import { NestFactory, Reflector } from '@nestjs/core';
 import { AppModule } from './app.module';
 import * as compression from 'compression';
 import { ValidationPipe, ClassSerializerInterceptor } from '@nestjs/common';
+import { json, urlencoded } from 'express';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Configurar límites de payload para requests grandes (200MB)
+  app.use(json({ limit: '200mb' }));
+  app.use(urlencoded({ limit: '200mb', extended: true }));
+
+  // Configuración adicional para el servidor Express
+  app.getHttpAdapter().getInstance().set('trust proxy', true);
 
   app.enableCors({
     origin:
