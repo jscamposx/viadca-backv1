@@ -12,6 +12,7 @@ import { Itinerario } from '../entities/itinerario.entity';
 import { Mayoristas } from '../entities/mayoristas.entity';
 import { Hotel } from '../entities/hotel.entity';
 import { CloudinaryModule } from '../cloudinary/cloudinary.module';
+import { ExcelModule } from '../excel/excel.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { CloudinaryModule } from '../cloudinary/cloudinary.module';
       Hotel,
     ]),
     CloudinaryModule,
+    ExcelModule,
   ],
   controllers: [PaquetesController, PaquetesPublicController],
   providers: [PaquetesService],
