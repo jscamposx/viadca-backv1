@@ -15,6 +15,7 @@ import { generarCodigo } from '../utils/generar-url.util';
 import { PaqueteListDto } from './dto/paquete-list.dto';
 import { UpdateHotelDto } from './dto/update-hotel.dto';
 import { PaginationDto, PaginatedResponse } from './dto/pagination.dto';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
 @Injectable()
 export class PaquetesService {
@@ -31,6 +32,7 @@ export class PaquetesService {
     private readonly itinerarioRepository: Repository<Itinerario>,
     @InjectRepository(Destino)
     private readonly destinoRepository: Repository<Destino>,
+    private readonly cloudinaryService: CloudinaryService,
   ) {}
 
   async create(createPaqueteDto: CreatePaqueteDto): Promise<Paquete> {
@@ -95,16 +97,20 @@ export class PaquetesService {
     if (destinosDto && destinosDto.length > 0) {
       paquete.destinos = await this.processDestinosAsync(destinosDto);
     }
-    
-    // Procesar imágenes de forma asíncrona para evitar bloquear el hilo principal
+
+    // Procesar imágenes con Cloudinary de forma asíncrona
     if (imagenesDto && imagenesDto.length > 0) {
-      paquete.imagenes = await this.processImagenesAsync(imagenesDto);
+      paquete.imagenes = await this.processImagenesWithCloudinary(
+        imagenesDto,
+        'paquetes',
+      );
     }
-    
+
     if (hotelDto !== null && hotelDto !== undefined) {
-      const hotelImagenes = hotelDto.imagenes ? 
-        await this.processHotelImagenesAsync(hotelDto.imagenes) : [];
-      
+      const hotelImagenes = hotelDto.imagenes
+        ? await this.processImagenesWithCloudinary(hotelDto.imagenes, 'hoteles')
+        : [];
+
       paquete.hotel = this.hotelRepository.create({
         ...hotelDto,
         imagenes: hotelImagenes,
@@ -124,8 +130,15 @@ export class PaquetesService {
     createImagenDto: CreateImagenDto,
   ): Promise<Imagen> {
     const paquete = await this.findOne(paqueteId);
+
+    // Procesar imagen con Cloudinary si es base64
+    const imagenProcessed = await this.processImageWithCloudinary(
+      createImagenDto,
+      'paquetes',
+    );
+
     const nuevaImagen = this.imagenRepository.create({
-      ...createImagenDto,
+      ...imagenProcessed,
       paquete,
     });
     return this.imagenRepository.save(nuevaImagen);
@@ -328,13 +341,92 @@ export class PaquetesService {
 
   async remove(id: string): Promise<void> {
     const paquete = await this.findOne(id);
+
+    // Eliminar todas las imágenes de Cloudinary antes de eliminar el paquete
+    if (paquete.imagenes && paquete.imagenes.length > 0) {
+      for (const imagen of paquete.imagenes) {
+        if (imagen.tipo === 'cloudinary' && imagen.cloudinary_public_id) {
+          try {
+            await this.cloudinaryService.deleteFile(
+              imagen.cloudinary_public_id,
+            );
+            console.log(
+              `Imagen eliminada de Cloudinary: ${imagen.cloudinary_public_id}`,
+            );
+          } catch (error) {
+            console.error(
+              `Error al eliminar imagen de Cloudinary ${imagen.cloudinary_public_id}:`,
+              error,
+            );
+            // Continuamos con la eliminación aunque falle Cloudinary
+          }
+        }
+      }
+    }
+
+    // Eliminar imágenes del hotel si existe
+    if (
+      paquete.hotel &&
+      paquete.hotel.imagenes &&
+      paquete.hotel.imagenes.length > 0
+    ) {
+      for (const imagen of paquete.hotel.imagenes) {
+        if (imagen.tipo === 'cloudinary' && imagen.cloudinary_public_id) {
+          try {
+            await this.cloudinaryService.deleteFile(
+              imagen.cloudinary_public_id,
+            );
+            console.log(
+              `Imagen de hotel eliminada de Cloudinary: ${imagen.cloudinary_public_id}`,
+            );
+          } catch (error) {
+            console.error(
+              `Error al eliminar imagen de hotel de Cloudinary ${imagen.cloudinary_public_id}:`,
+              error,
+            );
+            // Continuamos con la eliminación aunque falle Cloudinary
+          }
+        }
+      }
+    }
+
+    // Eliminar el paquete (cascada eliminará las relaciones en BD)
     await this.paqueteRepository.remove(paquete);
   }
 
   async removeImage(imagenId: string): Promise<void> {
+    // Primero buscar la imagen para obtener el public_id de Cloudinary
+    const imagen = await this.imagenRepository.findOne({
+      where: { id: imagenId },
+    });
+
+    if (!imagen) {
+      throw new NotFoundException(`Imagen con ID "${imagenId}" no encontrada.`);
+    }
+
+    // Solo eliminar de Cloudinary si la imagen es tipo 'cloudinary' y tiene public_id
+    if (imagen.tipo === 'cloudinary' && imagen.cloudinary_public_id) {
+      try {
+        await this.cloudinaryService.deleteFile(imagen.cloudinary_public_id);
+        console.log(
+          `Imagen eliminada de Cloudinary: ${imagen.cloudinary_public_id}`,
+        );
+      } catch (error) {
+        console.error('Error al eliminar imagen de Cloudinary:', error);
+        // Continuar con la eliminación de la base de datos aunque falle Cloudinary
+      }
+    } else {
+      console.log(
+        `Imagen tipo '${imagen.tipo}' no requiere eliminación de Cloudinary`,
+      );
+    }
+
+    // Eliminar de la base de datos
     const result = await this.imagenRepository.delete(imagenId);
     if (result.affected === 0) {
-      throw new NotFoundException(`Imagen con ID "${imagenId}" no encontrada.`);
+      throw new NotFoundException(
+        `Error al eliminar imagen con ID "${imagenId}".`,
+      );
     }
   }
 
@@ -351,7 +443,7 @@ export class PaquetesService {
 
   private parseItinerario(itinerario_texto: string): Itinerario[] {
     if (!itinerario_texto) return [];
-    
+
     // Normalizar el texto: reemplazar diferentes variantes por el formato estándar
     let textoNormalizado = itinerario_texto
       .trim()
@@ -368,7 +460,7 @@ export class PaquetesService {
 
     // Verificar si hay algún patrón de día en el texto
     const tieneDias = /DÍA\s+\d+/i.test(textoNormalizado);
-    
+
     // Si no hay ningún patrón de día, crear DÍA 1 con todo el texto
     if (!tieneDias) {
       const itinerario = new Itinerario();
@@ -451,38 +543,109 @@ export class PaquetesService {
       imagenesDto.map((dto) => dto.id).filter(Boolean),
     );
 
+    // Eliminar imágenes que ya no están en el DTO
     const imagenesAEliminar = (imagenesActuales || []).filter(
       (img) => !dtoImageIds.has(img.id),
     );
+
     if (imagenesAEliminar.length > 0) {
+      // Eliminar de Cloudinary solo las que son tipo 'cloudinary'
+      for (const imagen of imagenesAEliminar) {
+        if (imagen.tipo === 'cloudinary' && imagen.cloudinary_public_id) {
+          try {
+            await this.cloudinaryService.deleteFile(
+              imagen.cloudinary_public_id,
+            );
+            console.log(
+              `Imagen eliminada de Cloudinary: ${imagen.cloudinary_public_id}`,
+            );
+          } catch (error) {
+            console.error('Error al eliminar imagen de Cloudinary:', error);
+          }
+        }
+      }
       await this.imagenRepository.remove(imagenesAEliminar);
     }
 
     // Procesar imágenes en lotes para evitar bloquear el hilo principal
-    const batchSize = 5;
+    const batchSize = 3; // Reducido para Cloudinary
     const imagenes: Imagen[] = [];
 
     for (let i = 0; i < imagenesDto.length; i += batchSize) {
       const batch = imagenesDto.slice(i, i + batchSize);
-      
+
       const batchPromises = batch.map(async (dto) => {
-        return new Promise<Imagen>((resolve) => {
-          setImmediate(() => {
-            const imagenExistente = dto.id
-              ? (imagenesActuales || []).find((img) => img.id === dto.id)
-              : undefined;
-            const imagen = imagenExistente || this.imagenRepository.create();
-            resolve(Object.assign(imagen, dto));
-          });
-        });
+        const imagenExistente = dto.id
+          ? (imagenesActuales || []).find((img) => img.id === dto.id)
+          : undefined;
+
+        if (imagenExistente) {
+          // Si es imagen existente, procesar según el tipo
+          if (
+            dto.tipo === 'cloudinary' &&
+            dto.contenido &&
+            dto.contenido.startsWith('data:image/')
+          ) {
+            // Solo para imágenes tipo 'cloudinary' con contenido base64
+            const processedImage = await this.processImageWithCloudinary(
+              dto as any,
+              'paquetes',
+            );
+            return Object.assign(imagenExistente, processedImage);
+          } else {
+            // Para otros tipos (URL, Google Places) o cloudinary ya procesado, solo actualizar campos básicos
+            return Object.assign(imagenExistente, {
+              tipo: dto.tipo,
+              contenido: dto.contenido,
+              orden: dto.orden,
+              nombre: dto.nombre,
+              mime_type: dto.mime_type,
+              // Solo mantener campos de Cloudinary si es tipo 'cloudinary'
+              cloudinary_public_id:
+                dto.tipo === 'cloudinary'
+                  ? dto.cloudinary_public_id ||
+                    imagenExistente.cloudinary_public_id
+                  : null,
+              cloudinary_url:
+                dto.tipo === 'cloudinary'
+                  ? dto.cloudinary_url || imagenExistente.cloudinary_url
+                  : null,
+            });
+          }
+        } else {
+          // Nueva imagen - procesar según el tipo
+          if (
+            dto.tipo === 'cloudinary' &&
+            dto.contenido &&
+            dto.contenido.startsWith('data:image/')
+          ) {
+            // Solo para imágenes tipo 'cloudinary' con contenido base64
+            return await this.processImageWithCloudinary(
+              dto as any,
+              'paquetes',
+            );
+          } else {
+            // Para URLs (Pexels, Google Places, etc.) o cloudinary ya procesado, solo crear la entidad
+            const nuevaImagen = this.imagenRepository.create();
+            return Object.assign(nuevaImagen, {
+              ...dto,
+              cloudinary_public_id:
+                dto.tipo === 'cloudinary'
+                  ? dto.cloudinary_public_id || null
+                  : null,
+              cloudinary_url:
+                dto.tipo === 'cloudinary' ? dto.cloudinary_url || null : null,
+            });
+          }
+        }
       });
 
       const batchResults = await Promise.all(batchPromises);
       imagenes.push(...batchResults);
 
-      // Pequeña pausa entre lotes para permitir que el event loop procese otras tareas
+      // Pequeña pausa entre lotes
       if (i + batchSize < imagenesDto.length) {
-        await new Promise(resolve => setImmediate(resolve));
+        await new Promise((resolve) => setTimeout(resolve, 100));
       }
     }
 
@@ -493,7 +656,9 @@ export class PaquetesService {
    * Procesa imágenes de forma asíncrona para evitar bloquear el hilo principal
    * Útil para requests grandes con múltiples imágenes en base64 o URLs
    */
-  private async processImagenesAsync(imagenesDto: CreateImagenDto[]): Promise<Imagen[]> {
+  private async processImagenesAsync(
+    imagenesDto: CreateImagenDto[],
+  ): Promise<Imagen[]> {
     if (!imagenesDto || imagenesDto.length === 0) {
       return [];
     }
@@ -504,7 +669,7 @@ export class PaquetesService {
 
     for (let i = 0; i < imagenesDto.length; i += batchSize) {
       const batch = imagenesDto.slice(i, i + batchSize);
-      
+
       const batchPromises = batch.map(async (dto) => {
         // Usar setImmediate para permitir que otros procesos se ejecuten
         return new Promise<Imagen>((resolve) => {
@@ -520,7 +685,7 @@ export class PaquetesService {
 
       // Pequeña pausa entre lotes para permitir que el event loop procese otras tareas
       if (i + batchSize < imagenesDto.length) {
-        await new Promise(resolve => setImmediate(resolve));
+        await new Promise((resolve) => setImmediate(resolve));
       }
     }
 
@@ -530,7 +695,9 @@ export class PaquetesService {
   /**
    * Procesa imágenes de hotel de forma asíncrona
    */
-  private async processHotelImagenesAsync(imagenesDto: CreateImagenDto[]): Promise<Imagen[]> {
+  private async processHotelImagenesAsync(
+    imagenesDto: CreateImagenDto[],
+  ): Promise<Imagen[]> {
     if (!imagenesDto || imagenesDto.length === 0) {
       return [];
     }
@@ -540,7 +707,7 @@ export class PaquetesService {
 
     for (let i = 0; i < imagenesDto.length; i += batchSize) {
       const batch = imagenesDto.slice(i, i + batchSize);
-      
+
       const batchPromises = batch.map(async (imgDto) => {
         return new Promise<Imagen>((resolve) => {
           setImmediate(() => {
@@ -554,7 +721,7 @@ export class PaquetesService {
       imagenes.push(...batchResults);
 
       if (i + batchSize < imagenesDto.length) {
-        await new Promise(resolve => setImmediate(resolve));
+        await new Promise((resolve) => setImmediate(resolve));
       }
     }
 
@@ -574,7 +741,7 @@ export class PaquetesService {
 
     for (let i = 0; i < destinosDto.length; i += batchSize) {
       const batch = destinosDto.slice(i, i + batchSize);
-      
+
       const batchPromises = batch.map(async (dto) => {
         return new Promise<Destino>((resolve) => {
           setImmediate(() => {
@@ -589,10 +756,117 @@ export class PaquetesService {
 
       // Pequeña pausa entre lotes
       if (i + batchSize < destinosDto.length) {
-        await new Promise(resolve => setImmediate(resolve));
+        await new Promise((resolve) => setImmediate(resolve));
       }
     }
 
     return destinos;
+  }
+
+  /**
+   * Procesa una imagen según su tipo:
+   * - 'cloudinary': Se sube a Cloudinary (contenido debe ser base64)
+   * - 'url': Solo almacena la URL (ej: Pexels, URLs externas)
+   * - 'google_places_url': Solo almacena la URL de Google Places
+   */
+  async processImageWithCloudinary(
+    imageDto: CreateImagenDto,
+    folder: string = 'paquetes',
+  ): Promise<Imagen> {
+    try {
+      if (imageDto.tipo === 'cloudinary') {
+        // Para tipo 'cloudinary', el contenido debe ser base64 y se sube a Cloudinary
+        if (
+          imageDto.contenido &&
+          imageDto.contenido.startsWith('data:image/')
+        ) {
+          // Convertir base64 a buffer
+          const base64Data = imageDto.contenido.replace(
+            /^data:image\/\w+;base64,/,
+            '',
+          );
+          const buffer = Buffer.from(base64Data, 'base64');
+
+          // Crear un objeto similar a Express.Multer.File
+          const file: Express.Multer.File = {
+            fieldname: 'file',
+            originalname: imageDto.nombre || 'image.jpg',
+            encoding: '7bit',
+            mimetype: imageDto.mime_type || 'image/jpeg',
+            buffer: buffer,
+            size: buffer.length,
+          } as Express.Multer.File;
+
+          // Subir a Cloudinary con upload_preset
+          const cloudinaryResult = await this.cloudinaryService.uploadFile(
+            file,
+            folder,
+          );
+
+          // Crear entidad imagen con datos de Cloudinary
+          return Object.assign(new Imagen(), {
+            ...imageDto,
+            tipo: 'cloudinary',
+            contenido: cloudinaryResult.url,
+            cloudinary_public_id: cloudinaryResult.public_id,
+            cloudinary_url: cloudinaryResult.url,
+          });
+        } else {
+          // Si es tipo 'cloudinary' pero ya tiene cloudinary_url, usarla directamente
+          return Object.assign(new Imagen(), imageDto);
+        }
+      } else if (
+        imageDto.tipo === 'url' ||
+        imageDto.tipo === 'google_places_url'
+      ) {
+        // Para URLs externas (Pexels, Google Places), solo almacenar sin procesar
+        return Object.assign(new Imagen(), {
+          ...imageDto,
+          // No establecer campos de Cloudinary para URLs externas
+          cloudinary_public_id: null,
+          cloudinary_url: null,
+        });
+      } else {
+        // Fallback para casos no esperados
+        return Object.assign(new Imagen(), imageDto);
+      }
+    } catch (error) {
+      console.error('Error al procesar imagen:', error);
+      throw new Error(`Error al procesar imagen: ${error.message}`);
+    }
+  }
+
+  /**
+   * Procesa múltiples imágenes con Cloudinary de forma asíncrona
+   */
+  private async processImagenesWithCloudinary(
+    imagenesDto: CreateImagenDto[],
+    folder: string = 'paquetes',
+  ): Promise<Imagen[]> {
+    if (!imagenesDto || imagenesDto.length === 0) {
+      return [];
+    }
+
+    // Procesar en lotes pequeños para evitar sobrecarga
+    const batchSize = 3; // Reducido porque Cloudinary puede ser más lento
+    const imagenes: Imagen[] = [];
+
+    for (let i = 0; i < imagenesDto.length; i += batchSize) {
+      const batch = imagenesDto.slice(i, i + batchSize);
+
+      const batchPromises = batch.map((dto) =>
+        this.processImageWithCloudinary(dto, folder),
+      );
+
+      const batchResults = await Promise.all(batchPromises);
+      imagenes.push(...batchResults);
+
+      // Pausa pequeña entre lotes para no sobrecargar Cloudinary
+      if (i + batchSize < imagenesDto.length) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+    }
+
+    return imagenes;
   }
 }

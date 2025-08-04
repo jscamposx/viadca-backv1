@@ -39,10 +39,13 @@ export class PaquetesController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @UseInterceptors(LargePayloadInterceptor)
-  async create(@Body() createPaqueteDto: CreatePaqueteDto, @Req() req: Request) {
+  async create(
+    @Body() createPaqueteDto: CreatePaqueteDto,
+    @Req() req: Request,
+  ) {
     // Extender timeout para requests con muchas imágenes
     req.setTimeout(600000); // 10 minutos
-    
+
     return this.paquetesService.create(createPaqueteDto);
   }
 
@@ -74,7 +77,7 @@ export class PaquetesController {
   ) {
     // Extender timeout para requests con muchas imágenes
     req.setTimeout(600000); // 10 minutos
-    
+
     console.log('Payload recibido:', JSON.stringify(updatePaqueteDto, null, 2));
 
     return this.paquetesService.update(id, updatePaqueteDto);

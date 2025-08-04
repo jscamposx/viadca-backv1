@@ -25,13 +25,19 @@ export class Imagen {
 
   @Column({
     type: 'enum',
-    enum: ['base64', 'url', 'google_places_url'],
-    default: 'url',
+    enum: ['url', 'google_places_url', 'cloudinary'],
+    default: 'cloudinary',
   })
   tipo: string;
 
   @Column({ type: 'mediumtext' })
   contenido: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  cloudinary_public_id: string;
+
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  cloudinary_url: string;
 
   @Column({ type: 'varchar', length: 50 })
   mime_type: string;

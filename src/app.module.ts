@@ -15,6 +15,7 @@ import { Contacto } from './entities/contacto.entity';
 
 import { PaquetesModule } from './paquetes/paquetes.module';
 import { MayoristasModule } from './mayoristas/mayoristas.module';
+import { CloudinaryModule } from './cloudinary/cloudinary.module';
 
 @Module({
   imports: [
@@ -23,7 +24,7 @@ import { MayoristasModule } from './mayoristas/mayoristas.module';
       envFilePath: [
         `.env.${process.env.NODE_ENV || 'development'}`,
         '.env.local',
-        '.env'
+        '.env',
       ],
     }),
 
@@ -67,6 +68,7 @@ import { MayoristasModule } from './mayoristas/mayoristas.module';
     }),
     PaquetesModule,
     MayoristasModule,
+    CloudinaryModule,
   ],
   controllers: [AppController],
   providers: [AppService],

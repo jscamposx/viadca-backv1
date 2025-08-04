@@ -17,7 +17,7 @@ export class CreateImagenDto {
   orden?: number;
 
   @IsString()
-  @IsEnum(['base64', 'url', 'google_places_url'])
+  @IsEnum(['url', 'google_places_url', 'cloudinary'])
   tipo: string;
 
   @IsString()
@@ -31,4 +31,12 @@ export class CreateImagenDto {
   @IsString()
   @IsNotEmpty()
   nombre: string;
+
+  @IsOptional()
+  @IsString()
+  cloudinary_public_id?: string;
+
+  @IsOptional()
+  @IsString()
+  cloudinary_url?: string;
 }
