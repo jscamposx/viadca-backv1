@@ -15,6 +15,7 @@ import { Contacto } from './entities/contacto.entity';
 
 import { PaquetesModule } from './paquetes/paquetes.module';
 import { MayoristasModule } from './mayoristas/mayoristas.module';
+import { UsuariosModule } from './usuarios/usuarios.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { CleanupModule } from './common/cleanup.module';
 import { AdminModule } from './admin/admin.module';
@@ -70,6 +71,7 @@ import { AdminModule } from './admin/admin.module';
     }),
     PaquetesModule,
     MayoristasModule,
+    UsuariosModule,
     CloudinaryModule,
     CleanupModule,
     AdminModule,
