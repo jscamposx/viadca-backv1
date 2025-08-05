@@ -1,16 +1,8 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  CreateDateColumn,
-  UpdateDateColumn,
-} from 'typeorm';
+import { Entity, Column } from 'typeorm';
+import { SoftDeleteEntity } from './base/soft-delete.entity';
 
 @Entity('usuarios')
-export class Usuario {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
+export class Usuario extends SoftDeleteEntity {
   @Column({ type: 'varchar', length: 100 })
   usuario: string;
 
@@ -32,10 +24,4 @@ export class Usuario {
 
   @Column({ type: 'text', nullable: true })
   token: string;
-
-  @CreateDateColumn({ name: 'creado_en' })
-  creadoEn: Date;
-
-  @UpdateDateColumn({ name: 'actualizado_en' })
-  actualizadoEn: Date;
 }

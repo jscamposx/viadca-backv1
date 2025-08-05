@@ -58,7 +58,6 @@ export class CloudinaryService {
     await Promise.all(deletePromises);
   }
 
-  // Método para obtener URL optimizada
   getOptimizedImageUrl(
     publicId: string,
     options?: {

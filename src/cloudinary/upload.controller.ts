@@ -64,7 +64,6 @@ export class UploadController {
 
   @Delete('image/:publicId')
   async deleteImage(@Param('publicId') publicId: string) {
-    // Decodificar el public_id ya que viene en la URL
     const decodedPublicId = decodeURIComponent(publicId);
     await this.cloudinaryService.deleteFile(decodedPublicId);
     return {

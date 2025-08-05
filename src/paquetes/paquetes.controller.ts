@@ -14,6 +14,7 @@ import {
   Res,
   UseInterceptors,
   Header,
+  NotFoundException,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { PaquetesService } from './paquetes.service';
@@ -48,8 +49,7 @@ export class PaquetesController {
     @Body() createPaqueteDto: CreatePaqueteDto,
     @Req() req: Request,
   ) {
-    // Extender timeout para requests con muchas imágenes
-    req.setTimeout(600000); // 10 minutos
+    req.setTimeout(600000);
 
     return this.paquetesService.create(createPaqueteDto);
   }
@@ -80,8 +80,7 @@ export class PaquetesController {
     @Body() updatePaqueteDto: UpdatePaqueteDto,
     @Req() req: Request,
   ) {
-    // Extender timeout para requests con muchas imágenes
-    req.setTimeout(600000); // 10 minutos
+    req.setTimeout(600000);
 
     console.log('Payload recibido:', JSON.stringify(updatePaqueteDto, null, 2));
 
@@ -90,14 +89,39 @@ export class PaquetesController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id', ParseUUIDPipe) id: string) {
-    return this.paquetesService.remove(id);
+  async remove(@Param('id', ParseUUIDPipe) id: string) {
+    const success = await this.paquetesService.softDelete(id);
+    if (!success) {
+      throw new NotFoundException(`Paquete con id ${id} no encontrado`);
+    }
+    return { message: 'Paquete eliminado correctamente' };
   }
 
-  @Delete('imagenes/:id')
+  @Patch(':id/restore')
+  @HttpCode(HttpStatus.OK)
+  async restore(@Param('id', ParseUUIDPipe) id: string) {
+    const success = await this.paquetesService.restore(id);
+    if (!success) {
+      throw new NotFoundException(
+        `Paquete con id ${id} no encontrado o no está eliminado`,
+      );
+    }
+    return { message: 'Paquete restaurado correctamente' };
+  }
+
+  @Get('deleted/list')
+  async getDeleted() {
+    return this.paquetesService.findDeleted();
+  }
+
+  @Delete(':id/hard')
   @HttpCode(HttpStatus.NO_CONTENT)
-  removeImage(@Param('id', ParseUUIDPipe) id: string) {
-    return this.paquetesService.removeImage(id);
+  async hardDelete(@Param('id', ParseUUIDPipe) id: string) {
+    const success = await this.paquetesService.hardDelete(id);
+    if (!success) {
+      throw new NotFoundException(`Paquete con id ${id} no encontrado`);
+    }
+    return { message: 'Paquete eliminado permanentemente' };
   }
 
   @Get('excel/:id')
@@ -107,20 +131,20 @@ export class PaquetesController {
     @Query('cliente') clienteName?: string,
   ) {
     try {
-      // Obtener el paquete con todas sus relaciones
       const paquete = await this.paquetesService.findOne(id);
-      
+
       if (!paquete) {
         res.status(404).json({ message: 'Paquete no encontrado' });
         return;
       }
 
-      // Generar el archivo Excel con el nombre del cliente si se proporciona
-      const excelBuffer = await this.excelService.generatePaqueteExcel(paquete, clienteName);
+      const excelBuffer = await this.excelService.generatePaqueteExcel(
+        paquete,
+        clienteName,
+      );
 
-      // Configurar headers para la descarga
       const fileName = `paquete_${paquete.codigoUrl}_${new Date().toISOString().split('T')[0]}.xlsx`;
-      
+
       res.setHeader(
         'Content-Disposition',
         `attachment; filename="${fileName}"`,
@@ -131,16 +155,14 @@ export class PaquetesController {
       );
       res.setHeader('Content-Length', excelBuffer.length);
 
-      // Enviar el archivo
       res.end(excelBuffer);
     } catch (error) {
       console.error('Error generando Excel:', error);
-      
-      // Solo enviar respuesta de error si no se han enviado headers aún
+
       if (!res.headersSent) {
-        res.status(500).json({ 
+        res.status(500).json({
           message: 'Error interno del servidor al generar el Excel',
-          error: error.message 
+          error: error.message,
         });
       }
     }

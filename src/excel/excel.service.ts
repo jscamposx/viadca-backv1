@@ -5,21 +5,28 @@ import { ExcelDataFormatterService } from './services/excel-data-formatter.servi
 
 @Injectable()
 export class ExcelService {
-  constructor(
-    private readonly dataFormatter: ExcelDataFormatterService
-  ) {}
+  constructor(private readonly dataFormatter: ExcelDataFormatterService) {}
 
-  async generatePaqueteExcel(paquete: Paquete, clienteName?: string): Promise<Buffer> {
+  async generatePaqueteExcel(
+    paquete: Paquete,
+    clienteName?: string,
+  ): Promise<Buffer> {
     // Formatear los datos del paquete
     const formattedData = this.dataFormatter.formatPaqueteData(paquete);
-    
+
     // Crear la plantilla usando el método estático con validación
-    const result = await PaqueteExcelTemplate.createTemplate(paquete, formattedData, clienteName);
-    
+    const result = await PaqueteExcelTemplate.createTemplate(
+      paquete,
+      formattedData,
+      clienteName,
+    );
+
     if ('error' in result) {
-      throw new Error(`Error generando Excel: ${result.error}. Detalles: ${result.errors.join(', ')}`);
+      throw new Error(
+        `Error generando Excel: ${result.error}. Detalles: ${result.errors.join(', ')}`,
+      );
     }
-    
+
     return result.buffer;
   }
 }

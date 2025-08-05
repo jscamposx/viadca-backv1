@@ -9,6 +9,7 @@ import {
   HttpCode,
   HttpStatus,
   ParseUUIDPipe,
+  NotFoundException,
 } from '@nestjs/common';
 import { MayoristasService } from './mayoristas.service';
 import { CreateMayoristaDto } from './dto/create-mayorista.dto';
@@ -44,7 +45,38 @@ export class MayoristasController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id', ParseUUIDPipe) id: string) {
-    return this.mayoristasService.remove(id);
+  async remove(@Param('id', ParseUUIDPipe) id: string) {
+    const success = await this.mayoristasService.softDelete(id);
+    if (!success) {
+      throw new NotFoundException(`Mayorista con id ${id} no encontrado`);
+    }
+    return { message: 'Mayorista eliminado correctamente' };
+  }
+
+  @Patch(':id/restore')
+  @HttpCode(HttpStatus.OK)
+  async restore(@Param('id', ParseUUIDPipe) id: string) {
+    const success = await this.mayoristasService.restore(id);
+    if (!success) {
+      throw new NotFoundException(
+        `Mayorista con id ${id} no encontrado o no está eliminado`,
+      );
+    }
+    return { message: 'Mayorista restaurado correctamente' };
+  }
+
+  @Get('deleted/list')
+  async getDeleted() {
+    return this.mayoristasService.findDeleted();
+  }
+
+  @Delete(':id/hard')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async hardDelete(@Param('id', ParseUUIDPipe) id: string) {
+    const success = await this.mayoristasService.hardDelete(id);
+    if (!success) {
+      throw new NotFoundException(`Mayorista con id ${id} no encontrado`);
+    }
+    return { message: 'Mayorista eliminado permanentemente' };
   }
 }

@@ -4,13 +4,16 @@ import { In, Repository } from 'typeorm';
 import { Mayoristas } from '../entities/mayoristas.entity';
 import { CreateMayoristaDto } from './dto/create-mayorista.dto';
 import { UpdateMayoristaDto } from './dto/update-mayorista.dto';
+import { SoftDeleteService } from '../common/services/soft-delete.service';
 
 @Injectable()
-export class MayoristasService {
+export class MayoristasService extends SoftDeleteService<Mayoristas> {
   constructor(
     @InjectRepository(Mayoristas)
     private readonly mayoristaRepository: Repository<Mayoristas>,
-  ) {}
+  ) {
+    super(mayoristaRepository);
+  }
 
   private generarClave(nombre: string, tipo_producto: string): string {
     const nombreSlice = nombre

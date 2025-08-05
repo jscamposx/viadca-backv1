@@ -1,14 +1,12 @@
 import {
   Entity,
-  PrimaryGeneratedColumn,
   Column,
-  CreateDateColumn,
-  UpdateDateColumn,
   OneToMany,
   ManyToMany,
   JoinTable,
   OneToOne,
 } from 'typeorm';
+import { SoftDeleteEntity } from '../../entities/base/soft-delete.entity';
 import { Itinerario } from '../../entities/itinerario.entity';
 import { Hotel } from '../../entities/hotel.entity';
 import { Destino } from '../../entities/destino.entity';
@@ -16,10 +14,7 @@ import { Imagen } from '../../entities/imagen.entity';
 import { Mayoristas } from '../../entities/mayoristas.entity';
 
 @Entity('paquetes')
-export class Paquete {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
+export class Paquete extends SoftDeleteEntity {
   @Column({ type: 'varchar', length: 5, unique: true })
   codigoUrl: string;
 
@@ -67,12 +62,6 @@ export class Paquete {
 
   @Column({ type: 'boolean', default: true })
   activo: boolean;
-
-  @CreateDateColumn({ name: 'creado_en' })
-  creadoEn: Date;
-
-  @UpdateDateColumn({ name: 'actualizado_en' })
-  actualizadoEn: Date;
 
   @OneToMany(() => Itinerario, (itinerario) => itinerario.paquete, {
     cascade: true,

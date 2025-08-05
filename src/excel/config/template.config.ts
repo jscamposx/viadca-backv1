@@ -1,27 +1,18 @@
-/**
- * Configuración de la plantilla de Excel para paquetes
- * 
- * Este archivo contiene toda la configuración visual y de contenido
- * de la plantilla de Excel. Puedes modificar colores, textos, estilos
- * y estructura sin tocar la lógica de generación.
- */
-
 export const EXCEL_TEMPLATE_CONFIG = {
-  // === CONFIGURACIÓN DE COLORES ===
   colors: {
-    primary: '2E5BBA',        // Azul principal para títulos
-    secondary: '4472C4',      // Azul secundario para subtítulos
-    accent: 'E7F3FF',         // Azul claro para campos
-    white: 'FFFFFF',          // Blanco para texto
-    black: '000000',          // Negro para texto normal
+    primary: '2E5BBA', // Azul principal para títulos
+    secondary: '4472C4', // Azul secundario para subtítulos
+    accent: 'E7F3FF', // Azul claro para campos
+    white: 'FFFFFF', // Blanco para texto
+    black: '000000', // Negro para texto normal
   },
 
   // === CONFIGURACIÓN DE FUENTES ===
   fonts: {
-    primary: 'Arial',         // Fuente principal
-    titleSize: 16,            // Tamaño para títulos principales
-    subtitleSize: 14,         // Tamaño para subtítulos
-    contentSize: 11,          // Tamaño para contenido
+    primary: 'Arial', // Fuente principal
+    titleSize: 16, // Tamaño para títulos principales
+    subtitleSize: 14, // Tamaño para subtítulos
+    contentSize: 11, // Tamaño para contenido
   },
 
   // === CONFIGURACIÓN DE TEXTO ===
@@ -75,11 +66,11 @@ export const EXCEL_TEMPLATE_CONFIG = {
   // === CONFIGURACIÓN DE LAYOUT ===
   layout: {
     columnWidths: {
-      field: 25,              // Ancho columna de campos
-      value: 50,              // Ancho columna de valores
+      field: 25, // Ancho columna de campos
+      value: 50, // Ancho columna de valores
     },
     pageSetup: {
-      paperSize: 9,           // Tamaño de papel (A4)
+      paperSize: 9, // Tamaño de papel (A4)
       orientation: 'portrait', // Orientación
       margins: {
         left: 0.7,
@@ -91,8 +82,8 @@ export const EXCEL_TEMPLATE_CONFIG = {
       },
     },
     rowHeights: {
-      minimum: 20,            // Altura mínima de fila
-      lineMultiplier: 15,     // Multiplicador por línea de texto
+      minimum: 20, // Altura mínima de fila
+      lineMultiplier: 15, // Multiplicador por línea de texto
     },
   },
 
@@ -105,12 +96,12 @@ export const EXCEL_TEMPLATE_CONFIG = {
 
   // === CONFIGURACIÓN DE FORMATO ===
   formatting: {
-    locale: 'es-ES',          // Locale para formateo de números y fechas
+    locale: 'es-ES', // Locale para formateo de números y fechas
     currency: {
       symbol: '$',
       minimumFractionDigits: 2,
     },
-    textWrapThreshold: 80,    // Caracteres antes de hacer wrap
+    textWrapThreshold: 80, // Caracteres antes de hacer wrap
   },
 } as const;
 

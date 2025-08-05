@@ -16,6 +16,8 @@ import { Contacto } from './entities/contacto.entity';
 import { PaquetesModule } from './paquetes/paquetes.module';
 import { MayoristasModule } from './mayoristas/mayoristas.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
+import { CleanupModule } from './common/cleanup.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -69,6 +71,8 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module';
     PaquetesModule,
     MayoristasModule,
     CloudinaryModule,
+    CleanupModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService],
