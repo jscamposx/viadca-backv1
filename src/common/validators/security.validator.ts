@@ -15,15 +15,31 @@ export function IsNoSQLInjection(validationOptions?: ValidationOptions) {
         validate(value: any, args: ValidationArguments) {
           if (typeof value !== 'string') return true;
 
+          // Verificar si es una URL - las URLs pueden tener caracteres especiales legítimos
+          try {
+            const url = new URL(value);
+            if (url.protocol === 'http:' || url.protocol === 'https:') {
+              // Para URLs, solo verificar patrones muy específicos de SQL injection
+              const urlSqlPatterns = [
+                /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|UNION|SCRIPT)\b)/i,
+                /(;[\s]*\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER)\b)/i,
+                /(\-\-[\s]*\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER)\b)/i,
+              ];
+              return !urlSqlPatterns.some((pattern) => pattern.test(value));
+            }
+          } catch (e) {
+            // No es una URL válida, aplicar validación normal
+          }
+
+          // Para texto normal, aplicar validación más estricta
           const dangerousPatterns = [
             /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|UNION|SCRIPT)\b)/i,
-            /(;|\|\||&&|\|\&)/,
-            /(\-\-|\/\*|\*\/)/,
-            /(\'|\"|\`)/g,
-            /(\bOR\b|\bAND\b).*(\=|\>|\<)/i,
-            /(script|javascript|vbscript|onload|onerror)/i,
-            /(\<|\>|\%3C|\%3E)/,
-            /(eval|exec|system|cmd)/i,
+            /(;|\|\||&&)[\s]*\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER)\b/i,
+            /(\-\-|\/\*|\*\/)[\s]*\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER)\b/i,
+            /(\'|\"|\`)[\s]*\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER)\b/i,
+            /(\bOR\b|\bAND\b).*(\=|\>|\<).*\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER)\b/i,
+            /(script|javascript|vbscript)[\s]*:/i,
+            /(eval|exec|system|cmd)[\s]*\(/i,
           ];
 
           return !dangerousPatterns.some((pattern) => pattern.test(value));
@@ -47,6 +63,29 @@ export function IsCleanText(validationOptions?: ValidationOptions) {
         validate(value: any, args: ValidationArguments) {
           if (typeof value !== 'string') return true;
 
+          // Verificar si es una URL válida
+          try {
+            const url = new URL(value);
+            // Si es una URL válida, aplicar validaciones específicas para URLs
+            if (url.protocol === 'http:' || url.protocol === 'https:') {
+              // Para URLs, solo validar against patrones muy específicos de XSS
+              const urlDangerousPatterns = [
+                /javascript:/gi,
+                /vbscript:/gi,
+                /data:text\/html/gi,
+                /data:application\/javascript/gi,
+                /<script/gi,
+                /<iframe/gi,
+                /<object/gi,
+                /<embed/gi,
+              ];
+              return !urlDangerousPatterns.some((pattern) => pattern.test(value));
+            }
+          } catch (e) {
+            // No es una URL válida, aplicar validación de texto normal
+          }
+
+          // Para texto normal, aplicar validación estricta
           const cleanPatterns = [
             /\<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
             /\<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi,
@@ -63,7 +102,7 @@ export function IsCleanText(validationOptions?: ValidationOptions) {
           return !cleanPatterns.some((pattern) => pattern.test(value));
         },
         defaultMessage(args: ValidationArguments) {
-          return `${args.property} contiene contenido HTML o JavaScript no permitido`;
+          return `${args.property} contiene contenido no válido`;
         },
       },
     });

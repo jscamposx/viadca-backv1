@@ -1,11 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
+import * as path from 'path';
 
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
   private transporter: nodemailer.Transporter;
   private recentlySent = new Map<string, number>();
+  private readonly logoPath = path.join(__dirname, '../../assets/imagenes/logo.webp');
 
   constructor() {
     this.transporter = nodemailer.createTransport({
@@ -17,6 +19,32 @@ export class EmailService {
         pass: 'wbH7NAYdMnD1FvqI',
       },
     });
+  }
+
+  /**
+   * Genera el template base con el logo de la empresa
+   */
+  private getEmailTemplate(content: string, title: string, color: string = '#3498DB'): string {
+    return `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f9f9f9; padding: 20px;">
+        <!-- Header con Logo -->
+        <div style="text-align: center; background-color: white; padding: 20px; border-radius: 10px 10px 0 0; border-bottom: 3px solid ${color};">
+          <img src="cid:logo" alt="Viadca" style="max-width: 200px; height: auto;">
+        </div>
+        
+        <!-- Contenido -->
+        <div style="background-color: white; padding: 30px; border-radius: 0 0 10px 10px;">
+          <h2 style="color: ${color}; margin-top: 0; text-align: center;">${title}</h2>
+          ${content}
+        </div>
+        
+        <!-- Footer -->
+        <div style="text-align: center; color: #666; font-size: 12px; margin-top: 20px;">
+          <p>© ${new Date().getFullYear()} Viadca. Todos los derechos reservados.</p>
+          <p style="margin: 5px 0;">Sistema de gestión de viajes y paquetes turísticos</p>
+        </div>
+      </div>
+    `;
   }
 
   private wasRecentlySent(email: string, type: string): boolean {
@@ -33,9 +61,7 @@ export class EmailService {
     }
 
     this.recentlySent.set(key, Date.now());
-
     this.cleanOldEntries();
-
     return false;
   }
 
@@ -59,6 +85,24 @@ export class EmailService {
 
     const verificationUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verificar-email?token=${token}`;
 
+    const content = `
+      ${nombre ? `<p style="font-size: 16px;">Hola ${nombre},</p>` : '<p style="font-size: 16px;">Hola,</p>'}
+      <p>Gracias por registrarte en nuestra plataforma. Para completar tu registro, necesitas verificar tu correo electrónico.</p>
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${verificationUrl}" 
+           style="background-color: #3498DB; color: white; padding: 15px 40px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold; font-size: 16px;">
+          Verificar Correo
+        </a>
+      </div>
+      <p style="color: #666; font-size: 14px;">
+        Si no puedes hacer clic en el botón, copia y pega este enlace en tu navegador:<br>
+        <a href="${verificationUrl}" style="color: #3498DB;">${verificationUrl}</a>
+      </p>
+      <p style="color: #666; font-size: 12px; margin-top: 30px;">
+        Si no te registraste en Viadca, puedes ignorar este correo.
+      </p>
+    `;
+
     const mailOptions = {
       from: {
         name: 'Viadca Sistema',
@@ -66,26 +110,14 @@ export class EmailService {
       },
       to: email,
       subject: 'Verifica tu cuenta - Viadca',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #3498DB;">¡Bienvenido a Viadca!</h2>
-          ${nombre ? `<p>Hola ${nombre},</p>` : '<p>Hola,</p>'}
-          <p>Gracias por registrarte en nuestra plataforma. Para completar tu registro, necesitas verificar tu correo electrónico.</p>
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${verificationUrl}" 
-               style="background-color: #3498DB; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
-              Verificar Correo
-            </a>
-          </div>
-          <p style="color: #666; font-size: 12px;">
-            Si no puedes hacer clic en el botón, copia y pega este enlace en tu navegador:<br>
-            <a href="${verificationUrl}">${verificationUrl}</a>
-          </p>
-          <p style="color: #666; font-size: 12px; margin-top: 30px;">
-            Si no te registraste en Viadca, puedes ignorar este correo.
-          </p>
-        </div>
-      `,
+      html: this.getEmailTemplate(content, '¡Bienvenido a Viadca!', '#3498DB'),
+      attachments: [
+        {
+          filename: 'logo.webp',
+          path: this.logoPath,
+          cid: 'logo'
+        }
+      ]
     };
 
     try {
@@ -111,6 +143,27 @@ export class EmailService {
 
     const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/restablecer-contraseña?token=${token}`;
 
+    const content = `
+      ${nombre ? `<p style="font-size: 16px;">Hola ${nombre},</p>` : '<p style="font-size: 16px;">Hola,</p>'}
+      <p>Recibimos una solicitud para restablecer la contraseña de tu cuenta de Viadca.</p>
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${resetUrl}" 
+           style="background-color: #E74C3C; color: white; padding: 15px 40px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold; font-size: 16px;">
+          Restablecer Contraseña
+        </a>
+      </div>
+      <p style="color: #666; font-size: 14px;">
+        <strong>⚠️ Este enlace expirará en 1 hora por seguridad.</strong>
+      </p>
+      <p style="color: #666; font-size: 14px;">
+        Si no puedes hacer clic en el botón, copia y pega este enlace en tu navegador:<br>
+        <a href="${resetUrl}" style="color: #E74C3C;">${resetUrl}</a>
+      </p>
+      <p style="color: #666; font-size: 12px; margin-top: 30px;">
+        Si no solicitaste este restablecimiento, puedes ignorar este correo. Tu contraseña no se modificará.
+      </p>
+    `;
+
     const mailOptions = {
       from: {
         name: 'Viadca Sistema',
@@ -118,29 +171,14 @@ export class EmailService {
       },
       to: email,
       subject: 'Restablece tu contraseña - Viadca',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #E74C3C;">Restablecimiento de contraseña</h2>
-          ${nombre ? `<p>Hola ${nombre},</p>` : '<p>Hola,</p>'}
-          <p>Recibimos una solicitud para restablecer la contraseña de tu cuenta de Viadca.</p>
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${resetUrl}" 
-               style="background-color: #E74C3C; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
-              Restablecer Contraseña
-            </a>
-          </div>
-          <p style="color: #666; font-size: 12px;">
-            Este enlace expirará en 1 hora por seguridad.
-          </p>
-          <p style="color: #666; font-size: 12px;">
-            Si no puedes hacer clic en el botón, copia y pega este enlace en tu navegador:<br>
-            <a href="${resetUrl}">${resetUrl}</a>
-          </p>
-          <p style="color: #666; font-size: 12px; margin-top: 30px;">
-            Si no solicitaste este restablecimiento, puedes ignorar este correo. Tu contraseña no se modificará.
-          </p>
-        </div>
-      `,
+      html: this.getEmailTemplate(content, 'Restablecimiento de contraseña', '#E74C3C'),
+      attachments: [
+        {
+          filename: 'logo.webp',
+          path: this.logoPath,
+          cid: 'logo'
+        }
+      ]
     };
 
     try {
@@ -160,6 +198,27 @@ export class EmailService {
       return;
     }
 
+    const content = `
+      ${nombre ? `<p style="font-size: 16px;">Hola ${nombre},</p>` : '<p style="font-size: 16px;">Hola,</p>'}
+      <p>🎉 <strong>¡Tu correo electrónico ha sido verificado exitosamente!</strong></p>
+      <p>Ya puedes acceder a todas las funcionalidades de Viadca. Tu cuenta tiene el rol de <strong>pre-autorizado</strong>.</p>
+      <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #27AE60;">
+        <p style="margin: 0; color: #495057;">
+          <strong>Próximos pasos:</strong><br>
+          Un administrador revisará tu cuenta y podrá otorgarte acceso completo al sistema.
+        </p>
+      </div>
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/login" 
+           style="background-color: #27AE60; color: white; padding: 15px 40px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold; font-size: 16px;">
+          Iniciar Sesión
+        </a>
+      </div>
+      <p style="color: #666; font-size: 14px; text-align: center;">
+        ¡Gracias por unirte a Viadca! Estamos emocionados de tenerte en nuestra plataforma.
+      </p>
+    `;
+
     const mailOptions = {
       from: {
         name: 'Viadca Sistema',
@@ -167,23 +226,14 @@ export class EmailService {
       },
       to: email,
       subject: '¡Cuenta verificada exitosamente! - Viadca',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #27AE60;">¡Cuenta verificada!</h2>
-          ${nombre ? `<p>Hola ${nombre},</p>` : '<p>Hola,</p>'}
-          <p>Tu correo electrónico ha sido verificado exitosamente. Ya puedes acceder a todas las funcionalidades de Viadca.</p>
-          <p>Tu cuenta tiene el rol de <strong>pre-autorizado</strong>. Un administrador revisará tu cuenta y podrá otorgarte acceso completo al sistema.</p>
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/login" 
-               style="background-color: #27AE60; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
-              Iniciar Sesión
-            </a>
-          </div>
-          <p style="color: #666; font-size: 12px; margin-top: 30px;">
-            ¡Gracias por unirte a Viadca!
-          </p>
-        </div>
-      `,
+      html: this.getEmailTemplate(content, '¡Cuenta verificada!', '#27AE60'),
+      attachments: [
+        {
+          filename: 'logo.webp',
+          path: this.logoPath,
+          cid: 'logo'
+        }
+      ]
     };
 
     try {

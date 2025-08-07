@@ -222,6 +222,8 @@ export class UsuariosService
         rol: usuario.rol,
         nombre_completo: usuario.nombre_completo,
         email_verificado: usuario.email_verificado,
+        creadoEn: usuario.creadoEn, // ⭐ FECHA DE CREACIÓN AGREGADA
+        actualizadoEn: usuario.actualizadoEn,
       },
     };
   }

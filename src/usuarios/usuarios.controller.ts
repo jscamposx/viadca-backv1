@@ -55,7 +55,21 @@ export class UsuariosController {
   @Get('profile')
   @UseGuards(AuthGuard)
   async getProfile(@User() user) {
-    return this.usuariosService.findUserById(user.sub);
+    const usuario = await this.usuariosService.findUserById(user.sub);
+    if (!usuario) return null;
+    
+    // Mapeo explícito para frontend
+    return {
+      id: usuario.id,
+      usuario: usuario.usuario,
+      correo: usuario.correo,
+      rol: usuario.rol,
+      activo: usuario.activo,
+      email_verificado: usuario.email_verificado,
+      nombre_completo: usuario.nombre_completo,
+      creadoEn: usuario.creadoEn, // <-- FECHA DE CREACIÓN
+      actualizadoEn: usuario.actualizadoEn,
+    };
   }
 
   @Patch('profile')

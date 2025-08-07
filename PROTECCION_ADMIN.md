@@ -216,6 +216,31 @@ El `AdminGuard`:
 
 ## 👤 Actualización de Perfil de Usuario
 
+### Endpoint: `GET /usuarios/profile`
+- **Autenticación**: Requerida (`AuthGuard`)
+- **Autorización**: Cualquier usuario puede ver su propio perfil
+
+### Ejemplo de uso:
+```json
+GET /usuarios/profile
+Authorization: Bearer <jwt_token>
+```
+
+### Respuesta:
+```json
+{
+  "id": "95d4750c-6ccc-44d0-8bcb-f45c3f9e8f1c",
+  "usuario": "testuser",
+  "correo": "jscamposx@gmail.com",
+  "rol": "admin",
+  "activo": true,
+  "email_verificado": true,
+  "nombre_completo": "Jesus Campos",
+  "creadoEn": "2025-08-07T21:13:25.000Z",
+  "actualizadoEn": "2025-08-07T21:15:30.000Z"
+}
+```
+
 ### Endpoint: `PATCH /usuarios/profile`
 - **Autenticación**: Requerida (`AuthGuard`)
 - **Autorización**: Cualquier usuario puede actualizar su propio perfil
@@ -246,7 +271,9 @@ Content-Type: application/json
     "nombre_completo": "Nuevo Nombre",
     "rol": "admin",
     "activo": true,
-    "email_verificado": true
+    "email_verificado": true,
+    "creadoEn": "2025-08-07T21:13:25.000Z",
+    "actualizadoEn": "2025-08-07T21:15:30.000Z"
   }
 }
 ```
