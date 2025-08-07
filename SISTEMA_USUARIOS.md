@@ -50,7 +50,7 @@ El sistema crea automáticamente un usuario administrador:
 
 ## Endpoints de API
 
-### Autenticación Pública
+### 🌐 Endpoints Públicos (Autenticación)
 
 #### Registrar Usuario
 ```
@@ -126,7 +126,7 @@ POST /usuarios/reset-password
 }
 ```
 
-### Endpoints Autenticados
+### 👤 Endpoints Autenticados (Usuario)
 
 #### Obtener Perfil
 ```
@@ -134,23 +134,47 @@ GET /usuarios/profile
 Headers: Authorization: Bearer {jwt-token}
 ```
 
-### Endpoints de Administración (Solo Admin)
+### 🛡️ Endpoints de Administración (Solo Admin)
 
 #### Listar Todos los Usuarios
 ```
-GET /usuarios
+GET /admin/usuarios
+Headers: Authorization: Bearer {jwt-token}
+```
+
+#### Obtener Usuario por ID
+```
+GET /admin/usuarios/:id
 Headers: Authorization: Bearer {jwt-token}
 ```
 
 #### Listar Usuarios Eliminados
 ```
-GET /usuarios/deleted/list
+GET /admin/usuarios/deleted/list
 Headers: Authorization: Bearer {jwt-token}
+```
+
+#### Obtener Estadísticas de Usuarios
+```
+GET /admin/usuarios/stats/overview
+Headers: Authorization: Bearer {jwt-token}
+```
+**Response:**
+```json
+{
+  "total": 10,
+  "activos": 8,
+  "eliminados": 2,
+  "preAutorizados": 5,
+  "admins": 1,
+  "emailsVerificados": 7,
+  "noVerificados": 3
+}
 ```
 
 #### Actualizar Rol de Usuario
 ```
-PATCH /usuarios/:id/role
+PATCH /admin/usuarios/:id/role
 Headers: Authorization: Bearer {jwt-token}
 ```
 **Body:**
@@ -163,19 +187,19 @@ Headers: Authorization: Bearer {jwt-token}
 
 #### Eliminar Usuario (Soft Delete)
 ```
-PATCH /usuarios/:id/soft-delete
+PATCH /admin/usuarios/:id/soft-delete
 Headers: Authorization: Bearer {jwt-token}
 ```
 
 #### Restaurar Usuario
 ```
-PATCH /usuarios/:id/restore
+PATCH /admin/usuarios/:id/restore
 Headers: Authorization: Bearer {jwt-token}
 ```
 
 #### Eliminar Usuario Permanentemente
 ```
-POST /usuarios/:id/hard-delete
+POST /admin/usuarios/:id/hard-delete
 Headers: Authorization: Bearer {jwt-token}
 ```
 
@@ -252,13 +276,19 @@ const verifyEmail = async (token) => {
 ```javascript
 // Listar usuarios
 const getUsers = async () => {
-  const response = await authenticatedFetch('/usuarios');
+  const response = await authenticatedFetch('/admin/usuarios');
+  return response.json();
+};
+
+// Obtener estadísticas
+const getUserStats = async () => {
+  const response = await authenticatedFetch('/admin/usuarios/stats/overview');
   return response.json();
 };
 
 // Actualizar rol
 const updateUserRole = async (userId, roleData) => {
-  const response = await authenticatedFetch(`/usuarios/${userId}/role`, {
+  const response = await authenticatedFetch(`/admin/usuarios/${userId}/role`, {
     method: 'PATCH',
     body: JSON.stringify(roleData)
   });
@@ -267,7 +297,15 @@ const updateUserRole = async (userId, roleData) => {
 
 // Eliminar usuario
 const deleteUser = async (userId) => {
-  const response = await authenticatedFetch(`/usuarios/${userId}/soft-delete`, {
+  const response = await authenticatedFetch(`/admin/usuarios/${userId}/soft-delete`, {
+    method: 'PATCH'
+  });
+  return response.json();
+};
+
+// Restaurar usuario
+const restoreUser = async (userId) => {
+  const response = await authenticatedFetch(`/admin/usuarios/${userId}/restore`, {
     method: 'PATCH'
   });
   return response.json();

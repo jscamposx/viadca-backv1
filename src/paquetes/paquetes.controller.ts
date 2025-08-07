@@ -15,6 +15,8 @@ import {
   UseInterceptors,
   Header,
   NotFoundException,
+  ValidationPipe,
+  UseGuards,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { PaquetesService } from './paquetes.service';
@@ -24,6 +26,7 @@ import { CreateImagenDto } from './dto/create-imagen.dto';
 import { PaginationDto } from './dto/pagination.dto';
 import { LargePayloadInterceptor } from '../utils/large-payload.interceptor';
 import { ExcelService } from '../excel/excel.service';
+import { AdminGuard } from '../usuarios/guards/admin.guard';
 
 @Controller('paquetes')
 export class PaquetesPublicController {
@@ -43,10 +46,11 @@ export class PaquetesController {
   ) {}
 
   @Post()
+  @UseGuards(AdminGuard)
   @HttpCode(HttpStatus.CREATED)
   @UseInterceptors(LargePayloadInterceptor)
   async create(
-    @Body() createPaqueteDto: CreatePaqueteDto,
+    @Body(ValidationPipe) createPaqueteDto: CreatePaqueteDto,
     @Req() req: Request,
   ) {
     req.setTimeout(600000);
@@ -55,10 +59,11 @@ export class PaquetesController {
   }
 
   @Post(':id/imagenes')
+  @UseGuards(AdminGuard)
   @HttpCode(HttpStatus.CREATED)
   createImage(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() createImagenDto: CreateImagenDto,
+    @Body(ValidationPipe) createImagenDto: CreateImagenDto,
   ) {
     return this.paquetesService.createImage(id, createImagenDto);
   }
@@ -74,10 +79,11 @@ export class PaquetesController {
   }
 
   @Patch('/:id')
+  @UseGuards(AdminGuard)
   @UseInterceptors(LargePayloadInterceptor)
   async update(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() updatePaqueteDto: UpdatePaqueteDto,
+    @Body(ValidationPipe) updatePaqueteDto: UpdatePaqueteDto,
     @Req() req: Request,
   ) {
     req.setTimeout(600000);
@@ -88,6 +94,7 @@ export class PaquetesController {
   }
 
   @Delete(':id')
+  @UseGuards(AdminGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@Param('id', ParseUUIDPipe) id: string) {
     const success = await this.paquetesService.softDelete(id);
@@ -98,6 +105,7 @@ export class PaquetesController {
   }
 
   @Patch(':id/restore')
+  @UseGuards(AdminGuard)
   @HttpCode(HttpStatus.OK)
   async restore(@Param('id', ParseUUIDPipe) id: string) {
     const success = await this.paquetesService.restore(id);
@@ -115,6 +123,7 @@ export class PaquetesController {
   }
 
   @Delete(':id/hard')
+  @UseGuards(AdminGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
   async hardDelete(@Param('id', ParseUUIDPipe) id: string) {
     const success = await this.paquetesService.hardDelete(id);

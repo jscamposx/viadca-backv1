@@ -10,12 +10,7 @@ import { AdminGuard } from './guards/admin.guard';
 @Module({
   imports: [TypeOrmModule.forFeature([Usuario])],
   controllers: [UsuariosController],
-  providers: [
-    UsuariosService,
-    EmailService,
-    AuthGuard,
-    AdminGuard,
-  ],
+  providers: [UsuariosService, EmailService, AuthGuard, AdminGuard],
   exports: [UsuariosService, AuthGuard, AdminGuard],
 })
 export class UsuariosModule {}

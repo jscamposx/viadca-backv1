@@ -10,18 +10,22 @@ import {
   HttpStatus,
   ParseUUIDPipe,
   NotFoundException,
+  ValidationPipe,
+  UseGuards,
 } from '@nestjs/common';
 import { MayoristasService } from './mayoristas.service';
 import { CreateMayoristaDto } from './dto/create-mayorista.dto';
 import { UpdateMayoristaDto } from './dto/update-mayorista.dto';
+import { AdminGuard } from '../usuarios/guards/admin.guard';
 
 @Controller('admin/mayoristas')
 export class MayoristasController {
   constructor(private readonly mayoristasService: MayoristasService) {}
 
   @Post()
+  @UseGuards(AdminGuard)
   @HttpCode(HttpStatus.CREATED)
-  create(@Body() createMayoristaDto: CreateMayoristaDto) {
+  create(@Body(ValidationPipe) createMayoristaDto: CreateMayoristaDto) {
     return this.mayoristasService.create(createMayoristaDto);
   }
 
@@ -36,14 +40,16 @@ export class MayoristasController {
   }
 
   @Patch(':id')
+  @UseGuards(AdminGuard)
   update(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() updateMayoristaDto: UpdateMayoristaDto,
+    @Body(ValidationPipe) updateMayoristaDto: UpdateMayoristaDto,
   ) {
     return this.mayoristasService.update(id, updateMayoristaDto);
   }
 
   @Delete(':id')
+  @UseGuards(AdminGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@Param('id', ParseUUIDPipe) id: string) {
     const success = await this.mayoristasService.softDelete(id);
@@ -54,6 +60,7 @@ export class MayoristasController {
   }
 
   @Patch(':id/restore')
+  @UseGuards(AdminGuard)
   @HttpCode(HttpStatus.OK)
   async restore(@Param('id', ParseUUIDPipe) id: string) {
     const success = await this.mayoristasService.restore(id);
@@ -71,6 +78,7 @@ export class MayoristasController {
   }
 
   @Delete(':id/hard')
+  @UseGuards(AdminGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
   async hardDelete(@Param('id', ParseUUIDPipe) id: string) {
     const success = await this.mayoristasService.hardDelete(id);

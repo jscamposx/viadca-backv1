@@ -718,7 +718,6 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
       const batchResults = await Promise.all(batchPromises);
       destinos.push(...batchResults);
 
-      // Pequeña pausa entre lotes
       if (i + batchSize < destinosDto.length) {
         await new Promise((resolve) => setImmediate(resolve));
       }

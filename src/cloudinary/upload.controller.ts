@@ -9,15 +9,18 @@ import {
   Param,
   ParseUUIDPipe,
   Delete,
+  UseGuards,
 } from '@nestjs/common';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { CloudinaryService } from './cloudinary.service';
+import { AdminGuard } from '../usuarios/guards/admin.guard';
 
 @Controller('admin/upload')
 export class UploadController {
   constructor(private readonly cloudinaryService: CloudinaryService) {}
 
   @Post('image')
+  @UseGuards(AdminGuard)
   @UseInterceptors(FileInterceptor('file'))
   async uploadImage(
     @UploadedFile() file: Express.Multer.File,
@@ -39,6 +42,7 @@ export class UploadController {
   }
 
   @Post('images')
+  @UseGuards(AdminGuard)
   @UseInterceptors(FilesInterceptor('files', 10))
   async uploadMultipleImages(
     @UploadedFiles() files: Express.Multer.File[],
@@ -63,6 +67,7 @@ export class UploadController {
   }
 
   @Delete('image/:publicId')
+  @UseGuards(AdminGuard)
   async deleteImage(@Param('publicId') publicId: string) {
     const decodedPublicId = decodeURIComponent(publicId);
     await this.cloudinaryService.deleteFile(decodedPublicId);

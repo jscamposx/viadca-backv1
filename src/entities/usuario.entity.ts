@@ -4,7 +4,7 @@ import { SoftDeleteEntity } from './base/soft-delete.entity';
 export enum UsuarioRol {
   ADMIN = 'admin',
   PRE_AUTORIZADO = 'pre-autorizado',
-  USUARIO = 'usuario'
+  USUARIO = 'usuario',
 }
 
 @Entity('usuarios')

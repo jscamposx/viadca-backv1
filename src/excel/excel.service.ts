@@ -11,10 +11,9 @@ export class ExcelService {
     paquete: Paquete,
     clienteName?: string,
   ): Promise<Buffer> {
-    // Formatear los datos del paquete
+
     const formattedData = this.dataFormatter.formatPaqueteData(paquete);
 
-    // Crear la plantilla usando el método estático con validación
     const result = await PaqueteExcelTemplate.createTemplate(
       paquete,
       formattedData,

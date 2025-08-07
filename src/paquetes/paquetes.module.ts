@@ -13,6 +13,7 @@ import { Mayoristas } from '../entities/mayoristas.entity';
 import { Hotel } from '../entities/hotel.entity';
 import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 import { ExcelModule } from '../excel/excel.module';
+import { UsuariosModule } from '../usuarios/usuarios.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { ExcelModule } from '../excel/excel.module';
     ]),
     CloudinaryModule,
     ExcelModule,
+    UsuariosModule,
   ],
   controllers: [PaquetesController, PaquetesPublicController],
   providers: [PaquetesService],

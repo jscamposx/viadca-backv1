@@ -1,4 +1,9 @@
-import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+} from '@nestjs/common';
 import { AuthGuard } from './auth.guard';
 import { UsuarioRol } from '../../entities/usuario.entity';
 
@@ -7,7 +12,7 @@ export class AdminGuard extends AuthGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     // Primero verificar autenticación
     const isAuthenticated = super.canActivate(context);
-    
+
     if (!isAuthenticated) {
       return false;
     }
@@ -16,7 +21,9 @@ export class AdminGuard extends AuthGuard implements CanActivate {
     const user = request.user;
 
     if (user.rol !== UsuarioRol.ADMIN) {
-      throw new ForbiddenException('Acceso denegado. Se requieren permisos de administrador');
+      throw new ForbiddenException(
+        'Acceso denegado. Se requieren permisos de administrador',
+      );
     }
 
     return true;

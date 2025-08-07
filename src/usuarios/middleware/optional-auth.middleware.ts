@@ -11,12 +11,12 @@ export class OptionalAuthMiddleware implements NestMiddleware {
 
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.substring(7);
-      
+
       try {
         const payload = this.usuariosService.verifyToken(token);
         req['user'] = payload;
       } catch (error) {
-        // Token inválido, pero no fallar - simplemente no agregar usuario
+
       }
     }
 
