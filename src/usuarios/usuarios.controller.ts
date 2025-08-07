@@ -23,24 +23,20 @@ import { User } from './decorators/user.decorator';
 export class UsuariosController {
   constructor(private readonly usuariosService: UsuariosService) {}
 
-
   @Post('register')
   async register(@Body(ValidationPipe) createUsuarioDto: CreateUsuarioDto) {
     return this.usuariosService.register(createUsuarioDto);
   }
 
- 
   @Post('verify-email')
   async verifyEmail(@Body(ValidationPipe) verifyEmailDto: VerifyEmailDto) {
     return this.usuariosService.verifyEmail(verifyEmailDto);
   }
 
- 
   @Post('login')
   async login(@Body(ValidationPipe) loginDto: LoginDto) {
     return this.usuariosService.login(loginDto);
   }
-
 
   @Post('forgot-password')
   async forgotPassword(
@@ -48,7 +44,6 @@ export class UsuariosController {
   ) {
     return this.usuariosService.forgotPassword(forgotPasswordDto);
   }
-
 
   @Post('reset-password')
   async resetPassword(
@@ -62,7 +57,6 @@ export class UsuariosController {
   async getProfile(@User() user) {
     return this.usuariosService.findUserById(user.sub);
   }
-
 
   @Patch('profile')
   @UseGuards(AuthGuard)

@@ -23,14 +23,12 @@ export class AdminUsuariosController {
     return this.usuariosService.findAllUsers();
   }
 
-
   @Get(':id')
   @UseGuards(AdminGuard)
   async findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.usuariosService.findUserById(id);
   }
 
- 
   @Get('deleted/list')
   @UseGuards(AdminGuard)
   async findDeleted() {
@@ -46,7 +44,6 @@ export class AdminUsuariosController {
     return this.usuariosService.updateUserRole(id, updateUsuarioRolDto);
   }
 
-
   @Patch(':id/soft-delete')
   @UseGuards(AdminGuard)
   async softDelete(@Param('id', ParseUUIDPipe) id: string) {
@@ -54,7 +51,6 @@ export class AdminUsuariosController {
     return { message: 'Usuario eliminado exitosamente' };
   }
 
- 
   @Patch(':id/restore')
   @UseGuards(AdminGuard)
   async restore(@Param('id', ParseUUIDPipe) id: string) {
@@ -62,7 +58,6 @@ export class AdminUsuariosController {
     return { message: 'Usuario restaurado exitosamente' };
   }
 
- 
   @Post(':id/hard-delete')
   @UseGuards(AdminGuard)
   async hardDelete(@Param('id', ParseUUIDPipe) id: string) {
@@ -70,7 +65,6 @@ export class AdminUsuariosController {
     return { message: 'Usuario eliminado permanentemente' };
   }
 
- 
   @Get('stats/overview')
   @UseGuards(AdminGuard)
   async getStats() {

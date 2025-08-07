@@ -11,7 +11,6 @@ export class ExcelService {
     paquete: Paquete,
     clienteName?: string,
   ): Promise<Buffer> {
-
     const formattedData = this.dataFormatter.formatPaqueteData(paquete);
 
     const result = await PaqueteExcelTemplate.createTemplate(

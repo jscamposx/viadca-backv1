@@ -55,7 +55,6 @@ export class UsuariosService
     await this.createMainAdmin();
   }
 
-
   private async createMainAdmin(): Promise<void> {
     try {
       const adminExiste = await this.repository.findOne({
@@ -91,11 +90,9 @@ export class UsuariosService
     }
   }
 
- 
   async register(
     createUsuarioDto: CreateUsuarioDto,
   ): Promise<{ message: string }> {
-
     const usuarioExiste = await this.repository.findOne({
       where: [
         { usuario: createUsuarioDto.usuario },
@@ -114,7 +111,6 @@ export class UsuariosService
 
     const verificationToken = crypto.randomBytes(32).toString('hex');
 
-
     const nuevoUsuario = this.repository.create({
       ...createUsuarioDto,
       contrasena: hashedPassword,
@@ -126,7 +122,6 @@ export class UsuariosService
 
     await this.repository.save(nuevoUsuario);
 
-
     try {
       await this.emailService.sendVerificationEmail(
         createUsuarioDto.correo,
@@ -135,7 +130,6 @@ export class UsuariosService
       );
     } catch (error) {
       this.logger.error('Error enviando email de verificación:', error);
-
     }
 
     return {
@@ -162,7 +156,6 @@ export class UsuariosService
     usuario.email_verificado = true;
     usuario.token_verificacion = null;
 
-  
     await this.repository.manager.transaction(
       async (transactionalEntityManager) => {
         await transactionalEntityManager.save(usuario);
@@ -176,14 +169,12 @@ export class UsuariosService
           );
         } catch (error) {
           this.logger.error('Error enviando email de bienvenida:', error);
-        
         }
       },
     );
 
     return { message: 'Correo verificado exitosamente' };
   }
-
 
   async login(
     loginDto: LoginDto,
@@ -210,7 +201,6 @@ export class UsuariosService
       );
     }
 
- 
     const payload: JwtPayload = {
       sub: usuario.id,
       usuario: usuario.usuario,
@@ -244,17 +234,15 @@ export class UsuariosService
     });
 
     if (!usuario) {
-
       return {
         message:
           'Si el correo existe, recibirás un enlace para restablecer tu contraseña',
       };
     }
 
- 
     const resetToken = crypto.randomBytes(32).toString('hex');
     const expireTime = new Date();
-    expireTime.setHours(expireTime.getHours() + 1); 
+    expireTime.setHours(expireTime.getHours() + 1);
 
     usuario.token_recuperacion = resetToken;
     usuario.token_recuperacion_expira = expireTime;
@@ -293,7 +281,6 @@ export class UsuariosService
       );
     }
 
-
     const hashedPassword = await bcrypt.hash(
       resetPasswordDto.nuevaContrasena,
       this.SALT_ROUNDS,
@@ -306,7 +293,6 @@ export class UsuariosService
     return { message: 'Contraseña restablecida exitosamente' };
   }
 
- 
   async findAllUsers(): Promise<Usuario[]> {
     return this.repository.find({
       select: [
@@ -324,7 +310,6 @@ export class UsuariosService
     });
   }
 
-
   async updateUserRole(
     id: string,
     updateUsuarioRolDto: UpdateUsuarioRolDto,
@@ -334,7 +319,6 @@ export class UsuariosService
     if (!usuario) {
       throw new NotFoundException('Usuario no encontrado');
     }
-
 
     if (
       usuario.usuario === 'admin' &&
@@ -349,7 +333,6 @@ export class UsuariosService
     return this.repository.save(usuario);
   }
 
-
   verifyToken(token: string): JwtPayload {
     try {
       return jwt.verify(token, this.JWT_SECRET) as JwtPayload;
@@ -357,7 +340,6 @@ export class UsuariosService
       throw new UnauthorizedException('Token inválido');
     }
   }
-
 
   async findUserById(id: string): Promise<Usuario | null> {
     return this.repository.findOne({
@@ -376,18 +358,15 @@ export class UsuariosService
     });
   }
 
-
   async updateProfile(
     userId: string,
     updatePerfilDto: UpdatePerfilDto,
   ): Promise<{ message: string; usuario: Partial<Usuario> }> {
-
     const usuario = await this.repository.findOne({ where: { id: userId } });
 
     if (!usuario) {
       throw new NotFoundException('Usuario no encontrado');
     }
-
 
     if (updatePerfilDto.email && updatePerfilDto.email !== usuario.correo) {
       const existeEmail = await this.repository.findOne({
@@ -403,20 +382,17 @@ export class UsuariosService
         );
       }
 
-     
       const verificationToken = crypto.randomBytes(32).toString('hex');
       updatePerfilDto.email = updatePerfilDto.email;
 
-
       Object.assign(usuario, updatePerfilDto, {
         correo: updatePerfilDto.email,
-        email_verificado: false, 
+        email_verificado: false,
         token_verificacion: verificationToken,
       });
 
       await this.repository.save(usuario);
 
-    
       try {
         await this.emailService.sendVerificationEmail(
           updatePerfilDto.email,
@@ -443,14 +419,12 @@ export class UsuariosService
         usuario: usuarioSeguro,
       };
     } else {
-    
       Object.assign(usuario, updatePerfilDto, {
         correo: updatePerfilDto.email || usuario.correo,
         nombre_completo: updatePerfilDto.nombre || usuario.nombre_completo,
       });
 
       await this.repository.save(usuario);
-
 
       const {
         contrasena,

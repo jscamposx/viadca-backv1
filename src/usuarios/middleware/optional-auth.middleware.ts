@@ -15,9 +15,7 @@ export class OptionalAuthMiddleware implements NestMiddleware {
       try {
         const payload = this.usuariosService.verifyToken(token);
         req['user'] = payload;
-      } catch (error) {
-
-      }
+      } catch (error) {}
     }
 
     next();

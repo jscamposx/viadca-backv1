@@ -19,30 +19,26 @@ export class EmailService {
     });
   }
 
-
   private wasRecentlySent(email: string, type: string): boolean {
     const key = `${email}:${type}`;
     const lastSent = this.recentlySent.get(key);
 
     if (lastSent) {
       const timeDiff = Date.now() - lastSent;
- 
+
       if (timeDiff < 30000) {
         this.logger.warn(`Email ${type} duplicado bloqueado para: ${email}`);
         return true;
       }
     }
 
-
     this.recentlySent.set(key, Date.now());
 
- 
     this.cleanOldEntries();
 
     return false;
   }
 
- 
   private cleanOldEntries(): void {
     const fiveMinutesAgo = Date.now() - 300000;
     for (const [key, timestamp] of this.recentlySent.entries()) {
@@ -58,7 +54,7 @@ export class EmailService {
     nombre?: string,
   ): Promise<void> {
     if (this.wasRecentlySent(email, 'verification')) {
-      return; 
+      return;
     }
 
     const verificationUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verificar-email?token=${token}`;
@@ -160,7 +156,6 @@ export class EmailService {
   }
 
   async sendWelcomeEmail(email: string, nombre?: string): Promise<void> {
-
     if (this.wasRecentlySent(email, 'welcome')) {
       return;
     }
@@ -199,7 +194,6 @@ export class EmailService {
         `Error enviando email de bienvenida a ${email}:`,
         error,
       );
-   
     }
   }
 }

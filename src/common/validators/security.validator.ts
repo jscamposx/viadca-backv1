@@ -15,7 +15,6 @@ export function IsNoSQLInjection(validationOptions?: ValidationOptions) {
         validate(value: any, args: ValidationArguments) {
           if (typeof value !== 'string') return true;
 
-      
           const dangerousPatterns = [
             /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|UNION|SCRIPT)\b)/i,
             /(;|\|\||&&|\|\&)/,
@@ -48,7 +47,6 @@ export function IsCleanText(validationOptions?: ValidationOptions) {
         validate(value: any, args: ValidationArguments) {
           if (typeof value !== 'string') return true;
 
-      
           const cleanPatterns = [
             /\<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
             /\<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi,

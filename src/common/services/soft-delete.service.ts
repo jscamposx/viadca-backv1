@@ -34,14 +34,12 @@ export abstract class SoftDeleteService<T extends SoftDeleteEntity> {
     });
   }
 
-
   async findAllWithDeleted(options?: FindManyOptions<T>): Promise<T[]> {
     return this.repository.find({
       ...options,
       withDeleted: true,
     });
   }
-
 
   async findOneWithDeleted(
     id: string,
@@ -57,7 +55,6 @@ export abstract class SoftDeleteService<T extends SoftDeleteEntity> {
     });
   }
 
- 
   async findDeleted(options?: FindManyOptions<T>): Promise<T[]> {
     return this.repository.find({
       ...options,
@@ -69,7 +66,6 @@ export abstract class SoftDeleteService<T extends SoftDeleteEntity> {
     });
   }
 
- 
   async create(data: DeepPartial<T>): Promise<T> {
     const entity = this.repository.create(data);
     return this.repository.save(entity);
@@ -85,30 +81,25 @@ export abstract class SoftDeleteService<T extends SoftDeleteEntity> {
     return this.repository.save(entity);
   }
 
-
   async softDelete(id: string): Promise<boolean> {
     const result = await this.repository.softDelete(id);
     return (result.affected || 0) > 0;
   }
 
- 
   async softDeleteMany(ids: string[]): Promise<number> {
     const result = await this.repository.softDelete(ids);
     return result.affected || 0;
   }
 
-  
   async restore(id: string): Promise<boolean> {
     const result = await this.repository.restore(id);
     return (result.affected || 0) > 0;
   }
 
-
   async restoreMany(ids: string[]): Promise<number> {
     const result = await this.repository.restore(ids);
     return result.affected || 0;
   }
-
 
   async hardDelete(id: string): Promise<boolean> {
     const result = await this.repository.delete(id);
@@ -125,14 +116,12 @@ export abstract class SoftDeleteService<T extends SoftDeleteEntity> {
     });
   }
 
- 
   async countWithDeleted(options?: FindManyOptions<T>): Promise<number> {
     return this.repository.count({
       ...options,
       withDeleted: true,
     });
   }
-
 
   async exists(id: string): Promise<boolean> {
     const count = await this.repository.count({
