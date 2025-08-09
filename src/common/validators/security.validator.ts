@@ -15,11 +15,9 @@ export function IsNoSQLInjection(validationOptions?: ValidationOptions) {
         validate(value: any, args: ValidationArguments) {
           if (typeof value !== 'string') return true;
 
-          // Verificar si es una URL - las URLs pueden tener caracteres especiales legítimos
           try {
             const url = new URL(value);
             if (url.protocol === 'http:' || url.protocol === 'https:') {
-              // Para URLs, solo verificar patrones muy específicos de SQL injection
               const urlSqlPatterns = [
                 /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|UNION|SCRIPT)\b)/i,
                 /(;[\s]*\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER)\b)/i,
@@ -27,11 +25,8 @@ export function IsNoSQLInjection(validationOptions?: ValidationOptions) {
               ];
               return !urlSqlPatterns.some((pattern) => pattern.test(value));
             }
-          } catch (e) {
-            // No es una URL válida, aplicar validación normal
-          }
+          } catch (e) {}
 
-          // Para texto normal, aplicar validación más estricta
           const dangerousPatterns = [
             /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|UNION|SCRIPT)\b)/i,
             /(;|\|\||&&)[\s]*\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER)\b/i,
@@ -63,12 +58,10 @@ export function IsCleanText(validationOptions?: ValidationOptions) {
         validate(value: any, args: ValidationArguments) {
           if (typeof value !== 'string') return true;
 
-          // Verificar si es una URL válida
           try {
             const url = new URL(value);
-            // Si es una URL válida, aplicar validaciones específicas para URLs
+
             if (url.protocol === 'http:' || url.protocol === 'https:') {
-              // Para URLs, solo validar against patrones muy específicos de XSS
               const urlDangerousPatterns = [
                 /javascript:/gi,
                 /vbscript:/gi,
@@ -79,13 +72,12 @@ export function IsCleanText(validationOptions?: ValidationOptions) {
                 /<object/gi,
                 /<embed/gi,
               ];
-              return !urlDangerousPatterns.some((pattern) => pattern.test(value));
+              return !urlDangerousPatterns.some((pattern) =>
+                pattern.test(value),
+              );
             }
-          } catch (e) {
-            // No es una URL válida, aplicar validación de texto normal
-          }
+          } catch (e) {}
 
-          // Para texto normal, aplicar validación estricta
           const cleanPatterns = [
             /\<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
             /\<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi,

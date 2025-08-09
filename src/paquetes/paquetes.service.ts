@@ -813,4 +813,67 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
 
     return imagenes;
   }
+
+  async findOnePublicByCodigoUrl(codigoUrl: string): Promise<any> {
+    const paquete = await this.findOneByCodigoUrl(codigoUrl);
+
+    if (!paquete.activo) {
+      return { activo: false };
+    }
+
+    const formatDate = (d: Date | string | null | undefined) =>
+      d ? new Date(d).toISOString().split('T')[0] : null;
+
+    const toDecimalString = (v: any) =>
+      v === null || v === undefined || v === '' ? null : Number(v).toFixed(2);
+
+    const mapImagen = (img: Imagen) => ({
+      orden: img.orden,
+      tipo: img.tipo,
+      contenido: img.contenido,
+      cloudinary_public_id: img.cloudinary_public_id ?? null,
+      cloudinary_url: img.cloudinary_url ?? null,
+      mime_type: (img as any).mime_type ?? null,
+      nombre: (img as any).nombre ?? null,
+    });
+
+    return {
+      codigoUrl: paquete.codigoUrl,
+      titulo: paquete.titulo,
+      origen: paquete.origen,
+      origen_lat: paquete.origen_lat,
+      origen_lng: paquete.origen_lng,
+      fecha_inicio: formatDate(paquete.fecha_inicio),
+      fecha_fin: formatDate(paquete.fecha_fin),
+      duracion_dias: paquete.duracion_dias,
+      incluye: paquete.incluye,
+      no_incluye: paquete.no_incluye,
+      requisitos: paquete.requisitos,
+      descuento: toDecimalString(paquete.descuento),
+      anticipo: toDecimalString(paquete.anticipo),
+      precio_total: toDecimalString(paquete.precio_total),
+      notas: paquete.notas,
+      activo: paquete.activo,
+      itinerarios: (paquete.itinerarios || []).map((i) => ({
+        dia_numero: i.dia_numero,
+        descripcion: i.descripcion,
+      })),
+      hotel: paquete.hotel
+        ? {
+            nombre: paquete.hotel.nombre,
+            estrellas: paquete.hotel.estrellas,
+            isCustom: paquete.hotel.isCustom,
+            total_calificaciones: paquete.hotel.total_calificaciones,
+            imagenes: (paquete.hotel.imagenes || []).map(mapImagen),
+          }
+        : null,
+      destinos: (paquete.destinos || []).map((d) => ({
+        destino: d.destino,
+        destino_lng: d.destino_lng,
+        destino_lat: d.destino_lat,
+        orden: d.orden,
+      })),
+      imagenes: (paquete.imagenes || []).map(mapImagen),
+    };
+  }
 }

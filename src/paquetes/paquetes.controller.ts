@@ -27,14 +27,16 @@ import { PaginationDto } from './dto/pagination.dto';
 import { LargePayloadInterceptor } from '../utils/large-payload.interceptor';
 import { ExcelService } from '../excel/excel.service';
 import { AdminGuard } from '../usuarios/guards/admin.guard';
+import { Throttle } from '@nestjs/throttler';
 
 @Controller('paquetes')
 export class PaquetesPublicController {
   constructor(private readonly paquetesService: PaquetesService) {}
 
   @Get(':codigoUrl')
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
   findOneByCodigoUrl(@Param('codigoUrl') codigoUrl: string) {
-    return this.paquetesService.findOneByCodigoUrl(codigoUrl);
+    return this.paquetesService.findOnePublicByCodigoUrl(codigoUrl);
   }
 }
 

@@ -3,6 +3,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 
 import { Usuario } from './entities/usuario.entity';
 import { Paquete } from './paquetes/entidades/paquete.entity';
@@ -30,6 +32,17 @@ import { AdminModule } from './admin/admin.module';
         '.env',
       ],
     }),
+
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60_000, // 60s ventana
+        limit: 60, // 60 req/min por IP
+      },
+      {
+        ttl: 10_000, // 10s ventana corta
+        limit: 20, // ráfagas cortas
+      },
+    ]),
 
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
@@ -77,6 +90,6 @@ import { AdminModule } from './admin/admin.module';
     AdminModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
 export class AppModule {}

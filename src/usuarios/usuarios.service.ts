@@ -222,7 +222,7 @@ export class UsuariosService
         rol: usuario.rol,
         nombre_completo: usuario.nombre_completo,
         email_verificado: usuario.email_verificado,
-        creadoEn: usuario.creadoEn, // ⭐ FECHA DE CREACIÓN AGREGADA
+        creadoEn: usuario.creadoEn,
         actualizadoEn: usuario.actualizadoEn,
       },
     };
@@ -385,13 +385,12 @@ export class UsuariosService
       }
 
       const verificationToken = crypto.randomBytes(32).toString('hex');
-      updatePerfilDto.email = updatePerfilDto.email;
 
-      Object.assign(usuario, updatePerfilDto, {
-        correo: updatePerfilDto.email,
-        email_verificado: false,
-        token_verificacion: verificationToken,
-      });
+      usuario.nombre_completo =
+        updatePerfilDto.nombre || usuario.nombre_completo;
+      usuario.correo = updatePerfilDto.email;
+      usuario.email_verificado = false;
+      usuario.token_verificacion = verificationToken;
 
       await this.repository.save(usuario);
 
@@ -399,7 +398,7 @@ export class UsuariosService
         await this.emailService.sendVerificationEmail(
           updatePerfilDto.email,
           verificationToken,
-          updatePerfilDto.nombre || usuario.nombre_completo,
+          usuario.nombre_completo,
         );
       } catch (error) {
         this.logger.warn(
@@ -412,16 +411,21 @@ export class UsuariosService
         contrasena,
         token_verificacion,
         token_recuperacion,
+        token_recuperacion_expira,
         ...usuarioSeguro
       } = usuario;
 
       return {
         message:
           'Perfil actualizado exitosamente. Se ha enviado un email de verificación a tu nueva dirección.',
-        usuario: usuarioSeguro,
+        usuario: {
+          ...usuarioSeguro,
+          creadoEn: usuario.creadoEn,
+          actualizadoEn: usuario.actualizadoEn,
+        },
       };
     } else {
-      Object.assign(usuario, updatePerfilDto, {
+      Object.assign(usuario, {
         correo: updatePerfilDto.email || usuario.correo,
         nombre_completo: updatePerfilDto.nombre || usuario.nombre_completo,
       });
@@ -432,12 +436,17 @@ export class UsuariosService
         contrasena,
         token_verificacion,
         token_recuperacion,
+        token_recuperacion_expira,
         ...usuarioSeguro
       } = usuario;
 
       return {
         message: 'Perfil actualizado exitosamente',
-        usuario: usuarioSeguro,
+        usuario: {
+          ...usuarioSeguro,
+          creadoEn: usuario.creadoEn,
+          actualizadoEn: usuario.actualizadoEn,
+        },
       };
     }
   }

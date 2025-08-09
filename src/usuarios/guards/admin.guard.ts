@@ -10,7 +10,6 @@ import { UsuarioRol } from '../../entities/usuario.entity';
 @Injectable()
 export class AdminGuard extends AuthGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
-    // Primero verificar autenticación
     const isAuthenticated = super.canActivate(context);
 
     if (!isAuthenticated) {

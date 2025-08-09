@@ -58,8 +58,8 @@ export class CleanupService {
     }
   }
 
-  async hardDeleteExpiredRecords(): Promise<void> {
-    if (!this.config.enableAutoHardDelete) {
+  async hardDeleteExpiredRecords(force: boolean = false): Promise<void> {
+    if (!force && !this.config.enableAutoHardDelete) {
       this.logger.log('Eliminación automática de registros deshabilitada');
       return;
     }
@@ -110,8 +110,8 @@ export class CleanupService {
     }
   }
 
-  async cleanupOrphanedImages(): Promise<void> {
-    if (!this.config.enableAutoImageCleanup) {
+  async cleanupOrphanedImages(force: boolean = false): Promise<void> {
+    if (!force && !this.config.enableAutoImageCleanup) {
       this.logger.log('Limpieza automática de imágenes deshabilitada');
       return;
     }
@@ -222,8 +222,8 @@ export class CleanupService {
         )
         .getCount();
 
-      await this.hardDeleteExpiredRecords();
-      await this.cleanupOrphanedImages();
+      await this.hardDeleteExpiredRecords(true);
+      await this.cleanupOrphanedImages(true);
 
       return {
         hardDeletedRecords: {

@@ -96,3 +96,19 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 ## License
 
 Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+
+## Rate limiting
+
+Se ha habilitado rate limiting global usando `@nestjs/throttler` con:
+- 60 req/min por IP (ventana 60s)
+- 20 req/10s por IP para ráfagas
+
+Endpoints sensibles tienen límites más estrictos:
+- POST /usuarios/login, /usuarios/register, /usuarios/forgot-password, /usuarios/reset-password → 5 req/min por IP
+- GET /usuarios/profile → 60 req/min
+- PATCH /usuarios/profile → 20 req/min
+
+Ajustes en `AppModule` (ThrottlerModule.forRoot) y por endpoint con `@Throttle`.
+
+Para servidores de 500MB RAM, estos valores son conservadores y protegen de abuso sin afectar usuarios legítimos.
+ pnpm add -g pnpm 
