@@ -844,21 +844,25 @@ export class PaqueteExcelTemplate {
       },
     ];
 
-    await this.worksheet.protect('viadca2025', {
-      selectLockedCells: true,
-      selectUnlockedCells: true,
-      formatCells: false,
-      formatColumns: false,
-      formatRows: false,
-      insertRows: false,
-      insertColumns: false,
-      insertHyperlinks: false,
-      deleteRows: false,
-      deleteColumns: false,
-      sort: false,
-      autoFilter: false,
-      pivotTables: false,
-    });
+    // Habilitar o deshabilitar protección por variable de entorno (mejora compatibilidad macOS)
+    const enableProtection = process.env.EXCEL_PROTECT !== 'false';
+    if (enableProtection) {
+      await this.worksheet.protect('viadca2025', {
+        selectLockedCells: true,
+        selectUnlockedCells: true,
+        formatCells: false,
+        formatColumns: false,
+        formatRows: false,
+        insertRows: false,
+        insertColumns: false,
+        insertHyperlinks: false,
+        deleteRows: false,
+        deleteColumns: false,
+        sort: false,
+        autoFilter: false,
+        pivotTables: false,
+      });
+    }
 
     this.worksheet.pageSetup.margins = {
       left: 0.3,
@@ -872,8 +876,14 @@ export class PaqueteExcelTemplate {
     this.worksheet.pageSetup.printArea = `A1:D${this.currentRow + 5}`;
     this.worksheet.pageSetup.scale = 85;
 
-    const buffer = await this.workbook.xlsx.writeBuffer();
-    return Buffer.from(buffer);
+    // Forzar recálculo al abrir y mejorar compatibilidad
+    this.workbook.calcProperties.fullCalcOnLoad = true;
+
+    const buffer = await this.workbook.xlsx.writeBuffer({
+      useStyles: true,
+      useSharedStrings: true,
+    } as ExcelJS.stream.xlsx.WorkbookWriterOptions);
+    return Buffer.from(buffer as ArrayBuffer);
   }
 
   private addCustomDataValidation(cellRef: string, options: string[]): void {
