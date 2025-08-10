@@ -18,7 +18,7 @@ async function bootstrap() {
     origin: isProd ? [process.env.FRONTEND_URL as string] : true,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control'],
+    // allowedHeaders eliminado para que cors refleje Access-Control-Request-Headers automáticamente
   });
 
   app.use(cookieParser());
