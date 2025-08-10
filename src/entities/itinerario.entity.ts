@@ -19,7 +19,8 @@ export class Itinerario {
   @Column({ type: 'int', unsigned: true })
   dia_numero: number;
 
-  @Column({ type: 'text' })
+  // Aumentar capacidad al máximo para descripciones largas
+  @Column({ type: 'longtext' })
   descripcion: string;
 
   @ManyToOne(() => Paquete, (paquete) => paquete.itinerarios, {

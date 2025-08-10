@@ -14,11 +14,17 @@ export class AuthGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const authHeader = request.headers.authorization;
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw new UnauthorizedException('Token de acceso requerido');
+    let token: string | undefined;
+
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7);
+    } else if (request.cookies?.access_token) {
+      token = request.cookies.access_token;
     }
 
-    const token = authHeader.substring(7);
+    if (!token) {
+      throw new UnauthorizedException('Token de acceso requerido');
+    }
 
     try {
       const payload = this.usuariosService.verifyToken(token);

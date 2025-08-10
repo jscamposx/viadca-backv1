@@ -6,7 +6,10 @@ import {
   Body,
   UseGuards,
   ValidationPipe,
+  Res,
+  HttpCode,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { UsuariosService } from './usuarios.service';
 import { CreateUsuarioDto } from './dto/create-usuario.dto';
 import { UpdatePerfilDto } from './dto/update-perfil.dto';
@@ -37,8 +40,30 @@ export class UsuariosController {
 
   @Post('login')
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
-  async login(@Body(ValidationPipe) loginDto: LoginDto) {
-    return this.usuariosService.login(loginDto);
+  @HttpCode(200)
+  async login(@Body(ValidationPipe) loginDto: LoginDto, @Res({ passthrough: true }) res: Response) {
+    const result = await this.usuariosService.login(loginDto);
+
+    const isProd = process.env.NODE_ENV === 'production';
+    res.cookie('access_token', result.access_token, {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: isProd ? 'none' : 'lax',
+      maxAge: 24 * 60 * 60 * 1000, // 24h
+      path: '/',
+    });
+
+    // Forzar uso de cookie: no enviar token en el body
+    delete (result as any).access_token;
+
+    return result;
+  }
+
+  @Post('logout')
+  @HttpCode(200)
+  async logout(@Res({ passthrough: true }) res: Response) {
+    res.clearCookie('access_token', { path: '/' });
+    return { message: 'Sesión cerrada' };
   }
 
   @Post('forgot-password')

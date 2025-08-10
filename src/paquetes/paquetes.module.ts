@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { CacheModule } from '@nestjs/cache-manager';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Paquete } from './entidades/paquete.entity';
 import {
@@ -28,6 +29,7 @@ import { UsuariosModule } from '../usuarios/usuarios.module';
     CloudinaryModule,
     ExcelModule,
     UsuariosModule,
+    CacheModule.register({ ttl: 30, max: 500 }),
   ],
   controllers: [PaquetesController, PaquetesPublicController],
   providers: [PaquetesService],

@@ -39,13 +39,13 @@ export class Paquete extends SoftDeleteEntity {
   @Column({ type: 'int', unsigned: true })
   duracion_dias: number;
 
-  @Column({ type: 'text', nullable: true })
+  @Column({ type: 'longtext', nullable: true })
   incluye: string | null;
 
-  @Column({ type: 'text', nullable: true })
+  @Column({ type: 'longtext', nullable: true })
   no_incluye: string | null;
 
-  @Column({ type: 'text', nullable: true })
+  @Column({ type: 'longtext', nullable: true })
   requisitos: string | null;
 
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
@@ -57,7 +57,7 @@ export class Paquete extends SoftDeleteEntity {
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   precio_total: number;
 
-  @Column({ type: 'text', nullable: true })
+  @Column({ type: 'longtext', nullable: true })
   notas: string | null;
 
   @Column({ type: 'boolean', default: true })

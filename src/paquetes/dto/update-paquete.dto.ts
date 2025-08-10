@@ -10,7 +10,7 @@ import {
   ValidateNested,
   IsUUID,
   ValidateIf,
-  MaxLength,
+  // MaxLength, // removido para liberar límites
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { UpdateHotelDto } from './update-hotel.dto';
@@ -24,14 +24,14 @@ import {
 export class UpdatePaqueteDto {
   @IsOptional()
   @IsString({ message: 'El título debe ser una cadena de texto' })
-  @MaxLength(200, { message: 'El título no puede tener más de 200 caracteres' })
+  // @MaxLength(200)
   @IsNoSQLInjection({ message: 'El título contiene caracteres no permitidos' })
   @IsCleanText({ message: 'El título contiene contenido no válido' })
   readonly titulo?: string;
 
   @IsOptional()
   @IsString({ message: 'El origen debe ser una cadena de texto' })
-  @MaxLength(100, { message: 'El origen no puede tener más de 100 caracteres' })
+  // @MaxLength(100)
   @IsNoSQLInjection({ message: 'El origen contiene caracteres no permitidos' })
   @IsCleanText({ message: 'El origen contiene contenido no válido' })
   readonly origen?: string;
@@ -55,9 +55,7 @@ export class UpdatePaqueteDto {
   @IsOptional()
   @ValidateIf((o) => o.incluye !== null)
   @IsString({ message: 'Lo que incluye debe ser una cadena de texto' })
-  @MaxLength(2000, {
-    message: 'Lo que incluye no puede tener más de 2000 caracteres',
-  })
+  // @MaxLength(2000)
   @IsNoSQLInjection({
     message: 'Lo que incluye contiene caracteres no permitidos',
   })
@@ -67,9 +65,7 @@ export class UpdatePaqueteDto {
   @IsOptional()
   @ValidateIf((o) => o.no_incluye !== null)
   @IsString({ message: 'Lo que no incluye debe ser una cadena de texto' })
-  @MaxLength(2000, {
-    message: 'Lo que no incluye no puede tener más de 2000 caracteres',
-  })
+  // @MaxLength(2000)
   @IsNoSQLInjection({
     message: 'Lo que no incluye contiene caracteres no permitidos',
   })
@@ -79,9 +75,7 @@ export class UpdatePaqueteDto {
   @IsOptional()
   @ValidateIf((o) => o.requisitos !== null)
   @IsString({ message: 'Los requisitos deben ser una cadena de texto' })
-  @MaxLength(2000, {
-    message: 'Los requisitos no pueden tener más de 2000 caracteres',
-  })
+  // @MaxLength(2000)
   @IsNoSQLInjection({
     message: 'Los requisitos contienen caracteres no permitidos',
   })
@@ -107,9 +101,7 @@ export class UpdatePaqueteDto {
   @IsOptional()
   @ValidateIf((o) => o.notas !== null)
   @IsString({ message: 'Las notas deben ser una cadena de texto' })
-  @MaxLength(1000, {
-    message: 'Las notas no pueden tener más de 1000 caracteres',
-  })
+  // @MaxLength(1000)
   @IsNoSQLInjection({ message: 'Las notas contienen caracteres no permitidos' })
   @IsCleanText({ message: 'Las notas contienen contenido no válido' })
   readonly notas?: string | null;
@@ -146,9 +138,7 @@ export class UpdatePaqueteDto {
 
   @IsOptional()
   @IsString({ message: 'El itinerario de texto debe ser una cadena de texto' })
-  @MaxLength(5000, {
-    message: 'El itinerario de texto no puede tener más de 5000 caracteres',
-  })
+  // @MaxLength(5000)
   @IsNoSQLInjection({
     message: 'El itinerario de texto contiene caracteres no permitidos',
   })

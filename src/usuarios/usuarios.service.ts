@@ -112,8 +112,11 @@ export class UsuariosService
     const verificationToken = crypto.randomBytes(32).toString('hex');
 
     const nuevoUsuario = this.repository.create({
-      ...createUsuarioDto,
+      usuario: createUsuarioDto.usuario,
+      correo: createUsuarioDto.correo,
       contrasena: hashedPassword,
+      nombre_completo:
+        createUsuarioDto.nombre_completo ?? createUsuarioDto.nombre,
       rol: UsuarioRol.PRE_AUTORIZADO,
       token_verificacion: verificationToken,
       email_verificado: false,
@@ -126,7 +129,7 @@ export class UsuariosService
       await this.emailService.sendVerificationEmail(
         createUsuarioDto.correo,
         verificationToken,
-        createUsuarioDto.nombre_completo,
+        createUsuarioDto.nombre_completo ?? createUsuarioDto.nombre,
       );
     } catch (error) {
       this.logger.error('Error enviando email de verificación:', error);
@@ -212,6 +215,8 @@ export class UsuariosService
     const access_token = jwt.sign(payload, this.JWT_SECRET, {
       expiresIn: '24h',
     });
+
+    // Nota: la creación de la cookie se realiza en el controller para acceder al response
 
     return {
       access_token,

@@ -53,9 +53,6 @@ export class CreatePaqueteDto {
   @IsOptional()
   @ValidateIf((o) => o.incluye !== null)
   @IsString({ message: 'Lo que incluye debe ser una cadena de texto' })
-  @MaxLength(2000, {
-    message: 'Lo que incluye no puede tener más de 2000 caracteres',
-  })
   @IsNoSQLInjection({
     message: 'Lo que incluye contiene caracteres no permitidos',
   })
@@ -65,9 +62,6 @@ export class CreatePaqueteDto {
   @IsOptional()
   @ValidateIf((o) => o.no_incluye !== null)
   @IsString({ message: 'Lo que no incluye debe ser una cadena de texto' })
-  @MaxLength(2000, {
-    message: 'Lo que no incluye no puede tener más de 2000 caracteres',
-  })
   @IsNoSQLInjection({
     message: 'Lo que no incluye contiene caracteres no permitidos',
   })
@@ -77,9 +71,6 @@ export class CreatePaqueteDto {
   @IsOptional()
   @ValidateIf((o) => o.requisitos !== null)
   @IsString({ message: 'Los requisitos deben ser una cadena de texto' })
-  @MaxLength(2000, {
-    message: 'Los requisitos no pueden tener más de 2000 caracteres',
-  })
   @IsNoSQLInjection({
     message: 'Los requisitos contienen caracteres no permitidos',
   })
@@ -104,9 +95,6 @@ export class CreatePaqueteDto {
   @IsOptional()
   @ValidateIf((o) => o.notas !== null)
   @IsString({ message: 'Las notas deben ser una cadena de texto' })
-  @MaxLength(1000, {
-    message: 'Las notas no pueden tener más de 1000 caracteres',
-  })
   @IsNoSQLInjection({ message: 'Las notas contienen caracteres no permitidos' })
   @IsCleanText({ message: 'Las notas contienen contenido no válido' })
   readonly notas?: string | null;
@@ -133,9 +121,6 @@ export class CreatePaqueteDto {
 
   @IsOptional()
   @IsString({ message: 'El itinerario de texto debe ser una cadena de texto' })
-  @MaxLength(5000, {
-    message: 'El itinerario de texto no puede tener más de 5000 caracteres',
-  })
   @IsNoSQLInjection({
     message: 'El itinerario de texto contiene caracteres no permitidos',
   })

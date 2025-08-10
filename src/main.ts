@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import * as compression from 'compression';
 import { ValidationPipe, ClassSerializerInterceptor } from '@nestjs/common';
 import { json, urlencoded } from 'express';
+import * as cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -12,13 +13,15 @@ async function bootstrap() {
 
   app.getHttpAdapter().getInstance().set('trust proxy', true);
 
+  const isProd = process.env.NODE_ENV === 'production';
   app.enableCors({
-    origin:
-      process.env.NODE_ENV === 'production' ? [process.env.FRONTEND_URL] : true,
+    origin: isProd ? [process.env.FRONTEND_URL as string] : true,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control'],
   });
+
+  app.use(cookieParser());
 
   app.useGlobalPipes(
     new ValidationPipe({

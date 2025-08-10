@@ -12,35 +12,46 @@ import {
   NotFoundException,
   ValidationPipe,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { MayoristasService } from './mayoristas.service';
 import { CreateMayoristaDto } from './dto/create-mayorista.dto';
 import { UpdateMayoristaDto } from './dto/update-mayorista.dto';
 import { AdminGuard } from '../usuarios/guards/admin.guard';
+import { Throttle, SkipThrottle } from '@nestjs/throttler';
+import { CacheInterceptor, CacheKey, CacheTTL } from '@nestjs/cache-manager';
 
 @Controller('admin/mayoristas')
+@Throttle({ default: { limit: 600, ttl: 60_000 } })
 export class MayoristasController {
   constructor(private readonly mayoristasService: MayoristasService) {}
 
   @Post()
   @UseGuards(AdminGuard)
   @HttpCode(HttpStatus.CREATED)
+  @SkipThrottle()
   create(@Body(ValidationPipe) createMayoristaDto: CreateMayoristaDto) {
     return this.mayoristasService.create(createMayoristaDto);
   }
 
   @Get()
+  @UseInterceptors(CacheInterceptor)
+  @CacheKey('admin:mayoristas:list')
+  @CacheTTL(30)
   findAll() {
     return this.mayoristasService.findAll();
   }
 
   @Get(':id')
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(30)
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.mayoristasService.findOne(id);
   }
 
   @Patch(':id')
   @UseGuards(AdminGuard)
+  @SkipThrottle()
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body(ValidationPipe) updateMayoristaDto: UpdateMayoristaDto,
@@ -51,6 +62,7 @@ export class MayoristasController {
   @Delete(':id')
   @UseGuards(AdminGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
+  @SkipThrottle()
   async remove(@Param('id', ParseUUIDPipe) id: string) {
     const success = await this.mayoristasService.softDelete(id);
     if (!success) {
@@ -62,6 +74,7 @@ export class MayoristasController {
   @Patch(':id/restore')
   @UseGuards(AdminGuard)
   @HttpCode(HttpStatus.OK)
+  @SkipThrottle()
   async restore(@Param('id', ParseUUIDPipe) id: string) {
     const success = await this.mayoristasService.restore(id);
     if (!success) {
@@ -73,6 +86,9 @@ export class MayoristasController {
   }
 
   @Get('deleted/list')
+  @UseInterceptors(CacheInterceptor)
+  @CacheKey('admin:mayoristas:deleted')
+  @CacheTTL(30)
   async getDeleted() {
     return this.mayoristasService.findDeleted();
   }
@@ -80,6 +96,7 @@ export class MayoristasController {
   @Delete(':id/hard')
   @UseGuards(AdminGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
+  @SkipThrottle()
   async hardDelete(@Param('id', ParseUUIDPipe) id: string) {
     const success = await this.mayoristasService.hardDelete(id);
     if (!success) {

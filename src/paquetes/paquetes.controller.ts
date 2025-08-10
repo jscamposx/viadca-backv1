@@ -27,7 +27,8 @@ import { PaginationDto } from './dto/pagination.dto';
 import { LargePayloadInterceptor } from '../utils/large-payload.interceptor';
 import { ExcelService } from '../excel/excel.service';
 import { AdminGuard } from '../usuarios/guards/admin.guard';
-import { Throttle } from '@nestjs/throttler';
+import { Throttle, SkipThrottle } from '@nestjs/throttler';
+import { CacheInterceptor, CacheKey, CacheTTL } from '@nestjs/cache-manager';
 
 @Controller('paquetes')
 export class PaquetesPublicController {
@@ -41,6 +42,7 @@ export class PaquetesPublicController {
 }
 
 @Controller('admin/paquetes')
+@Throttle({ default: { limit: 600, ttl: 60_000 } })
 export class PaquetesController {
   constructor(
     private readonly paquetesService: PaquetesService,
@@ -51,6 +53,7 @@ export class PaquetesController {
   @UseGuards(AdminGuard)
   @HttpCode(HttpStatus.CREATED)
   @UseInterceptors(LargePayloadInterceptor)
+  @SkipThrottle()
   async create(
     @Body(ValidationPipe) createPaqueteDto: CreatePaqueteDto,
     @Req() req: Request,
@@ -63,6 +66,7 @@ export class PaquetesController {
   @Post(':id/imagenes')
   @UseGuards(AdminGuard)
   @HttpCode(HttpStatus.CREATED)
+  @SkipThrottle()
   createImage(
     @Param('id', ParseUUIDPipe) id: string,
     @Body(ValidationPipe) createImagenDto: CreateImagenDto,
@@ -71,11 +75,15 @@ export class PaquetesController {
   }
 
   @Get()
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(30)
   findAll(@Query() paginationDto: PaginationDto) {
     return this.paquetesService.findAllPaginated(paginationDto);
   }
 
   @Get(':id')
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(30)
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.paquetesService.findOne(id);
   }
@@ -83,6 +91,7 @@ export class PaquetesController {
   @Patch('/:id')
   @UseGuards(AdminGuard)
   @UseInterceptors(LargePayloadInterceptor)
+  @SkipThrottle()
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body(ValidationPipe) updatePaqueteDto: UpdatePaqueteDto,
@@ -98,6 +107,7 @@ export class PaquetesController {
   @Delete(':id')
   @UseGuards(AdminGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
+  @SkipThrottle()
   async remove(@Param('id', ParseUUIDPipe) id: string) {
     const success = await this.paquetesService.softDelete(id);
     if (!success) {
@@ -109,6 +119,7 @@ export class PaquetesController {
   @Patch(':id/restore')
   @UseGuards(AdminGuard)
   @HttpCode(HttpStatus.OK)
+  @SkipThrottle()
   async restore(@Param('id', ParseUUIDPipe) id: string) {
     const success = await this.paquetesService.restore(id);
     if (!success) {
@@ -120,6 +131,9 @@ export class PaquetesController {
   }
 
   @Get('deleted/list')
+  @UseInterceptors(CacheInterceptor)
+  @CacheKey('admin:paquetes:deleted')
+  @CacheTTL(30)
   async getDeleted() {
     return this.paquetesService.findDeleted();
   }
@@ -127,6 +141,7 @@ export class PaquetesController {
   @Delete(':id/hard')
   @UseGuards(AdminGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
+  @SkipThrottle()
   async hardDelete(@Param('id', ParseUUIDPipe) id: string) {
     const success = await this.paquetesService.hardDelete(id);
     if (!success) {
@@ -136,6 +151,8 @@ export class PaquetesController {
   }
 
   @Get('excel/:id')
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(30)
   async generateExcel(
     @Param('id', ParseUUIDPipe) id: string,
     @Res() res: Response,

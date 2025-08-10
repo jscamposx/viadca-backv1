@@ -21,6 +21,7 @@ import { UsuariosModule } from './usuarios/usuarios.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { CleanupModule } from './common/cleanup.module';
 import { AdminModule } from './admin/admin.module';
+import { ContactoModule } from './contacto/contacto.module';
 
 @Module({
   imports: [
@@ -88,6 +89,7 @@ import { AdminModule } from './admin/admin.module';
     CloudinaryModule,
     CleanupModule,
     AdminModule,
+    ContactoModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],

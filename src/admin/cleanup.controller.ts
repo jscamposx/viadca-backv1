@@ -5,25 +5,30 @@ import {
   UseGuards,
   HttpStatus,
   HttpCode,
+  UseInterceptors,
 } from '@nestjs/common';
 import { CleanupService } from '../common/services/cleanup.service';
 import { AdminGuard } from '../usuarios/guards/admin.guard';
-import { Throttle } from '@nestjs/throttler';
+import { Throttle, SkipThrottle } from '@nestjs/throttler';
+import { CacheInterceptor, CacheKey, CacheTTL } from '@nestjs/cache-manager';
 
 @Controller('admin/cleanup')
+@Throttle({ default: { limit: 600, ttl: 60_000 } })
 export class CleanupController {
   constructor(private readonly cleanupService: CleanupService) {}
 
   @Get('stats')
   @UseGuards(AdminGuard)
-  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @UseInterceptors(CacheInterceptor)
+  @CacheKey('admin:cleanup:stats')
+  @CacheTTL(30)
   async getCleanupStats() {
     return await this.cleanupService.getCleanupStats();
   }
 
   @Post('run')
   @UseGuards(AdminGuard)
-  @Throttle({ default: { limit: 1, ttl: 60_000 } })
+  @SkipThrottle()
   @HttpCode(HttpStatus.OK)
   async runManualCleanup() {
     try {
@@ -44,7 +49,7 @@ export class CleanupController {
 
   @Post('hard-delete')
   @UseGuards(AdminGuard)
-  @Throttle({ default: { limit: 1, ttl: 60_000 } })
+  @SkipThrottle()
   @HttpCode(HttpStatus.OK)
   async runHardDelete() {
     try {
@@ -64,7 +69,7 @@ export class CleanupController {
 
   @Post('cleanup-images')
   @UseGuards(AdminGuard)
-  @Throttle({ default: { limit: 2, ttl: 60_000 } })
+  @SkipThrottle()
   @HttpCode(HttpStatus.OK)
   async runImageCleanup() {
     try {
