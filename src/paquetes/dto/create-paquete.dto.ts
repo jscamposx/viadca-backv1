@@ -13,6 +13,7 @@ import {
   ValidateIf,
   MaxLength,
   IsIn,
+  IsEnum,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CreateDestinoDto } from './create-destino.dto';
@@ -22,6 +23,11 @@ import {
   IsNoSQLInjection,
   IsCleanText,
 } from '../../common/validators/security.validator';
+
+export enum MonedaPaquete {
+  MXN = 'MXN',
+  USD = 'USD',
+}
 
 export class CreatePaqueteDto {
   @IsString({ message: 'El título debe ser una cadena de texto' })
@@ -91,6 +97,11 @@ export class CreatePaqueteDto {
   @IsNumber({}, { message: 'El precio total debe ser un número' })
   @IsPositive({ message: 'El precio total debe ser un número positivo' })
   readonly precio_total: number;
+
+  // Nueva moneda del paquete (MXN o USD)
+  @IsOptional()
+  @IsEnum(MonedaPaquete, { message: 'La moneda debe ser MXN o USD' })
+  readonly moneda?: MonedaPaquete;
 
   @IsOptional()
   @ValidateIf((o) => o.notas !== null)

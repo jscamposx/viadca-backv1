@@ -1,4 +1,5 @@
 import { Mayoristas } from '../../entities/mayoristas.entity';
+import { MonedaPaquete } from './create-paquete.dto';
 
 export class PaqueteListDto {
   id: string;
@@ -8,4 +9,5 @@ export class PaqueteListDto {
   titulo: string;
   activo: boolean;
   precio_total: number;
+  moneda: MonedaPaquete;
 }

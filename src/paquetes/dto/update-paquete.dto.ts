@@ -11,6 +11,7 @@ import {
   IsUUID,
   ValidateIf,
   // MaxLength, // removido para liberar límites
+  IsEnum,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { UpdateHotelDto } from './update-hotel.dto';
@@ -20,6 +21,7 @@ import {
   IsNoSQLInjection,
   IsCleanText,
 } from '../../common/validators/security.validator';
+import { MonedaPaquete } from './create-paquete.dto';
 
 export class UpdatePaqueteDto {
   @IsOptional()
@@ -97,6 +99,11 @@ export class UpdatePaqueteDto {
   @IsNumber({}, { message: 'El precio total debe ser un número' })
   @IsPositive({ message: 'El precio total debe ser un número positivo' })
   readonly precio_total?: number;
+
+  // Moneda editable en actualización
+  @IsOptional()
+  @IsEnum(MonedaPaquete, { message: 'La moneda debe ser MXN o USD' })
+  readonly moneda?: MonedaPaquete;
 
   @IsOptional()
   @ValidateIf((o) => o.notas !== null)

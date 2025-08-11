@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { Paquete } from './entidades/paquete.entity';
-import { CreatePaqueteDto } from './dto/create-paquete.dto';
+import { CreatePaqueteDto, MonedaPaquete } from './dto/create-paquete.dto';
 import { UpdatePaqueteDto } from './dto/update-paquete.dto';
 import { Destino } from '../entities/destino.entity';
 import { Imagen } from '../entities/imagen.entity';
@@ -70,7 +70,18 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
       paqueteData.notas = null;
     }
 
-    const paquete = this.paqueteRepository.create(paqueteData);
+    // Moneda por defecto MXN
+    if (
+      !('moneda' in paqueteData) ||
+      paqueteData.moneda === undefined ||
+      paqueteData.moneda === null
+    ) {
+      (paqueteData as any).moneda = 'MXN' as MonedaPaquete;
+    }
+
+    const paquete = this.paqueteRepository.create(
+      paqueteData as unknown as Partial<Paquete>,
+    );
 
     const inicio = new Date(fecha_inicio);
     const fin = new Date(fecha_fin);
@@ -166,7 +177,8 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
         mayoristas: paquete.mayoristas || [],
         activo: paquete.activo,
         precio_total: Number(paquete.precio_total),
-      };
+        moneda: paquete.moneda,
+      } as PaqueteListDto;
     });
   }
 
@@ -199,7 +211,8 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
         mayoristas: paquete.mayoristas || [],
         activo: paquete.activo,
         precio_total: Number(paquete.precio_total),
-      };
+        moneda: paquete.moneda,
+      } as PaqueteListDto;
     });
 
     const totalPages = Math.ceil(total / limit);
@@ -288,8 +301,14 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
     if ('notas' in updatePaqueteDto) {
       paqueteDetails.notas = updatePaqueteDto.notas;
     }
+    if ('moneda' in updatePaqueteDto && updatePaqueteDto.moneda) {
+      (paqueteDetails as any).moneda = updatePaqueteDto.moneda;
+    }
 
-    this.paqueteRepository.merge(paquete, paqueteDetails);
+    this.paqueteRepository.merge(
+      paquete,
+      paqueteDetails as unknown as Partial<Paquete>,
+    );
 
     if (fecha_inicio && fecha_fin) {
       const inicio = new Date(fecha_inicio);
@@ -852,6 +871,7 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
       descuento: toDecimalString(paquete.descuento),
       anticipo: toDecimalString(paquete.anticipo),
       precio_total: toDecimalString(paquete.precio_total),
+      moneda: paquete.moneda, // agregado
       notas: paquete.notas,
       activo: paquete.activo,
       itinerarios: (paquete.itinerarios || []).map((i) => ({
