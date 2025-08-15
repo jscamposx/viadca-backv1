@@ -18,6 +18,7 @@ import { PaginationDto, PaginatedResponse } from './dto/pagination.dto';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { SoftDeleteService } from '../common/services/soft-delete.service';
 import { PaquetePublicListDto } from './dto/paquete-public-list.dto';
+import axios from 'axios';
 
 @Injectable()
 export class PaquetesService extends SoftDeleteService<Paquete> {
@@ -340,6 +341,7 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
       paquete.imagenes = await this.prepareImagesForSave(
         paquete.imagenes,
         imagenesDto,
+        'paquetes',
       );
     }
     if (itinerario_texto !== undefined) {
@@ -503,6 +505,7 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
       hotel.imagenes = await this.prepareImagesForSave(
         hotel.imagenes,
         imagenesDto,
+        'hoteles',
       );
     }
     return hotel;
@@ -545,6 +548,7 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
   private async prepareImagesForSave(
     imagenesActuales: Imagen[],
     imagenesDto: UpdateImagenDto[],
+    folder: string = 'paquetes',
   ): Promise<Imagen[]> {
     const dtoImageIds = new Set(
       imagenesDto.map((dto) => dto.id).filter(Boolean),
@@ -585,13 +589,13 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
 
         if (imagenExistente) {
           if (
-            dto.tipo === 'cloudinary' &&
+            dto.tipo === 'google_places_url' &&
             dto.contenido &&
-            dto.contenido.startsWith('data:image/')
+            dto.contenido.startsWith('http')
           ) {
             const processedImage = await this.processImageWithCloudinary(
               dto as any,
-              'paquetes',
+              folder,
             );
             return Object.assign(imagenExistente, processedImage);
           } else {
@@ -601,36 +605,33 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
               orden: dto.orden,
               nombre: dto.nombre,
               mime_type: dto.mime_type,
-
               cloudinary_public_id:
                 dto.tipo === 'cloudinary'
-                  ? dto.cloudinary_public_id ||
-                    imagenExistente.cloudinary_public_id
-                  : null,
+                  ? dto.cloudinary_public_id || imagenExistente.cloudinary_public_id
+                  : imagenExistente.cloudinary_public_id && dto.tipo !== 'cloudinary'
+                  ? null
+                  : imagenExistente.cloudinary_public_id,
               cloudinary_url:
                 dto.tipo === 'cloudinary'
                   ? dto.cloudinary_url || imagenExistente.cloudinary_url
-                  : null,
+                  : imagenExistente.cloudinary_url && dto.tipo !== 'cloudinary'
+                  ? null
+                  : imagenExistente.cloudinary_url,
             });
           }
         } else {
           if (
-            dto.tipo === 'cloudinary' &&
+            dto.tipo === 'google_places_url' &&
             dto.contenido &&
-            dto.contenido.startsWith('data:image/')
+            dto.contenido.startsWith('http')
           ) {
-            return await this.processImageWithCloudinary(
-              dto as any,
-              'paquetes',
-            );
+            return await this.processImageWithCloudinary(dto as any, folder);
           } else {
             const nuevaImagen = this.imagenRepository.create();
             return Object.assign(nuevaImagen, {
               ...dto,
               cloudinary_public_id:
-                dto.tipo === 'cloudinary'
-                  ? dto.cloudinary_public_id || null
-                  : null,
+                dto.tipo === 'cloudinary' ? dto.cloudinary_public_id || null : null,
               cloudinary_url:
                 dto.tipo === 'cloudinary' ? dto.cloudinary_url || null : null,
             });
@@ -649,153 +650,51 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
     return imagenes;
   }
 
-  private async processImagenesAsync(
-    imagenesDto: CreateImagenDto[],
-  ): Promise<Imagen[]> {
-    if (!imagenesDto || imagenesDto.length === 0) {
-      return [];
-    }
-
-    const batchSize = 5;
-    const imagenes: Imagen[] = [];
-
-    for (let i = 0; i < imagenesDto.length; i += batchSize) {
-      const batch = imagenesDto.slice(i, i + batchSize);
-
-      const batchPromises = batch.map(async (dto) => {
-        return new Promise<Imagen>((resolve) => {
-          setImmediate(() => {
-            const imagen = Object.assign(new Imagen(), dto);
-            resolve(imagen);
-          });
-        });
-      });
-
-      const batchResults = await Promise.all(batchPromises);
-      imagenes.push(...batchResults);
-
-      if (i + batchSize < imagenesDto.length) {
-        await new Promise((resolve) => setImmediate(resolve));
-      }
-    }
-
-    return imagenes;
-  }
-
-  private async processHotelImagenesAsync(
-    imagenesDto: CreateImagenDto[],
-  ): Promise<Imagen[]> {
-    if (!imagenesDto || imagenesDto.length === 0) {
-      return [];
-    }
-
-    const batchSize = 5;
-    const imagenes: Imagen[] = [];
-
-    for (let i = 0; i < imagenesDto.length; i += batchSize) {
-      const batch = imagenesDto.slice(i, i + batchSize);
-
-      const batchPromises = batch.map(async (imgDto) => {
-        return new Promise<Imagen>((resolve) => {
-          setImmediate(() => {
-            const imagen = this.imagenRepository.create(imgDto);
-            resolve(imagen);
-          });
-        });
-      });
-
-      const batchResults = await Promise.all(batchPromises);
-      imagenes.push(...batchResults);
-
-      if (i + batchSize < imagenesDto.length) {
-        await new Promise((resolve) => setImmediate(resolve));
-      }
-    }
-
-    return imagenes;
-  }
-
-  private async processDestinosAsync(destinosDto: any[]): Promise<Destino[]> {
-    if (!destinosDto || destinosDto.length === 0) {
-      return [];
-    }
-
-    const batchSize = 10;
-    const destinos: Destino[] = [];
-
-    for (let i = 0; i < destinosDto.length; i += batchSize) {
-      const batch = destinosDto.slice(i, i + batchSize);
-
-      const batchPromises = batch.map(async (dto) => {
-        return new Promise<Destino>((resolve) => {
-          setImmediate(() => {
-            const destino = Object.assign(new Destino(), dto);
-            resolve(destino);
-          });
-        });
-      });
-
-      const batchResults = await Promise.all(batchPromises);
-      destinos.push(...batchResults);
-
-      if (i + batchSize < destinosDto.length) {
-        await new Promise((resolve) => setImmediate(resolve));
-      }
-    }
-
-    return destinos;
-  }
-
   async processImageWithCloudinary(
     imageDto: CreateImagenDto,
     folder: string = 'paquetes',
   ): Promise<Imagen> {
     try {
-      if (imageDto.tipo === 'cloudinary') {
-        if (
-          imageDto.contenido &&
-          imageDto.contenido.startsWith('data:image/')
-        ) {
-          const base64Data = imageDto.contenido.replace(
-            /^data:image\/\w+;base64,/,
-            '',
-          );
-          const buffer = Buffer.from(base64Data, 'base64');
+      if (imageDto.tipo === 'google_places_url') {
+        // Descargar la imagen de Google Places y subirla a Cloudinary
+        const url = imageDto.contenido;
+        const response = await axios.get(url, { responseType: 'arraybuffer' });
+        const buffer = Buffer.from(response.data);
+        const mime = response.headers['content-type'] || imageDto.mime_type || 'image/jpeg';
+        const nombre = imageDto.nombre || 'google-places.jpg';
 
-          const file: Express.Multer.File = {
-            fieldname: 'file',
-            originalname: imageDto.nombre || 'image.jpg',
-            encoding: '7bit',
-            mimetype: imageDto.mime_type || 'image/jpeg',
-            buffer: buffer,
-            size: buffer.length,
-          } as Express.Multer.File;
+        const file: Express.Multer.File = {
+          fieldname: 'file',
+          originalname: nombre,
+          encoding: '7bit',
+          mimetype: mime,
+          buffer: buffer,
+          size: buffer.length,
+        } as Express.Multer.File;
 
-          const cloudinaryResult = await this.cloudinaryService.uploadFile(
-            file,
-            folder,
-          );
+        const cloudinaryResult = await this.cloudinaryService.uploadFile(
+          file,
+          folder,
+        );
 
-          return Object.assign(new Imagen(), {
-            ...imageDto,
-            tipo: 'cloudinary',
-            contenido: cloudinaryResult.url,
-            cloudinary_public_id: cloudinaryResult.public_id,
-            cloudinary_url: cloudinaryResult.url,
-          });
-        } else {
-          return Object.assign(new Imagen(), imageDto);
-        }
-      } else if (
-        imageDto.tipo === 'url' ||
-        imageDto.tipo === 'google_places_url'
-      ) {
         return Object.assign(new Imagen(), {
           ...imageDto,
-
+          tipo: 'cloudinary',
+          contenido: cloudinaryResult.url,
+          cloudinary_public_id: cloudinaryResult.public_id,
+          cloudinary_url: cloudinaryResult.url,
+          mime_type: mime,
+          nombre,
+        });
+      } else if (imageDto.tipo === 'url') {
+        return Object.assign(new Imagen(), {
+          ...imageDto,
           cloudinary_public_id: null,
           cloudinary_url: null,
         });
+      } else if (imageDto.tipo === 'cloudinary') {
+        // Passthrough: ya viene con datos de Cloudinary (no base64)
+        return Object.assign(new Imagen(), imageDto);
       } else {
         return Object.assign(new Imagen(), imageDto);
       }
@@ -832,6 +731,37 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
     }
 
     return imagenes;
+  }
+
+  private async processDestinosAsync(destinosDto: any[]): Promise<Destino[]> {
+    if (!destinosDto || destinosDto.length === 0) {
+      return [];
+    }
+
+    const batchSize = 10;
+    const destinos: Destino[] = [];
+
+    for (let i = 0; i < destinosDto.length; i += batchSize) {
+      const batch = destinosDto.slice(i, i + batchSize);
+
+      const batchPromises = batch.map(async (dto) => {
+        return new Promise<Destino>((resolve) => {
+          setImmediate(() => {
+            const destino = Object.assign(new Destino(), dto);
+            resolve(destino);
+          });
+        });
+      });
+
+      const batchResults = await Promise.all(batchPromises);
+      destinos.push(...batchResults);
+
+      if (i + batchSize < destinosDto.length) {
+        await new Promise((resolve) => setImmediate(resolve));
+      }
+    }
+
+    return destinos;
   }
 
   async findOnePublicByCodigoUrl(codigoUrl: string): Promise<any> {
