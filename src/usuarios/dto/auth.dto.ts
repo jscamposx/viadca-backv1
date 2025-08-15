@@ -12,13 +12,12 @@ import {
 } from '../../common/validators/security.validator';
 
 export class LoginDto {
-  @IsNotEmpty({ message: 'El usuario no puede estar vacío' })
-  @IsString({ message: 'El usuario debe ser una cadena de texto' })
-  @MaxLength(50, { message: 'El usuario no puede tener más de 50 caracteres' })
-  @Matches(/^[a-zA-Z0-9_-]+$/, { message: 'Formato de usuario inválido' })
-  @IsNoSQLInjection({ message: 'El usuario contiene caracteres no permitidos' })
-  @IsCleanText({ message: 'El usuario contiene contenido no válido' })
-  usuario: string;
+  @IsNotEmpty({ message: 'El usuario o correo no puede estar vacío' })
+  @IsString({ message: 'El usuario o correo debe ser una cadena de texto' })
+  @MaxLength(255, { message: 'El usuario o correo no puede tener más de 255 caracteres' })
+  @IsNoSQLInjection({ message: 'El usuario o correo contiene caracteres no permitidos' })
+  @IsCleanText({ message: 'El usuario o correo contiene contenido no válido' })
+  usuario: string; // Puede ser nombre de usuario o correo electrónico
 
   @IsNotEmpty({ message: 'La contraseña no puede estar vacía' })
   @IsString({ message: 'La contraseña debe ser una cadena de texto' })

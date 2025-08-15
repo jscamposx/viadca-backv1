@@ -192,7 +192,7 @@ export class EmailService {
       return;
     }
 
-    const verificationUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verificar-email?token=${token}`;
+    const verificationUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verificar-correo?token=${token}`;
 
     const content = `
       ${nombre ? `<p style=\"font-size: 16px;\">Hola ${nombre},</p>` : '<p style="font-size: 16px;">Hola,</p>'}
@@ -212,6 +212,11 @@ export class EmailService {
       </p>
     `;
 
+    const text = `Hola${nombre ? ` ${nombre}` : ''},\n\n` +
+      'Gracias por registrarte en nuestra plataforma. Para completar tu registro, verifica tu correo electrónico.\n\n' +
+      `Verificar correo: ${verificationUrl}\n\n` +
+      'Si no te registraste en Viadca, puedes ignorar este correo.';
+
     const attachments = this.logoPath
       ? [
           {
@@ -227,6 +232,7 @@ export class EmailService {
       to: email,
       subject: 'Verifica tu cuenta - Viadca',
       html: await this.getEmailTemplate(content, '¡Bienvenido a Viadca!', '#3498DB'),
+      text,
       attachments,
     } as nodemailer.SendMailOptions;
 
@@ -274,6 +280,12 @@ export class EmailService {
       </p>
     `;
 
+    const text = `Hola${nombre ? ` ${nombre}` : ''},\n\n` +
+      'Recibimos una solicitud para restablecer tu contraseña.\n' +
+      'Este enlace expirará en 1 hora.\n\n' +
+      `Restablecer contraseña: ${resetUrl}\n\n` +
+      'Si no solicitaste este restablecimiento, ignora este correo.';
+
     const attachments = this.logoPath
       ? [
           {
@@ -293,6 +305,7 @@ export class EmailService {
         'Restablecimiento de contraseña',
         '#E74C3C',
       ),
+      text,
       attachments,
     } as nodemailer.SendMailOptions;
 
@@ -313,6 +326,8 @@ export class EmailService {
       return;
     }
 
+    const loginUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/iniciar-sesion`;
+
     const content = `
       ${nombre ? `<p style=\"font-size: 16px;\">Hola ${nombre},</p>` : '<p style="font-size: 16px;">Hola,</p>'}
       <p>🎉 <strong>¡Tu correo electrónico ha sido verificado exitosamente!</strong></p>
@@ -324,7 +339,7 @@ export class EmailService {
         </p>
       </div>
       <div style=\"text-align: center; margin: 30px 0;\">
-        <a href=\"${process.env.FRONTEND_URL || 'http://localhost:3000'}/login\" 
+        <a href=\"${loginUrl}\" 
            style=\"background-color: #27AE60; color: white; padding: 15px 40px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold; font-size: 16px;\">
           Iniciar Sesión
         </a>
@@ -333,6 +348,11 @@ export class EmailService {
         ¡Gracias por unirte a Viadca! Estamos emocionados de tenerte en nuestra plataforma.
       </p>
     `;
+
+    const text = `Hola${nombre ? ` ${nombre}` : ''},\n\n` +
+      '¡Tu correo electrónico ha sido verificado exitosamente!\n' +
+      'Ya puedes iniciar sesión en Viadca.\n\n' +
+      `Iniciar sesión: ${loginUrl}`;
 
     const attachments = this.logoPath
       ? [
@@ -349,6 +369,7 @@ export class EmailService {
       to: email,
       subject: '¡Cuenta verificada exitosamente! - Viadca',
       html: await this.getEmailTemplate(content, '¡Cuenta verificada!', '#27AE60'),
+      text,
       attachments,
     } as nodemailer.SendMailOptions;
 

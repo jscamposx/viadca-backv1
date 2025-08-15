@@ -17,6 +17,7 @@ import { UpdateHotelDto } from './dto/update-hotel.dto';
 import { PaginationDto, PaginatedResponse } from './dto/pagination.dto';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { SoftDeleteService } from '../common/services/soft-delete.service';
+import { PaquetePublicListDto } from './dto/paquete-public-list.dto';
 
 @Injectable()
 export class PaquetesService extends SoftDeleteService<Paquete> {
@@ -895,5 +896,46 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
       })),
       imagenes: (paquete.imagenes || []).map(mapImagen),
     };
+  }
+
+  async findAllPublicSimple(): Promise<PaquetePublicListDto[]> {
+    const paquetes = await this.paqueteRepository.find({
+      relations: ['imagenes', 'destinos'],
+      where: { 
+        eliminadoEn: null,
+        activo: true
+      } as any,
+      order: {
+        creadoEn: 'DESC',
+      },
+    });
+
+    return paquetes.map((paquete) => {
+      // Obtener primera imagen ordenada
+      const imagenesOrdenadas = [...(paquete.imagenes || [])].sort(
+        (a, b) => a.orden - b.orden,
+      );
+      const primeraImagen = imagenesOrdenadas[0] || null;
+
+      // Obtener destinos ordenados y concatenarlos
+      const destinosOrdenados = [...(paquete.destinos || [])].sort(
+        (a, b) => a.orden - b.orden,
+      );
+      const destinosNombres = destinosOrdenados
+        .map(d => d.destino)
+        .join(', ');
+
+      return {
+        codigoUrl: paquete.codigoUrl,
+        titulo: paquete.titulo,
+        destinos_nombres: destinosNombres || paquete.titulo,
+        precio_total: Number(paquete.precio_total),
+        moneda: paquete.moneda,
+        duracion_dias: paquete.duracion_dias,
+        primera_imagen: primeraImagen ? primeraImagen.contenido : null,
+        activo: paquete.activo,
+        descuento: paquete.descuento > 0 ? Number(paquete.descuento) : undefined,
+      } as PaquetePublicListDto;
+    });
   }
 }

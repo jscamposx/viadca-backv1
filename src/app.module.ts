@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
+import { CacheModule } from '@nestjs/cache-manager';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
@@ -32,6 +33,12 @@ import { ContactoModule } from './contacto/contacto.module';
         '.env.local',
         '.env',
       ],
+    }),
+
+    CacheModule.register({
+      isGlobal: true,
+      ttl: 300, // 5 minutos por defecto
+      max: 1000, // máximo 1000 items en caché
     }),
 
     ThrottlerModule.forRoot([

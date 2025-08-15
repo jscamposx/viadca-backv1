@@ -182,8 +182,11 @@ export class UsuariosService
   async login(
     loginDto: LoginDto,
   ): Promise<{ access_token: string; usuario: any }> {
+    const loginInput = (loginDto.usuario || '').trim();
+    const isEmail = /@/.test(loginInput);
+
     const usuario = await this.repository.findOne({
-      where: { usuario: loginDto.usuario },
+      where: isEmail ? { correo: loginInput } : { usuario: loginInput },
     });
 
     if (!usuario || !usuario.activo) {
@@ -215,8 +218,6 @@ export class UsuariosService
     const access_token = jwt.sign(payload, this.JWT_SECRET, {
       expiresIn: '24h',
     });
-
-    // Nota: la creación de la cookie se realiza en el controller para acceder al response
 
     return {
       access_token,

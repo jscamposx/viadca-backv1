@@ -34,6 +34,17 @@ import { CacheInterceptor, CacheKey, CacheTTL } from '@nestjs/cache-manager';
 export class PaquetesPublicController {
   constructor(private readonly paquetesService: PaquetesService) {}
 
+  // Listado público simplificado para tarjetas
+  @Get('/listado')
+  @UseInterceptors(CacheInterceptor)
+  @CacheKey('paquetes:publico:simple')
+  @CacheTTL(300) // 5 minutos de caché
+  @Throttle({ default: { limit: 100, ttl: 60_000 } })
+  findAllPublicSimple() {
+    return this.paquetesService.findAllPublicSimple();
+  }
+
+
   @Get(':codigoUrl')
   @Throttle({ default: { limit: 30, ttl: 60_000 } })
   findOneByCodigoUrl(@Param('codigoUrl') codigoUrl: string) {
