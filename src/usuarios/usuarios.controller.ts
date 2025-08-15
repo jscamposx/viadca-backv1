@@ -44,17 +44,24 @@ export class UsuariosController {
   async login(@Body(ValidationPipe) loginDto: LoginDto, @Res({ passthrough: true }) res: Response) {
     const result = await this.usuariosService.login(loginDto);
 
+    // Config de cookie compatible con iOS/Safari y entornos locales
     const isProd = process.env.NODE_ENV === 'production';
+    const frontendUrl = process.env.FRONTEND_URL || '';
+    const isHttps = isProd && /^https:\/\//i.test(frontendUrl);
+    const cookieDomain = process.env.COOKIE_DOMAIN || undefined; // ej: .tudominio.com
+
     res.cookie('access_token', result.access_token, {
       httpOnly: true,
-      secure: isProd,
-      sameSite: isProd ? 'none' : 'lax',
-      maxAge: 24 * 60 * 60 * 1000, // 24h
+      secure: isHttps, // Requerido cuando sameSite: 'none'
+      sameSite: isHttps ? 'none' : 'lax', // En local (http) usar Lax; en prod HTTPS usar None
+      domain: cookieDomain, // opcional, necesario si usas subdominios
+      maxAge: 24 * 60 * 60 * 1000,
       path: '/',
     });
 
-    // Forzar uso de cookie: no enviar token en el body
-    delete (result as any).access_token;
+    // IMPORTANTE: no eliminar el token del body.
+    // Algunos navegadores (Safari/iOS) pueden bloquear/ignorar cookies cross-site.
+    // El frontend puede usar este token como fallback enviándolo en Authorization: Bearer <token>.
 
     return result;
   }
@@ -62,7 +69,17 @@ export class UsuariosController {
   @Post('logout')
   @HttpCode(200)
   async logout(@Res({ passthrough: true }) res: Response) {
-    res.clearCookie('access_token', { path: '/' });
+    const frontendUrl = process.env.FRONTEND_URL || '';
+    const isProd = process.env.NODE_ENV === 'production';
+    const isHttps = isProd && /^https:\/\//i.test(frontendUrl);
+    const cookieDomain = process.env.COOKIE_DOMAIN || undefined;
+
+    res.clearCookie('access_token', {
+      path: '/',
+      domain: cookieDomain,
+      secure: isHttps,
+      sameSite: isHttps ? 'none' : 'lax',
+    });
     return { message: 'Sesión cerrada' };
   }
 
