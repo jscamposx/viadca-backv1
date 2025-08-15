@@ -201,12 +201,6 @@ export class UsuariosService
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
-    if (!usuario.email_verificado) {
-      throw new UnauthorizedException(
-        'Debes verificar tu correo electrónico antes de iniciar sesión',
-      );
-    }
-
     const payload: JwtPayload = {
       sub: usuario.id,
       usuario: usuario.usuario,
