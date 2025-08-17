@@ -187,17 +187,48 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
   async findAllPaginated(
     paginationDto: PaginationDto,
   ): Promise<PaginatedResponse<PaqueteListDto>> {
-    const { page = 1, limit = 10 } = paginationDto;
+    const { page = 1, limit = 6, search } = paginationDto;
     const skip = (page - 1) * limit;
 
-    const [paquetes, total] = await this.paqueteRepository.findAndCount({
-      relations: ['imagenes', 'mayoristas'],
-      order: {
-        creadoEn: 'DESC',
-      },
-      skip,
-      take: limit,
-    });
+    const qb = this.paqueteRepository
+      .createQueryBuilder('p')
+      .leftJoinAndSelect('p.imagenes', 'imagenes')
+      .leftJoinAndSelect('p.mayoristas', 'mayoristas')
+      .where('p.eliminado_en IS NULL');
+
+    if (search && search.trim() !== '') {
+      const s = `%${search.trim().toLowerCase()}%`;
+      qb.andWhere(
+        'LOWER(p.titulo) LIKE :s OR LOWER(p.codigoUrl) LIKE :s OR LOWER(mayoristas.nombre) LIKE :s OR LOWER(mayoristas.tipo_producto) LIKE :s',
+        { s },
+      );
+    }
+
+    const total = await qb.clone().distinct(true).getCount();
+
+    const paquetes = await qb
+      .select([
+        'p.id',
+        'p.codigoUrl',
+        'p.titulo',
+        'p.activo',
+        'p.precio_total',
+        'p.moneda',
+        'p.creadoEn',
+        'imagenes.id',
+        'imagenes.orden',
+        'imagenes.tipo',
+        'imagenes.contenido',
+        'imagenes.cloudinary_public_id',
+        'imagenes.cloudinary_url',
+        'mayoristas.id',
+        'mayoristas.nombre',
+        'mayoristas.tipo_producto',
+      ])
+      .orderBy('p.creadoEn', 'DESC')
+      .skip(skip)
+      .take(limit)
+      .getMany();
 
     const paquetesTransformados = paquetes.map((paquete) => {
       const imagenesOrdenadas = [...(paquete.imagenes || [])].sort(
@@ -217,7 +248,7 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
       } as PaqueteListDto;
     });
 
-    const totalPages = Math.ceil(total / limit);
+    const totalPages = Math.ceil(total / limit) || 1;
 
     return {
       data: paquetesTransformados,
@@ -830,7 +861,7 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
 
   async findAllPublicSimple(): Promise<PaquetePublicListDto[]> {
     const paquetes = await this.paqueteRepository.find({
-      relations: ['imagenes', 'destinos'],
+      relations: ['imagenes', 'destinos', 'mayoristas'],
       where: { 
         eliminadoEn: null,
         activo: true
@@ -855,6 +886,11 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
         .map(d => d.destino)
         .join(', ');
 
+      // Obtener tipos de producto de mayoristas asociados (únicos)
+      const mayoristasTipos = Array.from(
+        new Set((paquete.mayoristas || []).map(m => m.tipo_producto))
+      );
+
       return {
         codigoUrl: paquete.codigoUrl,
         titulo: paquete.titulo,
@@ -865,7 +901,21 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
         primera_imagen: primeraImagen ? primeraImagen.contenido : null,
         activo: paquete.activo,
         descuento: paquete.descuento > 0 ? Number(paquete.descuento) : undefined,
+        mayoristas_tipos: mayoristasTipos,
       } as PaquetePublicListDto;
     });
+  }
+
+  async getPaquetesStats() {
+    const total = await this.paqueteRepository.count({ where: { eliminadoEn: null } as any });
+    const activos = await this.paqueteRepository.count({ where: { eliminadoEn: null, activo: true } as any });
+    const inactivos = await this.paqueteRepository.count({ where: { eliminadoEn: null, activo: false } as any });
+
+    return {
+      total,
+      paquetes: total,
+      activos,
+      inactivos,
+    };
   }
 }

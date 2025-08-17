@@ -8,4 +8,5 @@ export interface PaquetePublicListDto {
   primera_imagen?: string | null;
   activo: boolean;
   descuento?: number;
+  mayoristas_tipos: string[]; // tipos de producto de mayoristas asociados
 }

@@ -10,14 +10,16 @@ import {
   ParseUUIDPipe,
   UseInterceptors,
   Inject,
+  Query,
 } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
 import { UsuariosService } from '../../usuarios/usuarios.service';
 import { UpdateUsuarioRolDto } from '../../usuarios/dto/update-usuario-rol.dto';
 import { AdminGuard } from '../../usuarios/guards/admin.guard';
-import { CacheInterceptor, CacheKey, CacheTTL } from '@nestjs/cache-manager';
+import { CacheInterceptor, /* CacheKey,*/ CacheTTL } from '@nestjs/cache-manager';
 import { Throttle, SkipThrottle } from '@nestjs/throttler';
+import { PaginationDto } from '../../paquetes/dto/pagination.dto';
 
 @Controller('admin/usuarios')
 @Throttle({ default: { limit: 600, ttl: 60_000 } })
@@ -37,10 +39,10 @@ export class AdminUsuariosController {
   @Get()
   @UseGuards(AdminGuard)
   @UseInterceptors(CacheInterceptor)
-  @CacheKey('admin:usuarios:list')
+  // @CacheKey('admin:usuarios:list') // Evitamos clave estática para respetar page/limit
   @CacheTTL(30)
-  async findAll() {
-    return this.usuariosService.findAllUsers();
+  async findAll(@Query() paginationDto: PaginationDto) {
+    return this.usuariosService.findAllPaginated(paginationDto);
   }
 
   @Get(':id')
@@ -54,7 +56,7 @@ export class AdminUsuariosController {
   @Get('deleted/list')
   @UseGuards(AdminGuard)
   @UseInterceptors(CacheInterceptor)
-  @CacheKey('admin:usuarios:deleted')
+  // @CacheKey('admin:usuarios:deleted') // opcional: podríamos parametrizar más adelante
   @CacheTTL(30)
   async findDeleted() {
     return this.usuariosService.findDeleted();
@@ -105,7 +107,7 @@ export class AdminUsuariosController {
   @Get('stats/overview')
   @UseGuards(AdminGuard)
   @UseInterceptors(CacheInterceptor)
-  @CacheKey('admin:usuarios:stats')
+  // @CacheKey('admin:usuarios:stats')
   @CacheTTL(30)
   async getStats() {
     return this.usuariosService.getUserStats();

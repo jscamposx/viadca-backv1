@@ -60,6 +60,13 @@ export class PaquetesController {
     private readonly excelService: ExcelService,
   ) {}
 
+  @Get('stats/overview')
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(30)
+  getStats() {
+    return this.paquetesService.getPaquetesStats();
+  }
+
   @Post()
   @UseGuards(AdminGuard)
   @HttpCode(HttpStatus.CREATED)

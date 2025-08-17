@@ -13,13 +13,15 @@ import {
   ValidationPipe,
   UseGuards,
   UseInterceptors,
+  Query,
 } from '@nestjs/common';
 import { MayoristasService } from './mayoristas.service';
 import { CreateMayoristaDto } from './dto/create-mayorista.dto';
 import { UpdateMayoristaDto } from './dto/update-mayorista.dto';
 import { AdminGuard } from '../usuarios/guards/admin.guard';
 import { Throttle, SkipThrottle } from '@nestjs/throttler';
-import { CacheInterceptor, CacheKey, CacheTTL } from '@nestjs/cache-manager';
+import { CacheInterceptor, /* CacheKey,*/ CacheTTL } from '@nestjs/cache-manager';
+import { PaginationDto } from '../paquetes/dto/pagination.dto';
 
 @Controller('admin/mayoristas')
 @Throttle({ default: { limit: 600, ttl: 60_000 } })
@@ -36,10 +38,17 @@ export class MayoristasController {
 
   @Get()
   @UseInterceptors(CacheInterceptor)
-  @CacheKey('admin:mayoristas:list')
+  // @CacheKey('admin:mayoristas:list')
   @CacheTTL(30)
-  findAll() {
-    return this.mayoristasService.findAll();
+  findAll(@Query() paginationDto: PaginationDto) {
+    return this.mayoristasService.findAllPaginated(paginationDto);
+  }
+
+  @Get('stats/overview')
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(30)
+  getStats() {
+    return this.mayoristasService.getMayoristasStats();
   }
 
   @Get(':id')
@@ -87,7 +96,7 @@ export class MayoristasController {
 
   @Get('deleted/list')
   @UseInterceptors(CacheInterceptor)
-  @CacheKey('admin:mayoristas:deleted')
+  // @CacheKey('admin:mayoristas:deleted')
   @CacheTTL(30)
   async getDeleted() {
     return this.mayoristasService.findDeleted();

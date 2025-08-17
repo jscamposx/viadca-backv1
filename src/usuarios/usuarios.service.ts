@@ -24,6 +24,7 @@ import {
   ResetPasswordDto,
   VerifyEmailDto,
 } from './dto/auth.dto';
+import { PaginationDto, PaginatedResponse } from '../paquetes/dto/pagination.dto';
 
 export interface JwtPayload {
   sub: string;
@@ -310,6 +311,60 @@ export class UsuariosService
       ],
       order: { creadoEn: 'DESC' },
     });
+  }
+
+  async findAllPaginated(
+    paginationDto: PaginationDto,
+  ): Promise<PaginatedResponse<Partial<Usuario>>> {
+    const { page = 1, limit = 6, search } = paginationDto;
+    const skip = (page - 1) * limit;
+
+    const qb = this.repository
+      .createQueryBuilder('u')
+      .where('u.eliminado_en IS NULL');
+
+    if (search && search.trim() !== '') {
+      const s = `%${search.trim().toLowerCase()}%`;
+      qb.andWhere(
+        '(LOWER(u.usuario) LIKE :s OR LOWER(u.correo) LIKE :s OR LOWER(u.nombre_completo) LIKE :s OR LOWER(u.rol) LIKE :s)',
+        { s },
+      );
+    }
+
+    // Conteo total
+    const total = await qb.clone().getCount();
+
+    // Datos paginados
+    const usuarios = await qb
+      .select([
+        'u.id',
+        'u.usuario',
+        'u.correo',
+        'u.rol',
+        'u.activo',
+        'u.email_verificado',
+        'u.nombre_completo',
+        'u.creadoEn',
+        'u.actualizadoEn',
+      ])
+      .orderBy('u.creadoEn', 'DESC')
+      .skip(skip)
+      .take(limit)
+      .getMany();
+
+    const totalPages = Math.ceil(total / limit) || 1;
+
+    return {
+      data: usuarios,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalItems: total,
+        itemsPerPage: limit,
+        hasNextPage: page < totalPages,
+        hasPreviousPage: page > 1,
+      },
+    };
   }
 
   async updateUserRole(
