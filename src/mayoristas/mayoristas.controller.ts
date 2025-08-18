@@ -37,9 +37,7 @@ export class MayoristasController {
   }
 
   @Get()
-  @UseInterceptors(CacheInterceptor)
-  // @CacheKey('admin:mayoristas:list')
-  @CacheTTL(30)
+  // Caché removido para admin no-stats
   findAll(@Query() paginationDto: PaginationDto) {
     return this.mayoristasService.findAllPaginated(paginationDto);
   }
@@ -52,8 +50,7 @@ export class MayoristasController {
   }
 
   @Get(':id')
-  @UseInterceptors(CacheInterceptor)
-  @CacheTTL(30)
+  // Caché removido
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.mayoristasService.findOne(id);
   }
@@ -95,9 +92,7 @@ export class MayoristasController {
   }
 
   @Get('deleted/list')
-  @UseInterceptors(CacheInterceptor)
-  // @CacheKey('admin:mayoristas:deleted')
-  @CacheTTL(30)
+  // Caché removido
   async getDeleted() {
     return this.mayoristasService.findDeleted();
   }

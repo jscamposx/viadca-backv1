@@ -38,26 +38,21 @@ export class AdminUsuariosController {
 
   @Get()
   @UseGuards(AdminGuard)
-  @UseInterceptors(CacheInterceptor)
-  // @CacheKey('admin:usuarios:list') // Evitamos clave estática para respetar page/limit
-  @CacheTTL(30)
+  // Caché removido para endpoints admin no-stats
   async findAll(@Query() paginationDto: PaginationDto) {
     return this.usuariosService.findAllPaginated(paginationDto);
   }
 
   @Get(':id')
   @UseGuards(AdminGuard)
-  @UseInterceptors(CacheInterceptor)
-  @CacheTTL(30)
+  // Caché removido
   async findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.usuariosService.findUserById(id);
   }
 
   @Get('deleted/list')
   @UseGuards(AdminGuard)
-  @UseInterceptors(CacheInterceptor)
-  // @CacheKey('admin:usuarios:deleted') // opcional: podríamos parametrizar más adelante
-  @CacheTTL(30)
+  // Caché removido
   async findDeleted() {
     return this.usuariosService.findDeleted();
   }

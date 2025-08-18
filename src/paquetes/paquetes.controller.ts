@@ -93,15 +93,13 @@ export class PaquetesController {
   }
 
   @Get()
-  @UseInterceptors(CacheInterceptor)
-  @CacheTTL(30)
+  // Caché removido para admin no-stats
   findAll(@Query() paginationDto: PaginationDto) {
     return this.paquetesService.findAllPaginated(paginationDto);
   }
 
   @Get(':id')
-  @UseInterceptors(CacheInterceptor)
-  @CacheTTL(30)
+  // Caché removido
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.paquetesService.findOne(id);
   }
@@ -149,9 +147,7 @@ export class PaquetesController {
   }
 
   @Get('deleted/list')
-  @UseInterceptors(CacheInterceptor)
-  @CacheKey('admin:paquetes:deleted')
-  @CacheTTL(30)
+  // Caché removido
   async getDeleted() {
     return this.paquetesService.findDeleted();
   }
@@ -169,8 +165,7 @@ export class PaquetesController {
   }
 
   @Get('excel/:id')
-  @UseInterceptors(CacheInterceptor)
-  @CacheTTL(30)
+  // Caché removido
   async generateExcel(
     @Param('id', ParseUUIDPipe) id: string,
     @Res() res: Response,
