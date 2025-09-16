@@ -111,4 +111,4 @@ Endpoints sensibles tienen límites más estrictos:
 Ajustes en `AppModule` (ThrottlerModule.forRoot) y por endpoint con `@Throttle`.
 
 Para servidores de 500MB RAM, estos valores son conservadores y protegen de abuso sin afectar usuarios legítimos.
- pnpm add -g pnpm 
+ pnpm add -g pnpm  xd
