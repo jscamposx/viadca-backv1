@@ -1,0 +1,154 @@
+import {
+  IsString,
+  IsNotEmpty,
+  IsDateString,
+  IsNumber,
+  IsOptional,
+  IsBoolean,
+  Min,
+  IsPositive,
+  ValidateNested,
+  IsArray,
+  IsUUID,
+  ValidateIf,
+  MaxLength,
+  IsIn,
+  IsEnum,
+} from 'class-validator';
+import { Type } from 'class-transformer';
+import { CreateDestinoDto } from './create-destino.dto';
+import { CreateImagenDto } from './create-imagen.dto';
+import { CreateHotelDto } from './create-hotel.dto';
+import {
+  IsNoSQLInjection,
+  IsCleanText,
+} from '../../common/validators/security.validator';
+
+export enum MonedaPaquete {
+  MXN = 'MXN',
+  USD = 'USD',
+}
+
+export class CreatePaqueteDto {
+  @IsString({ message: 'El título debe ser una cadena de texto' })
+  @IsNotEmpty({ message: 'El título no puede estar vacío' })
+  @MaxLength(200, { message: 'El título no puede tener más de 200 caracteres' })
+  @IsNoSQLInjection({ message: 'El título contiene caracteres no permitidos' })
+  @IsCleanText({ message: 'El título contiene contenido no válido' })
+  readonly titulo: string;
+
+  @IsString({ message: 'El origen debe ser una cadena de texto' })
+  @IsNotEmpty({ message: 'El origen no puede estar vacío' })
+  @MaxLength(100, { message: 'El origen no puede tener más de 100 caracteres' })
+  @IsNoSQLInjection({ message: 'El origen contiene caracteres no permitidos' })
+  @IsCleanText({ message: 'El origen contiene contenido no válido' })
+  readonly origen: string;
+
+  @IsNumber({}, { message: 'La latitud del origen debe ser un número' })
+  readonly origen_lat: number;
+
+  @IsNumber({}, { message: 'La longitud del origen debe ser un número' })
+  readonly origen_lng: number;
+
+  @IsDateString({}, { message: 'La fecha de inicio debe ser una fecha válida' })
+  readonly fecha_inicio: Date;
+
+  @IsDateString({}, { message: 'La fecha de fin debe ser una fecha válida' })
+  readonly fecha_fin: Date;
+
+  @IsOptional()
+  @ValidateIf((o) => o.incluye !== null)
+  @IsString({ message: 'Lo que incluye debe ser una cadena de texto' })
+  @IsNoSQLInjection({
+    message: 'Lo que incluye contiene caracteres no permitidos',
+  })
+  @IsCleanText({ message: 'Lo que incluye contiene contenido no válido' })
+  readonly incluye?: string | null;
+
+  @IsOptional()
+  @ValidateIf((o) => o.no_incluye !== null)
+  @IsString({ message: 'Lo que no incluye debe ser una cadena de texto' })
+  @IsNoSQLInjection({
+    message: 'Lo que no incluye contiene caracteres no permitidos',
+  })
+  @IsCleanText({ message: 'Lo que no incluye contiene contenido no válido' })
+  readonly no_incluye?: string | null;
+
+  @IsOptional()
+  @ValidateIf((o) => o.requisitos !== null)
+  @IsString({ message: 'Los requisitos deben ser una cadena de texto' })
+  @IsNoSQLInjection({
+    message: 'Los requisitos contienen caracteres no permitidos',
+  })
+  @IsCleanText({ message: 'Los requisitos contienen contenido no válido' })
+  readonly requisitos?: string | null;
+
+  @IsOptional()
+  @IsNumber({}, { message: 'El descuento debe ser un número' })
+  @Min(0, { message: 'El descuento no puede ser negativo' })
+  readonly descuento?: number;
+
+  @IsOptional()
+  @ValidateIf((o) => o.anticipo !== null)
+  @IsNumber({}, { message: 'El anticipo debe ser un número' })
+  @IsPositive({ message: 'El anticipo debe ser un número positivo' })
+  readonly anticipo?: number | null;
+
+  @IsNumber({}, { message: 'El precio total debe ser un número' })
+  @IsPositive({ message: 'El precio total debe ser un número positivo' })
+  readonly precio_total: number;
+
+  // Nueva moneda del paquete (MXN o USD)
+  @IsOptional()
+  @IsEnum(MonedaPaquete, { message: 'La moneda debe ser MXN o USD' })
+  readonly moneda?: MonedaPaquete;
+
+  @IsOptional()
+  @ValidateIf((o) => o.notas !== null)
+  @IsString({ message: 'Las notas deben ser una cadena de texto' })
+  @IsNoSQLInjection({ message: 'Las notas contienen caracteres no permitidos' })
+  @IsCleanText({ message: 'Las notas contienen contenido no válido' })
+  readonly notas?: string | null;
+
+  @IsOptional()
+  @IsBoolean({ message: 'El estado activo debe ser un valor booleano' })
+  readonly activo?: boolean;
+
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => CreateDestinoDto)
+  readonly destinos?: CreateDestinoDto[];
+
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => CreateImagenDto)
+  readonly imagenes?: CreateImagenDto[];
+
+  @IsOptional()
+  @ValidateIf((o) => o.hotel !== null)
+  @ValidateNested()
+  @Type(() => CreateHotelDto)
+  readonly hotel?: CreateHotelDto | null;
+
+  @IsOptional()
+  @IsString({ message: 'El itinerario de texto debe ser una cadena de texto' })
+  @IsNoSQLInjection({
+    message: 'El itinerario de texto contiene caracteres no permitidos',
+  })
+  @IsCleanText({
+    message: 'El itinerario de texto contiene contenido no válido',
+  })
+  readonly itinerario_texto?: string;
+
+  @IsOptional()
+  @IsArray({ message: 'Los IDs de mayoristas deben ser un arreglo' })
+  @IsUUID('4', {
+    each: true,
+    message: 'Cada ID de mayorista debe ser un UUID válido',
+  })
+  readonly mayoristasIds?: string[];
+
+  @IsOptional()
+  @IsBoolean({ message: 'El campo favorito debe ser booleano' })
+  readonly favorito?: boolean;
+}
