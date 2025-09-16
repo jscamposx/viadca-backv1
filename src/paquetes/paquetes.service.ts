@@ -828,6 +828,7 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
     });
 
     return {
+      id: paquete.id,
       codigoUrl: paquete.codigoUrl,
       titulo: paquete.titulo,
       origen: paquete.origen,
@@ -930,4 +931,5 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
       inactivos,
     };
   }
+
 }
