@@ -948,24 +948,36 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
       order: { creadoEn: 'DESC' },
     });
 
-    const result = paquetes
-      .filter((p) => p.hotel?.isCustom === true)
-      .map((p) => {
-        if (p.hotel?.imagenes) {
-          p.hotel.imagenes.sort((a, b) => a.orden - b.orden);
+    // Deduplicar por placeId del hotel (primer encuentro = paquete más reciente por el order DESC)
+    const vistos = new Set<string>();
+    const result: Array<{
+      hotel: Hotel;
+      paquete: Pick<Paquete, 'id' | 'codigoUrl' | 'titulo' | 'activo'>;
+      primera_imagen?: string | null;
+    }> = [];
+
+    for (const p of paquetes) {
+      if (p.hotel?.isCustom === true) {
+        const key = p.hotel.placeId || p.hotel.id;
+        if (key && !vistos.has(key)) {
+          if (p.hotel.imagenes) {
+            p.hotel.imagenes.sort((a, b) => a.orden - b.orden);
+          }
+          const primera = p.hotel.imagenes && p.hotel.imagenes.length > 0 ? p.hotel.imagenes[0] : null;
+          result.push({
+            hotel: p.hotel as Hotel,
+            paquete: {
+              id: p.id,
+              codigoUrl: p.codigoUrl,
+              titulo: p.titulo,
+              activo: p.activo,
+            },
+            primera_imagen: primera ? primera.contenido : null,
+          });
+          vistos.add(key);
         }
-        const primera = p.hotel?.imagenes && p.hotel.imagenes.length > 0 ? p.hotel.imagenes[0] : null;
-        return {
-          hotel: p.hotel as Hotel,
-          paquete: {
-            id: p.id,
-            codigoUrl: p.codigoUrl,
-            titulo: p.titulo,
-            activo: p.activo,
-          },
-          primera_imagen: primera ? primera.contenido : null,
-        };
-      });
+      }
+    }
 
     return result;
   }
