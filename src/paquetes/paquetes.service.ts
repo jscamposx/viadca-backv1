@@ -932,4 +932,42 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
     };
   }
 
+
+  /**
+   * Devuelve SOLO los hoteles personalizados (isCustom=true) de paquetes no eliminados.
+   * Incluye imágenes de hotel y datos mínimos del paquete (id, codigoUrl, titulo, activo).
+   */
+  async findAllCustomHotelsFull(): Promise<Array<{
+    hotel: Hotel;
+    paquete: Pick<Paquete, 'id' | 'codigoUrl' | 'titulo' | 'activo'>;
+    primera_imagen?: string | null;
+  }>> {
+    const paquetes = await this.paqueteRepository.find({
+      relations: ['hotel', 'hotel.imagenes'],
+      where: { eliminadoEn: null } as any,
+      order: { creadoEn: 'DESC' },
+    });
+
+    const result = paquetes
+      .filter((p) => p.hotel?.isCustom === true)
+      .map((p) => {
+        if (p.hotel?.imagenes) {
+          p.hotel.imagenes.sort((a, b) => a.orden - b.orden);
+        }
+        const primera = p.hotel?.imagenes && p.hotel.imagenes.length > 0 ? p.hotel.imagenes[0] : null;
+        return {
+          hotel: p.hotel as Hotel,
+          paquete: {
+            id: p.id,
+            codigoUrl: p.codigoUrl,
+            titulo: p.titulo,
+            activo: p.activo,
+          },
+          primera_imagen: primera ? primera.contenido : null,
+        };
+      });
+
+    return result;
+  }
+
 }

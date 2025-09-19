@@ -152,6 +152,14 @@ export class PaquetesController {
     return this.paquetesService.findDeleted();
   }
 
+  @Get('custom/hoteles')
+  @UseGuards(AdminGuard)
+  @SkipThrottle()
+  // Devuelve SOLO los hoteles personalizados (isCustom=true) y datos mínimos del paquete
+  async getCustomHotels() {
+    return this.paquetesService.findAllCustomHotelsFull();
+  }
+
   @Delete(':id/hard')
   @UseGuards(AdminGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
