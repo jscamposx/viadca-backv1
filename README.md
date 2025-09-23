@@ -1,114 +1,314 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Viadca Back v1
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+![Viadca](src/assets/imagenes/logo.png)
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+API REST de gestión de viajes y paquetes turísticos construida con NestJS, TypeScript y MySQL. Incluye autenticación con JWT (cookie HttpOnly + Bearer fallback), subida de archivos a Cloudinary, generación de Excel, caché, rate limiting, limpieza automática de registros e imágenes, y módulos de administración.
 
-## Description
+> Stack principal: NestJS 11, TypeScript 5, Express 5, TypeORM 0.3, MySQL 8, pnpm.
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Tabla de contenido
 
-## Project setup
+- Descripción y funcionalidades
+- Requisitos
+- Instalación y ejecución
+- Variables de entorno (.env)
+- Estructura del proyecto
+- Scripts disponibles
+- Endpoints principales (API)
+- Seguridad y buenas prácticas
+- Caché y rate limiting
+- Subida de imágenes (Cloudinary)
+- Generación de Excel
+- Limpieza automática (cron)
+- Pruebas y linting
+- Despliegue
+- Licencia
+
+## Descripción y funcionalidades
+
+Este backend centraliza la gestión de:
+
+- Usuarios: registro, verificación de email, login/logout, perfil, recuperación y restablecimiento de contraseña.
+- Paquetes turísticos: CRUD administrativo, imágenes (Cloudinary), listados públicos optimizados y estadísticas.
+- Mayoristas: CRUD administrativo y estadísticas.
+- Contacto: configuración pública de datos de contacto/redes con caché.
+- Subida de imágenes: endpoints admin para subir/borrar en Cloudinary.
+- Generación de Excel: exportación de paquetes a Excel (ExcelJS) con template propio.
+- Mantenimiento: tareas de limpieza de soft-deletes e imágenes huérfanas programadas.
+
+Características transversales:
+
+- Validación y transformación de DTOs con `class-validator`/`class-transformer` y `ValidationPipe` global.
+- CORS configurable por entorno, cookies HttpOnly, `trust proxy` habilitado.
+- Rate limiting global y por endpoint con `@nestjs/throttler`.
+- Caché en memoria con `@nestjs/cache-manager` para respuestas públicas y estadísticas.
+- Compresión HTTP y límites elevados de payload para operaciones administrativas.
+
+## Requisitos
+
+- Node.js 18+ (recomendado 20+ LTS)
+- pnpm 8+
+- MySQL 8 (o compatible)
+- Cuenta de Cloudinary (para subir imágenes)
+
+## Instalación y ejecución
+
+1. Instalar dependencias
 
 ```bash
-$ pnpm install
+pnpm install
 ```
 
-## Compile and run the project
+1. Crear archivo de entorno según tu entorno: `.env.development`, `.env.local` o `.env`
+
+1. Ejecutar
 
 ```bash
-# development
-$ pnpm run start
+# desarrollo (watch)
+pnpm run start:dev
 
-# watch mode
-$ pnpm run start:dev
+# desarrollo simple
+pnpm run start
 
-# production mode
-$ pnpm run start:prod
+# producción (compila y levanta dist/ con NODE_ENV=production)
+pnpm run build
+pnpm run start:prod
 ```
 
-## Run tests
+Por defecto escucha en el puerto `3000` o el definido en `PORT`.
+
+## Variables de entorno (.env)
+
+El módulo de configuración carga (en orden): `.env.{NODE_ENV}`, `.env.local`, `.env`.
+
+- Servidor
+  - `PORT=3000`
+  - `NODE_ENV=development|production`
+  - `FRONTEND_URL=https://tu-frontend.com` (origins permitidos en producción)
+  - `COOKIE_DOMAIN=.tudominio.com` (opcional; útil con subdominios en prod)
+
+- Base de datos (TypeORM MySQL)
+  - `DB_HOST=localhost`
+  - `DB_PORT=3306`
+  - `DB_USERNAME=usuario`
+  - `DB_PASSWORD=clave`
+  - `DB_DATABASE=viadca`
+
+- Autenticación / JWT
+  - `JWT_SECRET=super-secreto-cámbialo`
+
+- Cloudinary
+  - `CLOUDINARY_CLOUD_NAME=xxxx`
+  - `CLOUDINARY_API_KEY=xxxx`
+  - `CLOUDINARY_API_SECRET=xxxx`
+
+- Email (SMTP)
+  - `SMTP_HOST=smtp.example.com`
+  - `SMTP_PORT=587` (465 para SSL)
+  - `SMTP_SECURE=false` (true si usas 465)
+  - `SMTP_USER=usuario`
+  - `SMTP_PASS=clave`
+  - `SMTP_FROM_NAME=Viadca`
+  - `SMTP_FROM_EMAIL=no-reply@tudominio.com`
+
+- Limpieza (cleanup)
+  - `CLEANUP_RETENTION_DAYS=14`
+  - `CLEANUP_HOUR=2`
+  - `CLEANUP_MINUTE=0`
+  - `CLEANUP_AUTO_HARD_DELETE=true`
+  - `CLEANUP_AUTO_IMAGE_CLEANUP=true`
+  - `CLEANUP_DETAILED_LOGS=false`
+
+## Estructura del proyecto
+
+```text
+src/
+  app.module.ts           # Módulo raíz: Config, Cache, Throttler, TypeORM, módulos de dominio
+  main.ts                 # Bootstrap: CORS, pipes globales, compresión, cookies, body limits
+
+  usuarios/               # Autenticación, guardas, DTOs y servicios de usuarios
+    usuarios.controller.ts
+    usuarios.service.ts
+    guards/
+      auth.guard.ts
+      admin.guard.ts
+    decorators/user.decorator.ts
+    dto/
+
+  paquetes/               # Gestión de paquetes turísticos
+    paquetes.controller.ts
+    paquetes.service.ts
+    dto/
+    entidades/paquete.entity.ts
+
+  mayoristas/             # Gestión de mayoristas
+    mayoristas.controller.ts
+    mayoristas.service.ts
+
+  contacto/               # Datos de contacto/redes públicas (con caché)
+    contacto.controller.ts
+    contacto.service.ts
+
+  cloudinary/             # Integración con Cloudinary para imágenes
+    upload.controller.ts
+    cloudinary.service.ts
+    cloudinary.module.ts
+
+  excel/                  # Generación de reportes Excel
+    excel.service.ts
+    templates/paquete-excel.template.ts
+
+  common/                 # Limpieza programada y utilidades comunes
+    cleanup.module.ts
+    services/cleanup.service.ts
+    config/cleanup.config.ts
+
+  entities/               # Entidades TypeORM compartidas (Usuario, Hotel, Imagen, etc.)
+  utils/                  # Utilidades (interceptores, helpers)
+```
+
+## Scripts disponibles
+
+Desde `package.json`:
+
+- `pnpm run start` — Inicia la app.
+- `pnpm run start:dev` — Watch mode con `NODE_ENV=dev`.
+- `pnpm run start:prod` — Ejecuta `dist/main` con `NODE_ENV=production`.
+- `pnpm run build` — Compila TypeScript.
+- `pnpm run lint` — Lint con ESLint.
+- `pnpm run format` — Formatea con Prettier.
+- `pnpm run test` — Tests unitarios con Jest.
+- `pnpm run test:e2e` — Tests e2e.
+- `pnpm run test:cov` — Cobertura.
+
+## Endpoints principales (API)
+
+Base URL: `http://localhost:{PORT}` (por defecto `3000`).
+
+- Usuarios (`/usuarios`)
+  - `POST /register` — Registro (rate limit: 5/min).
+  - `POST /verify-email` — Verificar correo.
+  - `POST /login` — Login, setea cookie `access_token` HttpOnly (rate limit: 5/min).
+  - `POST /logout` — Logout, limpia cookie.
+  - `POST /forgot-password` — Solicita reset (rate limit: 5/min).
+  - `POST /reset-password` — Restablece contraseña (rate limit: 5/min).
+  - `GET /profile` — Perfil autenticado (rate limit: 60/min).
+  - `PATCH /profile` — Actualiza perfil (rate limit: 20/min).
+
+- Paquetes públicos (`/paquetes`)
+  - `GET /listado` — Listado simple para tarjetas (cache 5 min; 100 req/min).
+  - `GET /:codigoUrl` — Detalle público por código.
+
+- Administración de paquetes (`/admin/paquetes`) [requiere rol admin]
+  - `GET /stats/overview` — KPIs (cache 30s).
+  - `POST /` — Crear paquete (payload grande permitido).
+  - `POST /:id/imagenes` — Agregar imagen a paquete.
+  - `GET /` — Listado paginado (filtros en `query`).
+  - `GET /:id` — Detalle.
+  - `PATCH /:id` — Actualizar paquete (payload grande permitido).
+  - `DELETE /:id` — Soft delete.
+  - `PATCH /:id/restore` — Restaurar.
+  - `GET /deleted/list` — Listar soft-deleted.
+  - `GET /custom/hoteles` — Hoteles personalizados (isCustom=true).
+  - `DELETE /:id/hard` — Eliminación permanente.
+  - `GET /excel/:id` — Descargar Excel del paquete.
+
+- Administración de mayoristas (`/admin/mayoristas`) [requiere rol admin]
+  - CRUD completo, `GET /stats/overview` con cache 30s, soft/hard delete y restore.
+
+- Contacto (`/contacto`)
+  - `GET /` — Obtiene datos públicos (cache 5 min).
+  - `POST /`, `PATCH /`, `DELETE /` — Administrar (requiere admin).
+
+- Subidas (Cloudinary) (`/admin/upload`) [requiere rol admin]
+  - `POST /image` — Subir imagen (campo `file`, opcional `folder`).
+  - `POST /images` — Subir múltiples (campo `files`, máx. 10).
+  - `DELETE /image/:publicId` — Borrar por `public_id`.
+
+- Limpieza (`/admin/cleanup`) [requiere rol admin]
+  - `GET /stats` — Estado y próximos runs (cache 30s).
+  - `POST /run` — Ejecuta limpieza manual (soft-deletes e imágenes).
+  - `POST /hard-delete` — Forzar hard delete de expirados.
+  - `POST /cleanup-images` — Forzar limpieza de imágenes huérfanas.
+
+## Seguridad y buenas prácticas
+
+- Autenticación: JWT firmado con `JWT_SECRET`. El token se entrega en:
+  - Cookie `access_token` HttpOnly (predeterminado). En producción sobre HTTPS usa `SameSite=None; Secure` y opcionalmente `COOKIE_DOMAIN`.
+  - Respuesta JSON como fallback (para navegadores que bloqueen cookies). El frontend puede enviarlo como `Authorization: Bearer <token>`.
+
+- Validación: `ValidationPipe` global con `whitelist`, `forbidNonWhitelisted` y `transform`.
+
+- CORS: En prod, `origin` restringido a `FRONTEND_URL`. En dev, `origin: true`.
+
+- Body size: JSON y urlencoded hasta `200mb`. Interceptor `LargePayloadInterceptor` en endpoints admin de paquetes para registrar tamaño y tiempos de respuesta.
+
+- TypeORM `synchronize: true`: útil en desarrollo. En producción se recomienda migraciones y desactivar `synchronize`.
+
+## Caché y rate limiting
+
+- Caché global (memoria): TTL por defecto 300s, máx. 1000 ítems. Endpoints usan `CacheInterceptor`, `@CacheKey` y `@CacheTTL` cuando aplica.
+
+- Rate limiting global (`@nestjs/throttler`):
+  - 60 req/min por IP (ventana 60s)
+  - 20 req/10s por IP (control de ráfagas)
+
+- Overrides por endpoint:
+  - Auth sensible (`/usuarios/register|login|forgot-password|reset-password`): 5 req/min.
+  - `GET /usuarios/profile`: 60 req/min.
+  - `PATCH /usuarios/profile`: 20 req/min.
+
+## Subida de imágenes (Cloudinary)
+
+- Config por variables `CLOUDINARY_*`.
+- Multer en memoria (límite 10MB por archivo, solo imágenes).
+- Respuesta incluye `public_id`, `url`, `upload_preset: 'viadca'` y `tipo: 'cloudinary'`.
+- Al eliminar paquetes/imagenes se intenta borrar también en Cloudinary.
+
+## Generación de Excel
+
+`GET /admin/paquetes/excel/:id` genera y descarga un Excel (`.xlsx`) del paquete seleccionado usando `exceljs` y el template `excel/templates/paquete-excel.template.ts`.
+
+## Limpieza automática (cron)
+
+- Servicio `CleanupService` ejecuta diariamente a la hora configurada (por defecto 02:00) y:
+  - Elimina definitivamente registros soft-deleted más antiguos que `CLEANUP_RETENTION_DAYS`.
+  - Limpia imágenes huérfanas en Cloudinary.
+- Se puede forzar manualmente desde los endpoints admin.
+
+## Pruebas y linting
 
 ```bash
 # unit tests
-$ pnpm run test
+pnpm run test
 
 # e2e tests
-$ pnpm run test:e2e
+pnpm run test:e2e
 
-# test coverage
-$ pnpm run test:cov
+# cobertura
+pnpm run test:cov
+
+# lint y formato
+pnpm run lint
+pnpm run format
 ```
 
-## Deployment
+## Despliegue
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+1. Configura correctamente `.env` en el entorno de producción.
+2. Compila y ejecuta en modo producción:
 
 ```bash
-$ pnpm install -g @nestjs/mau
-$ mau deploy
+pnpm run build
+pnpm run start:prod
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+Notas de producción:
 
-## Resources
+- Establece `NODE_ENV=production` y `FRONTEND_URL` (HTTPS) para cookies `SameSite=None; Secure`.
+- Recomendado configurar un proxy (Nginx) con `X-Forwarded-*` y mantener `trust proxy` habilitado.
+- Considera desactivar `synchronize` en TypeORM y usar migraciones.
 
-Check out a few resources that may come in handy when working with NestJS:
+## Licencia
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
-
-## Rate limiting
-
-Se ha habilitado rate limiting global usando `@nestjs/throttler` con:
-- 60 req/min por IP (ventana 60s)
-- 20 req/10s por IP para ráfagas
-
-Endpoints sensibles tienen límites más estrictos:
-- POST /usuarios/login, /usuarios/register, /usuarios/forgot-password, /usuarios/reset-password → 5 req/min por IP
-- GET /usuarios/profile → 60 req/min
-- PATCH /usuarios/profile → 20 req/min
-
-Ajustes en `AppModule` (ThrottlerModule.forRoot) y por endpoint con `@Throttle`.
-
-Para servidores de 500MB RAM, estos valores son conservadores y protegen de abuso sin afectar usuarios legítimos.
- pnpm add -g pnpm  xd
+Este proyecto es privado (UNLICENSED). Uso interno.
