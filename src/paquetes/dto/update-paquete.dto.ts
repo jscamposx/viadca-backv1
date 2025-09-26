@@ -96,6 +96,18 @@ export class UpdatePaqueteDto {
   readonly anticipo?: number | null;
 
   @IsOptional()
+  @ValidateIf((o) => o.precio_vuelo !== null)
+  @IsNumber({}, { message: 'El precio de vuelo debe ser un número' })
+  @Min(0, { message: 'El precio de vuelo no puede ser negativo' })
+  readonly precio_vuelo?: number | null;
+
+  @IsOptional()
+  @ValidateIf((o) => o.precio_hospedaje !== null)
+  @IsNumber({}, { message: 'El precio de hospedaje debe ser un número' })
+  @Min(0, { message: 'El precio de hospedaje no puede ser negativo' })
+  readonly precio_hospedaje?: number | null;
+
+  @IsOptional()
   @IsNumber({}, { message: 'El precio total debe ser un número' })
   @IsPositive({ message: 'El precio total debe ser un número positivo' })
   readonly precio_total?: number;

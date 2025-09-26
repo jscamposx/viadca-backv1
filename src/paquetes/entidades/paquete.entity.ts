@@ -54,6 +54,12 @@ export class Paquete extends SoftDeleteEntity {
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
   anticipo: number | null;
 
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  precio_vuelo: number | null;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  precio_hospedaje: number | null;
+
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   precio_total: number;
 

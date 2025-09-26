@@ -69,6 +69,12 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
     if (paqueteData.anticipo === undefined) {
       paqueteData.anticipo = null;
     }
+    if (paqueteData.precio_vuelo === undefined) {
+      paqueteData.precio_vuelo = null;
+    }
+    if (paqueteData.precio_hospedaje === undefined) {
+      paqueteData.precio_hospedaje = null;
+    }
     if (paqueteData.notas === undefined) {
       paqueteData.notas = null;
     }
@@ -337,6 +343,13 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
     }
     if ('anticipo' in updatePaqueteDto) {
       paqueteDetails.anticipo = updatePaqueteDto.anticipo;
+    }
+    if ('precio_vuelo' in updatePaqueteDto) {
+      paqueteDetails.precio_vuelo = updatePaqueteDto.precio_vuelo ?? null;
+    }
+    if ('precio_hospedaje' in updatePaqueteDto) {
+      paqueteDetails.precio_hospedaje =
+        updatePaqueteDto.precio_hospedaje ?? null;
     }
     if ('notas' in updatePaqueteDto) {
       paqueteDetails.notas = updatePaqueteDto.notas;
@@ -842,6 +855,8 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
       requisitos: paquete.requisitos,
       descuento: toDecimalString(paquete.descuento),
       anticipo: toDecimalString(paquete.anticipo),
+  precio_vuelo: toDecimalString(paquete.precio_vuelo),
+  precio_hospedaje: toDecimalString(paquete.precio_hospedaje),
       precio_total: toDecimalString(paquete.precio_total),
       moneda: paquete.moneda, // agregado
       notas: paquete.notas,
