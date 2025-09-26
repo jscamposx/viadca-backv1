@@ -8,11 +8,14 @@ export class PaqueteExcelTemplate {
 
   // Configuración directa y simple para modificar fácilmente
   private static readonly COLORS = {
-    primary: '2E5BBA', // Azul principal para títulos
-    secondary: '4472C4', // Azul secundario para subtítulos
-    accent: 'E7F3FF', // Azul claro para campos
-    white: 'FFFFFF', // Blanco
-    black: '000000', // Negro
+    primary: '0F3D73',
+    secondary: '145A9C',
+    accent: 'E8F1FD',
+    subtle: 'F5F8FE',
+    textDark: '1C2E4A',
+    textMuted: '3D5878',
+    white: 'FFFFFF',
+    border: 'D5E1F2',
   };
 
   private static readonly TEXTS = {
@@ -64,33 +67,35 @@ export class PaqueteExcelTemplate {
     });
 
     this.worksheet.columns = [
-      { key: 'icon', width: 6 },
-      { key: 'campo', width: 26 },
-      { key: 'valor', width: 50 },
-      { key: 'extra', width: 18 },
+      { key: 'icon', width: 7 },
+      { key: 'campo', width: 28 },
+      { key: 'valor', width: 62 },
+      { key: 'extra', width: 20 },
     ];
   }
 
   private getStyles() {
+    const palette = PaqueteExcelTemplate.COLORS;
+
     return {
       brandHeaderStyle: {
         font: {
           name: 'Segoe UI',
           size: 24,
           bold: true,
-          color: { argb: 'FFFFFF' },
+          color: { argb: palette.white },
         },
         fill: {
           type: 'pattern' as const,
           pattern: 'solid' as const,
-          fgColor: { argb: '667eea' },
+          fgColor: { argb: palette.primary },
         },
         alignment: {
           horizontal: 'center' as const,
           vertical: 'middle' as const,
         },
         border: {
-          bottom: { style: 'thick' as const, color: { argb: '667eea' } },
+          bottom: { style: 'thick' as const, color: { argb: palette.secondary } },
         },
       },
 
@@ -99,22 +104,22 @@ export class PaqueteExcelTemplate {
           name: 'Segoe UI',
           size: 20,
           bold: true,
-          color: { argb: '2c3e50' },
+          color: { argb: palette.textDark },
         },
         fill: {
           type: 'pattern' as const,
           pattern: 'solid' as const,
-          fgColor: { argb: 'f8f9fa' },
+          fgColor: { argb: palette.accent },
         },
         alignment: {
           horizontal: 'center' as const,
           vertical: 'middle' as const,
         },
         border: {
-          top: { style: 'thin' as const, color: { argb: 'e9ecef' } },
-          bottom: { style: 'thin' as const, color: { argb: 'e9ecef' } },
-          left: { style: 'thin' as const, color: { argb: 'e9ecef' } },
-          right: { style: 'thin' as const, color: { argb: 'e9ecef' } },
+          top: { style: 'thin' as const, color: { argb: palette.border } },
+          bottom: { style: 'thin' as const, color: { argb: palette.border } },
+          left: { style: 'thin' as const, color: { argb: palette.border } },
+          right: { style: 'thin' as const, color: { argb: palette.border } },
         },
       },
 
@@ -123,12 +128,12 @@ export class PaqueteExcelTemplate {
           name: 'Segoe UI',
           size: 14,
           bold: true,
-          color: { argb: 'FFFFFF' },
+          color: { argb: palette.white },
         },
         fill: {
           type: 'pattern' as const,
           pattern: 'solid' as const,
-          fgColor: { argb: '4facfe' },
+          fgColor: { argb: palette.secondary },
         },
         alignment: {
           horizontal: 'left' as const,
@@ -147,7 +152,7 @@ export class PaqueteExcelTemplate {
         fill: {
           type: 'pattern' as const,
           pattern: 'solid' as const,
-          fgColor: { argb: 'ffffff' },
+          fgColor: { argb: this.lightenColor(palette.secondary, 20) },
         },
         alignment: {
           horizontal: 'center' as const,
@@ -161,12 +166,12 @@ export class PaqueteExcelTemplate {
           name: 'Segoe UI',
           size: 11,
           bold: true,
-          color: { argb: '000000' },
+          color: { argb: palette.textDark },
         },
         fill: {
           type: 'pattern' as const,
           pattern: 'solid' as const,
-          fgColor: { argb: 'f8f9fa' },
+          fgColor: { argb: palette.accent },
         },
         alignment: {
           horizontal: 'left' as const,
@@ -180,13 +185,13 @@ export class PaqueteExcelTemplate {
         font: {
           name: 'Segoe UI',
           size: 11,
-          color: { argb: '000000' },
+          color: { argb: palette.textDark },
           bold: false,
         },
         fill: {
           type: 'pattern' as const,
           pattern: 'solid' as const,
-          fgColor: { argb: 'ffffff' },
+          fgColor: { argb: palette.white },
         },
         alignment: {
           horizontal: 'left' as const,
@@ -201,13 +206,13 @@ export class PaqueteExcelTemplate {
         font: {
           name: 'Segoe UI',
           size: 10,
-          color: { argb: '000000' },
+          color: { argb: palette.textDark },
           bold: false,
         },
         fill: {
           type: 'pattern' as const,
           pattern: 'solid' as const,
-          fgColor: { argb: 'fdfdfe' },
+          fgColor: { argb: palette.subtle },
         },
         alignment: {
           horizontal: 'justify' as const,
@@ -223,12 +228,12 @@ export class PaqueteExcelTemplate {
           name: 'Segoe UI',
           size: 11,
           bold: false,
-          color: { argb: '000000' },
+          color: { argb: palette.textDark },
         },
         fill: {
           type: 'pattern' as const,
           pattern: 'solid' as const,
-          fgColor: { argb: 'ffffff' },
+          fgColor: { argb: palette.white },
         },
         alignment: {
           horizontal: 'left' as const,
@@ -244,12 +249,12 @@ export class PaqueteExcelTemplate {
           name: 'Segoe UI',
           size: 11,
           bold: true,
-          color: { argb: 'FFFFFF' },
+          color: { argb: palette.white },
         },
         fill: {
           type: 'pattern' as const,
           pattern: 'solid' as const,
-          fgColor: { argb: '6c5ce7' },
+          fgColor: { argb: palette.primary },
         },
         alignment: {
           horizontal: 'center' as const,
@@ -262,13 +267,13 @@ export class PaqueteExcelTemplate {
         font: {
           name: 'Segoe UI',
           size: 10,
-          color: { argb: '000000' },
+          color: { argb: palette.textDark },
           bold: false,
         },
         fill: {
           type: 'pattern' as const,
           pattern: 'solid' as const,
-          fgColor: { argb: 'f8f9fa' },
+          fgColor: { argb: palette.subtle },
         },
         alignment: {
           horizontal: 'left' as const,
@@ -282,13 +287,13 @@ export class PaqueteExcelTemplate {
         font: {
           name: 'Segoe UI',
           size: 10,
-          color: { argb: '000000' },
+          color: { argb: palette.textDark },
           bold: false,
         },
         fill: {
           type: 'pattern' as const,
           pattern: 'solid' as const,
-          fgColor: { argb: 'ffffff' },
+          fgColor: { argb: palette.white },
         },
         alignment: {
           horizontal: 'left' as const,
@@ -303,12 +308,12 @@ export class PaqueteExcelTemplate {
           name: 'Segoe UI',
           size: 10,
           bold: true,
-          color: { argb: 'FFFFFF' },
+          color: { argb: palette.white },
         },
         fill: {
           type: 'pattern' as const,
           pattern: 'solid' as const,
-          fgColor: { argb: '00b894' },
+          fgColor: { argb: palette.secondary },
         },
         alignment: {
           horizontal: 'center' as const,
@@ -322,12 +327,12 @@ export class PaqueteExcelTemplate {
           name: 'Segoe UI',
           size: 10,
           bold: true,
-          color: { argb: 'FFFFFF' },
+          color: { argb: palette.white },
         },
         fill: {
           type: 'pattern' as const,
           pattern: 'solid' as const,
-          fgColor: { argb: 'fdcb6e' },
+          fgColor: { argb: this.lightenColor(palette.secondary, 15) },
         },
         alignment: {
           horizontal: 'center' as const,
@@ -341,7 +346,7 @@ export class PaqueteExcelTemplate {
           name: 'Segoe UI',
           size: 9,
           italic: true,
-          color: { argb: '74b9ff' },
+          color: { argb: palette.secondary },
         },
         alignment: {
           horizontal: 'center' as const,
@@ -352,29 +357,32 @@ export class PaqueteExcelTemplate {
   }
 
   private getModernBorders() {
+    const palette = PaqueteExcelTemplate.COLORS;
     return {
-      top: { style: 'medium' as const, color: { argb: 'e9ecef' } },
-      left: { style: 'medium' as const, color: { argb: 'e9ecef' } },
-      bottom: { style: 'medium' as const, color: { argb: 'e9ecef' } },
-      right: { style: 'medium' as const, color: { argb: 'e9ecef' } },
+      top: { style: 'medium' as const, color: { argb: palette.border } },
+      left: { style: 'medium' as const, color: { argb: palette.border } },
+      bottom: { style: 'medium' as const, color: { argb: palette.border } },
+      right: { style: 'medium' as const, color: { argb: palette.border } },
     };
   }
 
   private getSubtleBorders() {
+    const palette = PaqueteExcelTemplate.COLORS;
     return {
-      top: { style: 'thin' as const, color: { argb: 'f1f3f4' } },
-      left: { style: 'thin' as const, color: { argb: 'f1f3f4' } },
-      bottom: { style: 'thin' as const, color: { argb: 'f1f3f4' } },
-      right: { style: 'thin' as const, color: { argb: 'f1f3f4' } },
+      top: { style: 'thin' as const, color: { argb: palette.border } },
+      left: { style: 'thin' as const, color: { argb: palette.border } },
+      bottom: { style: 'thin' as const, color: { argb: palette.border } },
+      right: { style: 'thin' as const, color: { argb: palette.border } },
     };
   }
 
   private getRoundedBorders() {
+    const palette = PaqueteExcelTemplate.COLORS;
     return {
-      top: { style: 'thick' as const, color: { argb: 'ffffff' } },
-      left: { style: 'thick' as const, color: { argb: 'ffffff' } },
-      bottom: { style: 'thick' as const, color: { argb: 'ffffff' } },
-      right: { style: 'thick' as const, color: { argb: 'ffffff' } },
+      top: { style: 'thick' as const, color: { argb: palette.white } },
+      left: { style: 'thick' as const, color: { argb: palette.white } },
+      bottom: { style: 'thick' as const, color: { argb: palette.white } },
+      right: { style: 'thick' as const, color: { argb: palette.white } },
     };
   }
 
@@ -419,10 +427,13 @@ export class PaqueteExcelTemplate {
 
   private addModernSection(
     title: string,
-    icon: string,
-    color: string = '4facfe',
+    icon: string = '',
+    color?: string,
   ): void {
     const styles = this.getStyles();
+    const palette = PaqueteExcelTemplate.COLORS;
+    const baseColor = color ?? palette.secondary;
+    const iconColor = this.lightenColor(baseColor, 18);
 
     this.worksheet.getCell(`A${this.currentRow}`).value = icon;
     this.worksheet.getCell(`A${this.currentRow}`).style = {
@@ -430,7 +441,7 @@ export class PaqueteExcelTemplate {
       fill: {
         type: 'pattern' as const,
         pattern: 'solid' as const,
-        fgColor: { argb: color },
+        fgColor: { argb: iconColor },
       },
     };
 
@@ -442,7 +453,7 @@ export class PaqueteExcelTemplate {
       fill: {
         type: 'pattern' as const,
         pattern: 'solid' as const,
-        fgColor: { argb: color },
+        fgColor: { argb: baseColor },
       },
     };
 
@@ -457,6 +468,7 @@ export class PaqueteExcelTemplate {
     isHighlight: boolean = false,
   ): void {
     const styles = this.getStyles();
+    const palette = PaqueteExcelTemplate.COLORS;
 
     this.worksheet.getCell(`A${this.currentRow}`).value = '';
     this.worksheet.getCell(`A${this.currentRow}`).style = {
@@ -465,7 +477,7 @@ export class PaqueteExcelTemplate {
       fill: {
         type: 'pattern' as const,
         pattern: 'solid' as const,
-        fgColor: { argb: 'f8f9fa' },
+        fgColor: { argb: palette.accent },
       },
       border: this.getSubtleBorders(),
     };
@@ -495,6 +507,7 @@ export class PaqueteExcelTemplate {
     hyperlink: string,
   ): void {
     const styles = this.getStyles();
+    const palette = PaqueteExcelTemplate.COLORS;
 
     this.worksheet.getCell(`A${this.currentRow}`).value = '';
     this.worksheet.getCell(`A${this.currentRow}`).style = {
@@ -503,7 +516,7 @@ export class PaqueteExcelTemplate {
       fill: {
         type: 'pattern' as const,
         pattern: 'solid' as const,
-        fgColor: { argb: 'f8f9fa' },
+        fgColor: { argb: palette.accent },
       },
       border: this.getSubtleBorders(),
     };
@@ -523,7 +536,7 @@ export class PaqueteExcelTemplate {
       font: {
         name: 'Segoe UI',
         size: 11,
-        color: { argb: '000000' },
+        color: { argb: palette.textDark },
         underline: true,
         bold: false,
       },
@@ -619,10 +632,10 @@ export class PaqueteExcelTemplate {
     if (!text) return 22;
 
     const baseHeight = 22;
-    const charWidth = isLongText ? 120 : 90;
+    const charWidth = isLongText ? 100 : 60;
     const lines = Math.ceil(text.length / charWidth);
 
-    return Math.max(baseHeight, Math.min(lines * 16, isLongText ? 180 : 70));
+    return Math.max(baseHeight, Math.min(lines * 18, isLongText ? 200 : 120));
   }
 
   private addSectionSpacer(): void {
@@ -638,7 +651,7 @@ export class PaqueteExcelTemplate {
 
     this.addPackageTitle(paquete.titulo);
 
-    this.addModernSection('INFORMACIÓN GENERAL', '', '667eea');
+  this.addModernSection('INFORMACIÓN GENERAL');
     this.buildModernBasicInfo(formattedData.basicFields, paquete);
 
     if (paquete.destinos && paquete.destinos.length > 0) {
@@ -681,6 +694,8 @@ export class PaqueteExcelTemplate {
       ['Cliente', ''],
       ['Título', paquete.titulo],
       ['Precio Total', this.formatPrice(paquete.precio_total)],
+  ['Precio Vuelo', this.formatPrice(paquete.precio_vuelo)],
+  ['Precio Hospedaje', this.formatPrice(paquete.precio_hospedaje)],
       ['Descuento', this.formatPrice(paquete.descuento)],
       ['Anticipo', this.formatPrice(paquete.anticipo)],
       ['Duración', `${paquete.duracion_dias} días`],
@@ -727,7 +742,7 @@ export class PaqueteExcelTemplate {
   }
 
   private buildModernDestinos(destinos: any[]): void {
-    this.addModernSection('DESTINOS DEL VIAJE', '', '74b9ff');
+    this.addModernSection('DESTINOS DEL VIAJE');
 
     const tableData = destinos
       .sort((a, b) => a.orden - b.orden)
@@ -738,7 +753,7 @@ export class PaqueteExcelTemplate {
   }
 
   private buildModernHotel(hotel: any): void {
-    this.addModernSection('ALOJAMIENTO', '', 'fd79a8');
+    this.addModernSection('ALOJAMIENTO');
 
     this.addInfoCard('', 'Nombre del Hotel', hotel.nombre);
     this.addInfoCard('', 'Calificación', this.getStarRating(hotel.estrellas));
@@ -752,7 +767,7 @@ export class PaqueteExcelTemplate {
   }
 
   private buildModernItinerario(itinerarios: any[]): void {
-    this.addModernSection('ITINERARIO DETALLADO', '', '81ecec');
+    this.addModernSection('ITINERARIO DETALLADO');
 
     itinerarios
       .sort((a, b) => a.dia_numero - b.dia_numero)
@@ -768,7 +783,7 @@ export class PaqueteExcelTemplate {
   }
 
   private buildModernMayoristas(mayoristas: any[]): void {
-    this.addModernSection('MAYORISTAS ASOCIADOS', '', 'fab1a0');
+    this.addModernSection('MAYORISTAS ASOCIADOS');
 
     const tableData = mayoristas.map((mayorista) => [
       mayorista.nombre,
@@ -791,7 +806,7 @@ export class PaqueteExcelTemplate {
         name: 'Segoe UI',
         size: 9,
         italic: true,
-        color: { argb: '6c757d' },
+        color: { argb: PaqueteExcelTemplate.COLORS.textMuted },
       },
       alignment: { horizontal: 'center' as const, vertical: 'middle' as const },
     };
@@ -814,6 +829,16 @@ export class PaqueteExcelTemplate {
 
     if (paquete.precio_total) {
       parts.push(`Total: $${paquete.precio_total.toLocaleString('es-ES')}`);
+    }
+
+    if (paquete.precio_vuelo && paquete.precio_vuelo > 0) {
+      parts.push(`Vuelo: $${paquete.precio_vuelo.toLocaleString('es-ES')}`);
+    }
+
+    if (paquete.precio_hospedaje && paquete.precio_hospedaje > 0) {
+      parts.push(
+        `Hospedaje: $${paquete.precio_hospedaje.toLocaleString('es-ES')}`,
+      );
     }
 
     if (paquete.descuento && paquete.descuento > 0) {
@@ -1018,6 +1043,7 @@ export class PaqueteExcelTemplate {
     secondary: string;
     accent: string;
   } {
+    const palette = PaqueteExcelTemplate.COLORS;
     const colorSchemes: {
       [key: string]: { primary: string; secondary: string; accent: string };
     } = {
@@ -1026,7 +1052,11 @@ export class PaqueteExcelTemplate {
       ciudad: { primary: '6c5ce7', secondary: '5f3dc4', accent: 'a29bfe' },
       aventura: { primary: 'e17055', secondary: 'd63031', accent: 'fab1a0' },
       cultural: { primary: 'fdcb6e', secondary: 'e84393', accent: 'fd79a8' },
-      default: { primary: '667eea', secondary: '764ba2', accent: '4facfe' },
+      default: {
+        primary: palette.primary,
+        secondary: palette.secondary,
+        accent: palette.accent,
+      },
     };
 
     return colorSchemes[categoria.toLowerCase()] || colorSchemes.default;
@@ -1043,6 +1073,7 @@ export class PaqueteExcelTemplate {
 
   private addClientInfo(clienteName: string): void {
     const styles = this.getStyles();
+    const palette = PaqueteExcelTemplate.COLORS;
 
     this.worksheet.mergeCells(`A${this.currentRow}:D${this.currentRow}`);
     const clientCell = this.worksheet.getCell(`A${this.currentRow}`);
@@ -1052,12 +1083,12 @@ export class PaqueteExcelTemplate {
         name: 'Segoe UI',
         size: 14,
         bold: true,
-        color: { argb: '2c3e50' },
+        color: { argb: palette.textDark },
       },
       fill: {
         type: 'pattern' as const,
         pattern: 'solid' as const,
-        fgColor: { argb: 'e3f2fd' },
+        fgColor: { argb: palette.accent },
       },
       alignment: {
         horizontal: 'center' as const,
@@ -1070,6 +1101,7 @@ export class PaqueteExcelTemplate {
   }
 
   private createDetailsWorksheet(paquete: Paquete, clienteName?: string): void {
+    const palette = PaqueteExcelTemplate.COLORS;
     const detailsWorksheet = this.workbook.addWorksheet(
       'Detalles del Paquete',
       {
@@ -1103,12 +1135,12 @@ export class PaqueteExcelTemplate {
         name: 'Segoe UI',
         size: 18,
         bold: true,
-        color: { argb: 'FFFFFF' },
+        color: { argb: palette.white },
       },
       fill: {
         type: 'pattern' as const,
         pattern: 'solid' as const,
-        fgColor: { argb: '667eea' },
+        fgColor: { argb: palette.primary },
       },
       alignment: {
         horizontal: 'center' as const,
@@ -1126,12 +1158,12 @@ export class PaqueteExcelTemplate {
           name: 'Segoe UI',
           size: 12,
           bold: true,
-          color: { argb: '2c3e50' },
+          color: { argb: palette.textDark },
         },
         fill: {
           type: 'pattern' as const,
           pattern: 'solid' as const,
-          fgColor: { argb: 'e3f2fd' },
+          fgColor: { argb: palette.accent },
         },
         alignment: {
           horizontal: 'center' as const,
@@ -1149,7 +1181,7 @@ export class PaqueteExcelTemplate {
         name: 'Segoe UI',
         size: 14,
         bold: true,
-        color: { argb: '2c3e50' },
+        color: { argb: palette.textDark },
       },
       alignment: { horizontal: 'center' as const, vertical: 'middle' as const },
     };
@@ -1162,7 +1194,6 @@ export class PaqueteExcelTemplate {
         currentDetailRow,
         'QUÉ INCLUYE',
         paquete.incluye,
-        '00b894',
       );
     }
 
@@ -1172,7 +1203,6 @@ export class PaqueteExcelTemplate {
         currentDetailRow,
         'QUÉ NO INCLUYE',
         paquete.no_incluye,
-        'e17055',
       );
     }
 
@@ -1182,7 +1212,6 @@ export class PaqueteExcelTemplate {
         currentDetailRow,
         'REQUISITOS',
         paquete.requisitos,
-        'fdcb6e',
       );
     }
 
@@ -1192,7 +1221,6 @@ export class PaqueteExcelTemplate {
         currentDetailRow,
         'NOTAS IMPORTANTES',
         paquete.notas,
-        'a29bfe',
       );
     }
 
@@ -1211,7 +1239,7 @@ export class PaqueteExcelTemplate {
         name: 'Segoe UI',
         size: 9,
         italic: true,
-        color: { argb: '6c757d' },
+        color: { argb: palette.textMuted },
       },
       alignment: { horizontal: 'center' as const, vertical: 'middle' as const },
     };
@@ -1222,9 +1250,12 @@ export class PaqueteExcelTemplate {
     startRow: number,
     title: string,
     content: string,
-    color: string,
+    color?: string,
   ): number {
     let currentRow = startRow;
+    const palette = PaqueteExcelTemplate.COLORS;
+    const headerColor = color ?? palette.secondary;
+    const bodyFill = this.lightenColor(headerColor, 25);
 
     worksheet.getCell(`A${currentRow}`).value = title;
     worksheet.getCell(`A${currentRow}`).style = {
@@ -1232,12 +1263,12 @@ export class PaqueteExcelTemplate {
         name: 'Segoe UI',
         size: 14,
         bold: true,
-        color: { argb: 'FFFFFF' },
+        color: { argb: palette.white },
       },
       fill: {
         type: 'pattern' as const,
         pattern: 'solid' as const,
-        fgColor: { argb: color },
+        fgColor: { argb: headerColor },
       },
       alignment: {
         horizontal: 'left' as const,
@@ -1253,7 +1284,7 @@ export class PaqueteExcelTemplate {
       font: {
         name: 'Segoe UI',
         size: 11,
-        color: { argb: '000000' },
+        color: { argb: palette.textDark },
       },
       alignment: {
         horizontal: 'justify' as const,
@@ -1262,16 +1293,21 @@ export class PaqueteExcelTemplate {
         indent: 1,
       },
       border: {
-        top: { style: 'thin' as const, color: { argb: 'f1f3f4' } },
-        left: { style: 'thin' as const, color: { argb: 'f1f3f4' } },
-        bottom: { style: 'thin' as const, color: { argb: 'f1f3f4' } },
-        right: { style: 'thin' as const, color: { argb: 'f1f3f4' } },
+        top: { style: 'thin' as const, color: { argb: palette.border } },
+        left: { style: 'thin' as const, color: { argb: palette.border } },
+        bottom: { style: 'thin' as const, color: { argb: palette.border } },
+        right: { style: 'thin' as const, color: { argb: palette.border } },
+      },
+      fill: {
+        type: 'pattern' as const,
+        pattern: 'solid' as const,
+        fgColor: { argb: bodyFill },
       },
     };
 
     const rowHeight = Math.max(
       25,
-      Math.min(Math.ceil(content.length / 120) * 16, 200),
+      Math.min(Math.ceil(content.length / 110) * 18, 220),
     );
     worksheet.getRow(currentRow).height = rowHeight;
     currentRow += 3;
@@ -1285,6 +1321,7 @@ export class PaqueteExcelTemplate {
     itinerarios: any[],
   ): number {
     let currentRow = startRow;
+    const palette = PaqueteExcelTemplate.COLORS;
 
     worksheet.getCell(`A${currentRow}`).value = 'ITINERARIO DETALLADO';
     worksheet.getCell(`A${currentRow}`).style = {
@@ -1292,12 +1329,12 @@ export class PaqueteExcelTemplate {
         name: 'Segoe UI',
         size: 14,
         bold: true,
-        color: { argb: 'FFFFFF' },
+        color: { argb: palette.white },
       },
       fill: {
         type: 'pattern' as const,
         pattern: 'solid' as const,
-        fgColor: { argb: '81ecec' },
+        fgColor: { argb: palette.secondary },
       },
       alignment: {
         horizontal: 'left' as const,
@@ -1310,36 +1347,38 @@ export class PaqueteExcelTemplate {
 
     itinerarios
       .sort((a, b) => a.dia_numero - b.dia_numero)
-      .forEach((itinerario, index) => {
-        worksheet.getCell(`A${currentRow}`).value =
-          `Día ${itinerario.dia_numero}`;
-        worksheet.getCell(`A${currentRow}`).style = {
+      .forEach((itinerario) => {
+        const dayCell = worksheet.getCell(`A${currentRow}`);
+        dayCell.value = `Día ${itinerario.dia_numero}`;
+        dayCell.style = {
           font: {
             name: 'Segoe UI',
             size: 12,
             bold: true,
-            color: { argb: '2c3e50' },
+            color: { argb: palette.textDark },
           },
           fill: {
             type: 'pattern' as const,
             pattern: 'solid' as const,
-            fgColor: { argb: 'f8f9fa' },
+            fgColor: { argb: palette.accent },
           },
           alignment: {
             horizontal: 'left' as const,
             vertical: 'middle' as const,
             indent: 1,
           },
+          border: this.getSubtleBorders(),
         };
         worksheet.getRow(currentRow).height = 25;
         currentRow++;
 
-        worksheet.getCell(`A${currentRow}`).value = itinerario.descripcion;
-        worksheet.getCell(`A${currentRow}`).style = {
+        const detailCell = worksheet.getCell(`A${currentRow}`);
+        detailCell.value = itinerario.descripcion;
+        detailCell.style = {
           font: {
             name: 'Segoe UI',
             size: 11,
-            color: { argb: '000000' },
+            color: { argb: palette.textDark },
           },
           alignment: {
             horizontal: 'justify' as const,
@@ -1347,15 +1386,20 @@ export class PaqueteExcelTemplate {
             wrapText: true,
             indent: 2,
           },
+          fill: {
+            type: 'pattern' as const,
+            pattern: 'solid' as const,
+            fgColor: { argb: palette.subtle },
+          },
           border: {
-            left: { style: 'thin' as const, color: { argb: 'dee2e6' } },
-            bottom: { style: 'thin' as const, color: { argb: 'f1f3f4' } },
+            left: { style: 'thin' as const, color: { argb: palette.border } },
+            bottom: { style: 'thin' as const, color: { argb: palette.border } },
           },
         };
 
         const rowHeight = Math.max(
           20,
-          Math.min(Math.ceil(itinerario.descripcion.length / 120) * 16, 150),
+          Math.min(Math.ceil(itinerario.descripcion.length / 110) * 18, 180),
         );
         worksheet.getRow(currentRow).height = rowHeight;
         currentRow += 2;

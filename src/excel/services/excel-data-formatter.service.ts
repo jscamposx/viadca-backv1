@@ -42,6 +42,14 @@ export class ExcelDataFormatterService {
         this.config.texts.labels.totalPrice,
         this.formatPrice(paquete.precio_total),
       ],
+      [
+        this.config.texts.labels.flightPrice,
+        this.formatPrice(paquete.precio_vuelo ?? null),
+      ],
+      [
+        this.config.texts.labels.lodgingPrice,
+        this.formatPrice(paquete.precio_hospedaje ?? null),
+      ],
       [this.config.texts.labels.discount, `${paquete.descuento}%`],
       [
         this.config.texts.labels.advance,

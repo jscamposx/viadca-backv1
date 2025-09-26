@@ -38,6 +38,8 @@ export const EXCEL_TEMPLATE_CONFIG = {
       endDate: 'Fecha de Fin',
       duration: 'Duración',
       totalPrice: 'Precio Total',
+  flightPrice: 'Precio Vuelo',
+  lodgingPrice: 'Precio Hospedaje',
       discount: 'Descuento',
       advance: 'Anticipo',
       status: 'Estado',
