@@ -926,6 +926,8 @@ export class PaqueteExcelTemplate {
   }
 
   private addConditionalFormatting(): void {
+    const palette = PaqueteExcelTemplate.COLORS;
+
     this.worksheet.addConditionalFormatting({
       ref: 'C:C',
       rules: [
@@ -938,9 +940,9 @@ export class PaqueteExcelTemplate {
             fill: {
               type: 'pattern',
               pattern: 'solid',
-              fgColor: { argb: 'c7f2c7' },
+              fgColor: { argb: palette.subtle },
             },
-            font: { bold: true, color: { argb: '27ae60' } },
+            font: { bold: true, color: { argb: '000000' } },
           },
         },
       ],
@@ -958,9 +960,9 @@ export class PaqueteExcelTemplate {
             fill: {
               type: 'pattern',
               pattern: 'solid',
-              fgColor: { argb: 'd4edda' },
+              fgColor: { argb: palette.accent },
             },
-            font: { bold: true, color: { argb: '155724' } },
+            font: { bold: true, color: { argb: '000000' } },
           },
         },
         {
@@ -972,9 +974,9 @@ export class PaqueteExcelTemplate {
             fill: {
               type: 'pattern',
               pattern: 'solid',
-              fgColor: { argb: 'f8d7da' },
+              fgColor: { argb: palette.subtle },
             },
-            font: { bold: true, color: { argb: '721c24' } },
+            font: { bold: true, color: { argb: '000000' } },
           },
         },
       ],
