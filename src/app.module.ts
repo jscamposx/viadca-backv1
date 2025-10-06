@@ -63,6 +63,28 @@ import { ContactoModule } from './contacto/contacto.module';
 
         const type = (configService.get<string>('DB_TYPE') || 'mysql') as any;
 
+        // Helper para enmascarar password
+        const mask = (val?: string | null) => {
+          if (!val) return undefined;
+          if (val.length <= 4) return '****';
+          return `${val.substring(0, 2)}***${val.substring(val.length - 2)}`;
+        };
+
+        const rawDbEnvLog = {
+          NODE_ENV: configService.get<string>('NODE_ENV'),
+          DB_TYPE: configService.get<string>('DB_TYPE'),
+            DB_HOST: configService.get<string>('DB_HOST'),
+          DB_PORT: configService.get<string>('DB_PORT'),
+          DB_USERNAME: configService.get<string>('DB_USERNAME'),
+          DB_PASSWORD: mask(configService.get<string>('DB_PASSWORD')),
+          DB_DATABASE: configService.get<string>('DB_DATABASE'),
+          DB_SSL: configService.get<string>('DB_SSL'),
+          DB_LOGGING: configService.get<string>('DB_LOGGING'),
+          DB_SYNCHRONIZE: configService.get<string>('DB_SYNCHRONIZE'),
+        };
+
+        console.log('🧪 Variables de entorno (DB) detectadas:', rawDbEnvLog);
+
         const baseConfig: TypeOrmModuleOptions = {
           type,
           host: configService.get<string>('DB_HOST'),
