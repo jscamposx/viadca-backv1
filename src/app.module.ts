@@ -56,14 +56,20 @@ import { ContactoModule } from './contacto/contacto.module';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService): TypeOrmModuleOptions => {
-        const dbConfig: TypeOrmModuleOptions = {
-          type: 'mysql',
+        const isProd = (configService.get<string>('NODE_ENV') || 'development') === 'production';
+        const synchronize = configService.get<string>('DB_SYNCHRONIZE') === 'true';
+        const logging = configService.get<string>('DB_LOGGING') === 'true';
+        const sslEnabled = configService.get<string>('DB_SSL') === 'true';
+
+        const type = (configService.get<string>('DB_TYPE') || 'mysql') as any;
+
+        const baseConfig: TypeOrmModuleOptions = {
+          type,
           host: configService.get<string>('DB_HOST'),
           port: parseInt(configService.get<string>('DB_PORT') || '3306', 10),
           username: configService.get<string>('DB_USERNAME'),
           password: configService.get<string>('DB_PASSWORD'),
           database: configService.get<string>('DB_DATABASE'),
-
           entities: [
             Usuario,
             Paquete,
@@ -74,20 +80,36 @@ import { ContactoModule } from './contacto/contacto.module';
             Mayoristas,
             Contacto,
           ],
-
-          synchronize: true,
+          // Nunca activar synchronize en producción salvo migración puntual controlada
+          synchronize: synchronize && !isProd,
+          logging,
+          ssl: sslEnabled
+            ? {
+                rejectUnauthorized: false,
+              }
+            : undefined,
+          extra: sslEnabled
+            ? {
+                ssl: {
+                  rejectUnauthorized: false,
+                },
+              }
+            : undefined,
         };
 
-        console.log('🔌 Usando configuración de base de datos:', {
-          host: dbConfig.host,
-          port: dbConfig.port,
-          database: dbConfig.database,
-          username: dbConfig.username,
-          synchronize: dbConfig.synchronize,
+        console.log('🔌 DB Config:', {
+          type: baseConfig.type,
+          host: baseConfig.host,
+          port: baseConfig.port,
+          database: baseConfig.database,
+          username: baseConfig.username,
+          synchronize: baseConfig.synchronize,
+          logging: baseConfig.logging,
+          ssl: !!sslEnabled,
           NODE_ENV: process.env.NODE_ENV,
         });
 
-        return dbConfig;
+        return baseConfig;
       },
     }),
     PaquetesModule,
