@@ -57,7 +57,9 @@ import { ContactoModule } from './contacto/contacto.module';
       inject: [ConfigService],
       useFactory: (configService: ConfigService): TypeOrmModuleOptions => {
         const isProd = (configService.get<string>('NODE_ENV') || 'development') === 'production';
-        const synchronize = configService.get<string>('DB_SYNCHRONIZE') === 'true';
+  // Forzado temporal: siempre true mientras la BD es nueva.
+  const synchronizeEnv = configService.get<string>('DB_SYNCHRONIZE');
+  const synchronize = true; // <== FORZADO (recordar quitar luego)
         const logging = configService.get<string>('DB_LOGGING') === 'true';
         const sslEnabled = configService.get<string>('DB_SSL') === 'true';
 
@@ -85,8 +87,8 @@ import { ContactoModule } from './contacto/contacto.module';
 
         console.log('🧪 Variables de entorno (DB) detectadas:', rawDbEnvLog);
 
-        if (isProd && synchronize) {
-          console.warn('⚠️  WARNING: synchronize=true en producción. Esto puede causar cambios de esquema destructivos. Recomendada migración controlada.');
+        if (isProd) {
+          console.warn('⚠️  WARNING: synchronize FORZADO = true en producción (BD nueva). Quitar cuando el esquema esté estable. Valor env original:', synchronizeEnv);
         }
 
         const baseConfig: TypeOrmModuleOptions = {

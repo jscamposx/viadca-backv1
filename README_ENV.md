@@ -58,3 +58,4 @@ Y un `data-source.ts` que reutilice las mismas variables de entorno.
 - Error SSL: revisa `DB_SSL` y versión de MySQL.
 - Campos que faltan tras despliegue: probablemente `DB_SYNCHRONIZE` desactivado sin migraciones aplicadas.
 - CORS bloqueado: confirma `FRONTEND_URL` y que el navegador envía origin esperado.
+
