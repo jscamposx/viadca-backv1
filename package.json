@@ -45,7 +45,6 @@
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.2",
-    "mysql": "^2.18.1",
     "mysql2": "^3.14.3",
     "nestjs-prometheus": "^4.6.1",
     "nodemailer": "^7.0.5",
