@@ -85,6 +85,10 @@ import { ContactoModule } from './contacto/contacto.module';
 
         console.log('🧪 Variables de entorno (DB) detectadas:', rawDbEnvLog);
 
+        if (isProd && synchronize) {
+          console.warn('⚠️  WARNING: synchronize=true en producción. Esto puede causar cambios de esquema destructivos. Recomendada migración controlada.');
+        }
+
         const baseConfig: TypeOrmModuleOptions = {
           type,
           host: configService.get<string>('DB_HOST'),
@@ -102,8 +106,8 @@ import { ContactoModule } from './contacto/contacto.module';
             Mayoristas,
             Contacto,
           ],
-          // Nunca activar synchronize en producción salvo migración puntual controlada
-          synchronize: synchronize && !isProd,
+          // Ahora respetamos el valor explícito incluso en producción (bajo advertencia)
+          synchronize,
           logging,
           ssl: sslEnabled
             ? {
