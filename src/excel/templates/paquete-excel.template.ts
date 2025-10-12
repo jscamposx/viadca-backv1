@@ -39,6 +39,15 @@ export class PaqueteExcelTemplate {
     contact: 'INFORMACIÓN DE CONTACTO',
   };
 
+  // Información de contacto por defecto
+  private static readonly DEFAULT_CONTACT = {
+    phone: '999 242 3321',
+    email: 'viadca@zafirotours.mx',
+    whatsapp: '5216181098565',
+    address: 'Mascareñas #803, Durango Dgo, México. 34000, Durango, Mexico',
+    website: 'www.viadca.app',
+  };
+
   constructor() {
     this.workbook = new ExcelJS.Workbook();
     this.setupWorkbookMetadata();
@@ -271,7 +280,12 @@ export class PaqueteExcelTemplate {
           horizontal: 'center' as const,
           vertical: 'middle' as const,
         },
-        border: this.getModernBorders(),
+        border: {
+          top: { style: 'medium' as const, color: { argb: palette.primary } },
+          left: { style: 'thin' as const, color: { argb: palette.border } },
+          bottom: { style: 'medium' as const, color: { argb: palette.primary } },
+          right: { style: 'thin' as const, color: { argb: palette.border } },
+        },
       },
 
       tableRowEvenStyle: {
@@ -284,14 +298,19 @@ export class PaqueteExcelTemplate {
         fill: {
           type: 'pattern' as const,
           pattern: 'solid' as const,
-          fgColor: { argb: palette.subtle },
+          fgColor: { argb: 'F8F9FA' },
         },
         alignment: {
           horizontal: 'left' as const,
           vertical: 'middle' as const,
           indent: 1,
         },
-        border: this.getSubtleBorders(),
+        border: {
+          top: { style: 'thin' as const, color: { argb: 'E9ECEF' } },
+          left: { style: 'thin' as const, color: { argb: 'E9ECEF' } },
+          bottom: { style: 'thin' as const, color: { argb: 'E9ECEF' } },
+          right: { style: 'thin' as const, color: { argb: 'E9ECEF' } },
+        },
       },
 
       tableRowOddStyle: {
@@ -311,7 +330,12 @@ export class PaqueteExcelTemplate {
           vertical: 'middle' as const,
           indent: 1,
         },
-        border: this.getSubtleBorders(),
+        border: {
+          top: { style: 'thin' as const, color: { argb: 'E9ECEF' } },
+          left: { style: 'thin' as const, color: { argb: 'E9ECEF' } },
+          bottom: { style: 'thin' as const, color: { argb: 'E9ECEF' } },
+          right: { style: 'thin' as const, color: { argb: 'E9ECEF' } },
+        },
       },
 
       badgeSuccessStyle: {
@@ -401,15 +425,25 @@ export class PaqueteExcelTemplate {
   private addBrandHeader(): void {
     const styles = this.getStyles();
 
-    // Merge cells para el header
+    // Header con logo centrado (sin texto)
     this.worksheet.mergeCells(`A${this.currentRow}:D${this.currentRow + 1}`);
     const brandCell = this.worksheet.getCell(`A${this.currentRow}`);
-    brandCell.value = 'VIADCA';
-    brandCell.style = styles.brandHeaderStyle;
-    this.worksheet.getRow(this.currentRow).height = 45;
-    this.worksheet.getRow(this.currentRow + 1).height = 15;
+    brandCell.value = ''; // Sin texto, solo logo
+    brandCell.style = {
+      fill: {
+        type: 'pattern' as const,
+        pattern: 'solid' as const,
+        fgColor: { argb: PaqueteExcelTemplate.COLORS.white },
+      },
+      alignment: {
+        horizontal: 'center' as const,
+        vertical: 'middle' as const,
+      },
+    };
+    this.worksheet.getRow(this.currentRow).height = 60;
+    this.worksheet.getRow(this.currentRow + 1).height = 10;
 
-    // Agregar logo PNG al lado derecho del texto
+    // Agregar logo PNG centrado con dimensiones específicas
     try {
       const logoPath = path.join(__dirname, '../../assets/imagenes/logo.png');
       
@@ -420,12 +454,11 @@ export class PaqueteExcelTemplate {
           extension: 'png',
         });
 
-        // Posicionar logo en la esquina derecha del header
+        // Centrar logo usando posición absoluta desde el top-left
         this.worksheet.addImage(imageId, {
-          tl: { col: 3.2, row: this.currentRow - 1 } as any,
-          br: { col: 4, row: this.currentRow + 0.8 } as any,
-          editAs: 'oneCell',
-        });
+          tl: { col: 2.9, row: this.currentRow - 1 },
+          ext: { width: 180, height: 115 },
+        } as any);
       }
     } catch (error: any) {
       console.warn('No se pudo cargar el logo para el Excel:', error.message);
@@ -433,11 +466,23 @@ export class PaqueteExcelTemplate {
 
     this.currentRow += 3;
 
+    // Información de contacto profesional
+    this.worksheet.mergeCells(`A${this.currentRow}:D${this.currentRow}`);
+    const contactCell = this.worksheet.getCell(`A${this.currentRow}`);
+    contactCell.value = `📞 ${PaqueteExcelTemplate.DEFAULT_CONTACT.phone}  •  ✉️ ${PaqueteExcelTemplate.DEFAULT_CONTACT.email}  •  🌐 ${PaqueteExcelTemplate.DEFAULT_CONTACT.website}`;
+    contactCell.style = {
+      font: { name: 'Segoe UI', size: 10, color: { argb: PaqueteExcelTemplate.COLORS.primary } },
+      alignment: { vertical: 'middle', horizontal: 'center' },
+      fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F8F9FA' } },
+    };
+    this.worksheet.getRow(this.currentRow).height = 22;
+    this.currentRow += 2;
+
     // Timestamp de generación
     this.worksheet.mergeCells(`A${this.currentRow}:D${this.currentRow}`);
     const timestampCell = this.worksheet.getCell(`A${this.currentRow}`);
     const now = new Date();
-    timestampCell.value = `Documento generado: ${now.toLocaleDateString(
+    timestampCell.value = `Cotización generada: ${now.toLocaleDateString(
       'es-ES',
       {
         weekday: 'long',
@@ -462,6 +507,102 @@ export class PaqueteExcelTemplate {
     this.currentRow += 2;
   }
 
+  private addExecutiveSummary(paquete: Paquete): void {
+    const palette = PaqueteExcelTemplate.COLORS;
+    
+    // Obtener primer destino para mostrar
+    const primerDestino = paquete.destinos && paquete.destinos.length > 0
+      ? [paquete.destinos[0].ciudad, paquete.destinos[0].estado, paquete.destinos[0].pais]
+          .filter(Boolean)
+          .join(', ')
+      : 'No especificado';
+    
+    // Título "RESUMEN"
+    this.worksheet.mergeCells(`A${this.currentRow}:D${this.currentRow}`);
+    const summaryTitle = this.worksheet.getCell(`A${this.currentRow}`);
+    summaryTitle.value = '💼 RESUMEN DE COTIZACIÓN';
+    summaryTitle.style = {
+      font: { name: 'Segoe UI', size: 12, bold: true, color: { argb: palette.primary } },
+      alignment: { vertical: 'middle', horizontal: 'center' },
+      fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'E8F4FD' } },
+      border: {
+        top: { style: 'medium', color: { argb: palette.primary } },
+        left: { style: 'thin', color: { argb: 'DEE2E6' } },
+        right: { style: 'thin', color: { argb: 'DEE2E6' } },
+      },
+    };
+    this.worksheet.getRow(this.currentRow).height = 25;
+    this.currentRow += 1;
+
+    // Duración y destino
+    this.worksheet.mergeCells(`A${this.currentRow}:D${this.currentRow}`);
+    const durationCell = this.worksheet.getCell(`A${this.currentRow}`);
+    durationCell.value = `⏱️ Duración: ${paquete.duracion_dias} días  •  📍 Destino: ${primerDestino}`;
+    durationCell.style = {
+      font: { name: 'Segoe UI', size: 10, color: { argb: palette.secondary } },
+      alignment: { vertical: 'middle', horizontal: 'center' },
+      fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F8F9FA' } },
+      border: {
+        left: { style: 'thin', color: { argb: 'DEE2E6' } },
+        right: { style: 'thin', color: { argb: 'DEE2E6' } },
+      },
+    };
+    this.worksheet.getRow(this.currentRow).height = 20;
+    this.currentRow += 1;
+
+    // Precio destacado
+    this.worksheet.mergeCells(`A${this.currentRow}:D${this.currentRow}`);
+    const priceCell = this.worksheet.getCell(`A${this.currentRow}`);
+    let priceText = `💰 PRECIO TOTAL: ${this.formatPrice(paquete.precio_total)}`;
+    
+    // Agregar descuento si existe
+    if (paquete.descuento && paquete.descuento > 0) {
+      priceText += `  🎁 Descuento: ${this.formatPrice(paquete.descuento)}`;
+    }
+    
+    priceCell.value = priceText;
+    priceCell.style = {
+      font: { name: 'Segoe UI', size: 14, bold: true, color: { argb: palette.success } },
+      alignment: { vertical: 'middle', horizontal: 'center' },
+      fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F8F9FA' } },
+      border: {
+        left: { style: 'thin', color: { argb: 'DEE2E6' } },
+        right: { style: 'thin', color: { argb: 'DEE2E6' } },
+      },
+    };
+    this.worksheet.getRow(this.currentRow).height = 30;
+    this.currentRow += 1;
+
+    // Precio por persona si aplica
+    if (paquete.personas && paquete.personas > 0) {
+      this.worksheet.mergeCells(`A${this.currentRow}:D${this.currentRow}`);
+      const perPersonCell = this.worksheet.getCell(`A${this.currentRow}`);
+      const pricePerPerson = paquete.precio_total / paquete.personas;
+      perPersonCell.value = `👥 ${paquete.personas} ${paquete.personas === 1 ? 'persona' : 'personas'}  •  ${this.formatPrice(pricePerPerson)} por persona`;
+      perPersonCell.style = {
+        font: { name: 'Segoe UI', size: 11, color: { argb: palette.primary } },
+        alignment: { vertical: 'middle', horizontal: 'center' },
+        fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F8F9FA' } },
+        border: {
+          bottom: { style: 'medium', color: { argb: palette.primary } },
+          left: { style: 'thin', color: { argb: 'DEE2E6' } },
+          right: { style: 'thin', color: { argb: 'DEE2E6' } },
+        },
+      };
+      this.worksheet.getRow(this.currentRow).height = 22;
+      this.currentRow += 1;
+    } else {
+      // Si no hay personas, cerrar el borde en el precio
+      priceCell.style.border = {
+        bottom: { style: 'medium', color: { argb: palette.primary } },
+        left: { style: 'thin', color: { argb: 'DEE2E6' } },
+        right: { style: 'thin', color: { argb: 'DEE2E6' } },
+      };
+    }
+
+    this.currentRow += 1;
+  }
+
   private addModernSection(
     title: string,
     icon: string = '',
@@ -469,9 +610,10 @@ export class PaqueteExcelTemplate {
   ): void {
     const styles = this.getStyles();
     const palette = PaqueteExcelTemplate.COLORS;
-    const baseColor = color ?? palette.secondary;
+    const baseColor = color ?? palette.primary;
     const iconColor = this.lightenColor(baseColor, 18);
 
+    // Icono y título de sección
     this.worksheet.getCell(`A${this.currentRow}`).value = icon;
     this.worksheet.getCell(`A${this.currentRow}`).style = {
       ...styles.iconStyle,
@@ -494,7 +636,7 @@ export class PaqueteExcelTemplate {
       },
     };
 
-    this.worksheet.getRow(this.currentRow).height = 30;
+    this.worksheet.getRow(this.currentRow).height = 32;
     this.currentRow++;
   }
 
@@ -507,6 +649,7 @@ export class PaqueteExcelTemplate {
     const styles = this.getStyles();
     const palette = PaqueteExcelTemplate.COLORS;
 
+    // Columna de icono con fondo más suave
     this.worksheet.getCell(`A${this.currentRow}`).value = '';
     this.worksheet.getCell(`A${this.currentRow}`).style = {
       font: { name: 'Segoe UI', size: 12 },
@@ -514,15 +657,28 @@ export class PaqueteExcelTemplate {
       fill: {
         type: 'pattern' as const,
         pattern: 'solid' as const,
-        fgColor: { argb: palette.accent },
+        fgColor: { argb: 'E8F4FD' },
       },
-      border: this.getSubtleBorders(),
+      border: {
+        top: { style: 'thin' as const, color: { argb: 'E9ECEF' } },
+        left: { style: 'thin' as const, color: { argb: 'E9ECEF' } },
+        bottom: { style: 'thin' as const, color: { argb: 'E9ECEF' } },
+        right: { style: 'thin' as const, color: { argb: 'E9ECEF' } },
+      },
     };
 
+    // Label con mejor contraste
     this.worksheet.getCell(`B${this.currentRow}`).value = label;
-    this.worksheet.getCell(`B${this.currentRow}`).style =
-      styles.fieldLabelStyle;
+    this.worksheet.getCell(`B${this.currentRow}`).style = {
+      ...styles.fieldLabelStyle,
+      fill: {
+        type: 'pattern' as const,
+        pattern: 'solid' as const,
+        fgColor: { argb: 'F8F9FA' },
+      },
+    };
 
+    // Valor con mejor presentación
     this.worksheet.mergeCells(`C${this.currentRow}:D${this.currentRow}`);
     this.worksheet.getCell(`C${this.currentRow}`).value =
       value || 'No especificado';
@@ -531,7 +687,7 @@ export class PaqueteExcelTemplate {
       : styles.fieldValueStyle;
 
     this.worksheet.getRow(this.currentRow).height = Math.max(
-      22,
+      26,
       this.calculateRowHeight(value),
     );
     this.currentRow++;
@@ -606,15 +762,17 @@ export class PaqueteExcelTemplate {
   ): void {
     const styles = this.getStyles();
 
+    // Headers con mejor altura
     headers.forEach((header, index) => {
       const colLetter = String.fromCharCode(65 + index);
       this.worksheet.getCell(`${colLetter}${this.currentRow}`).value = header;
       this.worksheet.getCell(`${colLetter}${this.currentRow}`).style =
         styles.tableHeaderStyle;
     });
-    this.worksheet.getRow(this.currentRow).height = 28;
+    this.worksheet.getRow(this.currentRow).height = 32;
     this.currentRow++;
 
+    // Filas de datos con mejor spacing
     data.forEach((row, rowIndex) => {
       row.forEach((cell, colIndex) => {
         const colLetter = String.fromCharCode(65 + colIndex);
@@ -630,7 +788,7 @@ export class PaqueteExcelTemplate {
             styles.tableRowOddStyle;
         }
       });
-      this.worksheet.getRow(this.currentRow).height = 25;
+      this.worksheet.getRow(this.currentRow).height = 28;
       this.currentRow++;
     });
   }
@@ -687,6 +845,9 @@ export class PaqueteExcelTemplate {
     this.addBrandHeader();
 
     this.addPackageTitle(paquete.titulo);
+
+    // Resumen ejecutivo destacado con precio
+    this.addExecutiveSummary(paquete);
 
   this.addModernSection('INFORMACIÓN GENERAL');
     this.buildModernBasicInfo(formattedData.basicFields, paquete);
@@ -850,11 +1011,59 @@ export class PaqueteExcelTemplate {
   }
 
   private addModernFooter(): void {
+    this.currentRow += 3;
+    const palette = PaqueteExcelTemplate.COLORS;
+
+    // Llamada a acción
+    this.worksheet.mergeCells(`A${this.currentRow}:D${this.currentRow}`);
+    const ctaCell = this.worksheet.getCell(`A${this.currentRow}`);
+    ctaCell.value = '🎯 ¿Listo para reservar? Contáctanos hoy y asegura tu aventura';
+    ctaCell.style = {
+      font: { name: 'Segoe UI', size: 12, bold: true, color: { argb: palette.primary } },
+      alignment: { horizontal: 'center', vertical: 'middle' },
+      fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF9E6' } },
+    };
+    this.worksheet.getRow(this.currentRow).height = 30;
+    this.currentRow += 1;
+
+    // Información de contacto
+    this.worksheet.mergeCells(`A${this.currentRow}:D${this.currentRow}`);
+    const contactCell = this.worksheet.getCell(`A${this.currentRow}`);
+    contactCell.value = `📞 ${PaqueteExcelTemplate.DEFAULT_CONTACT.phone}  •  ✉️ ${PaqueteExcelTemplate.DEFAULT_CONTACT.email}  •  🌐 ${PaqueteExcelTemplate.DEFAULT_CONTACT.website}`;
+    contactCell.style = {
+      font: { name: 'Segoe UI', size: 10, color: { argb: palette.textDark } },
+      alignment: { horizontal: 'center', vertical: 'middle' },
+      fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F8F9FA' } },
+    };
+    this.worksheet.getRow(this.currentRow).height = 25;
+    this.currentRow += 1;
+
+    // Dirección
+    this.worksheet.mergeCells(`A${this.currentRow}:D${this.currentRow}`);
+    const addressCell = this.worksheet.getCell(`A${this.currentRow}`);
+    addressCell.value = `📍 ${PaqueteExcelTemplate.DEFAULT_CONTACT.address}`;
+    addressCell.style = {
+      font: { name: 'Segoe UI', size: 9, color: { argb: palette.textMuted } },
+      alignment: { horizontal: 'center', vertical: 'middle' },
+    };
+    this.worksheet.getRow(this.currentRow).height = 20;
     this.currentRow += 2;
 
+    // Términos y validez
+    this.worksheet.mergeCells(`A${this.currentRow}:D${this.currentRow}`);
+    const termsCell = this.worksheet.getCell(`A${this.currentRow}`);
+    termsCell.value = '📋 Cotización válida por 15 días. Sujeto a disponibilidad y cambios en tarifas.';
+    termsCell.style = {
+      font: { name: 'Segoe UI', size: 9, italic: true, color: { argb: palette.textMuted } },
+      alignment: { horizontal: 'center', vertical: 'middle' },
+    };
+    this.worksheet.getRow(this.currentRow).height = 20;
+    this.currentRow += 1;
+
+    // Copyright
     this.worksheet.mergeCells(`A${this.currentRow}:D${this.currentRow}`);
     const footerCell = this.worksheet.getCell(`A${this.currentRow}`);
-    footerCell.value = '© 2025 Viadca';
+    footerCell.value = '© 2025 Viadca - Expertos en crear experiencias inolvidables';
     footerCell.style = {
       font: {
         name: 'Segoe UI',
@@ -926,25 +1135,8 @@ export class PaqueteExcelTemplate {
       },
     ];
 
-    // Habilitar o deshabilitar protección por variable de entorno (mejora compatibilidad macOS)
-    const enableProtection = process.env.EXCEL_PROTECT !== 'false';
-    if (enableProtection) {
-      await this.worksheet.protect('viadca2025', {
-        selectLockedCells: true,
-        selectUnlockedCells: true,
-        formatCells: false,
-        formatColumns: false,
-        formatRows: false,
-        insertRows: false,
-        insertColumns: false,
-        insertHyperlinks: false,
-        deleteRows: false,
-        deleteColumns: false,
-        sort: false,
-        autoFilter: false,
-        pivotTables: false,
-      });
-    }
+    // Protección deshabilitada para permitir edición completa del Excel
+    // Los usuarios pueden modificar cualquier celda según necesiten
 
     this.worksheet.pageSetup.margins = {
       left: 0.3,
@@ -1182,27 +1374,31 @@ export class PaqueteExcelTemplate {
     detailsWorksheet.columns = [{ key: 'content', width: 100 }];
     let currentDetailRow = 1;
 
+    // Header más limpio
     detailsWorksheet.mergeCells(`A${currentDetailRow}:A${currentDetailRow}`);
     const headerCell = detailsWorksheet.getCell(`A${currentDetailRow}`);
     headerCell.value = `VIADCA - DETALLES DEL PAQUETE`;
     headerCell.style = {
       font: {
         name: 'Segoe UI',
-        size: 18,
+        size: 16,
         bold: true,
-        color: { argb: palette.white },
+        color: { argb: palette.primary },
       },
       fill: {
         type: 'pattern' as const,
         pattern: 'solid' as const,
-        fgColor: { argb: palette.primary },
+        fgColor: { argb: 'F8F9FA' },
       },
       alignment: {
         horizontal: 'center' as const,
         vertical: 'middle' as const,
       },
+      border: {
+        bottom: { style: 'medium' as const, color: { argb: palette.primary } },
+      },
     };
-    detailsWorksheet.getRow(currentDetailRow).height = 40;
+    detailsWorksheet.getRow(currentDetailRow).height = 35;
     currentDetailRow += 2;
 
     if (clienteName) {
@@ -1211,21 +1407,22 @@ export class PaqueteExcelTemplate {
       detailsWorksheet.getCell(`A${currentDetailRow}`).style = {
         font: {
           name: 'Segoe UI',
-          size: 12,
+          size: 11,
           bold: true,
           color: { argb: palette.textDark },
         },
         fill: {
           type: 'pattern' as const,
           pattern: 'solid' as const,
-          fgColor: { argb: palette.accent },
+          fgColor: { argb: 'E8F4FD' },
         },
         alignment: {
-          horizontal: 'center' as const,
+          horizontal: 'left' as const,
           vertical: 'middle' as const,
+          indent: 1,
         },
       };
-      detailsWorksheet.getRow(currentDetailRow).height = 25;
+      detailsWorksheet.getRow(currentDetailRow).height = 22;
       currentDetailRow += 2;
     }
 
@@ -1234,13 +1431,13 @@ export class PaqueteExcelTemplate {
     detailsWorksheet.getCell(`A${currentDetailRow}`).style = {
       font: {
         name: 'Segoe UI',
-        size: 14,
+        size: 13,
         bold: true,
-        color: { argb: palette.textDark },
+        color: { argb: palette.primary },
       },
-      alignment: { horizontal: 'center' as const, vertical: 'middle' as const },
+      alignment: { horizontal: 'left' as const, vertical: 'middle' as const, indent: 1 },
     };
-    detailsWorksheet.getRow(currentDetailRow).height = 30;
+    detailsWorksheet.getRow(currentDetailRow).height = 28;
     currentDetailRow += 3;
 
     if (paquete.incluye) {
@@ -1287,8 +1484,22 @@ export class PaqueteExcelTemplate {
       );
     }
 
+    // Footer mejorado
     currentDetailRow += 2;
-    detailsWorksheet.getCell(`A${currentDetailRow}`).value = '© 2025 Viadca';
+    detailsWorksheet.getCell(`A${currentDetailRow}`).value = 
+      `📞 ${PaqueteExcelTemplate.DEFAULT_CONTACT.phone}  •  ✉️ ${PaqueteExcelTemplate.DEFAULT_CONTACT.email}  •  🌐 ${PaqueteExcelTemplate.DEFAULT_CONTACT.website}`;
+    detailsWorksheet.getCell(`A${currentDetailRow}`).style = {
+      font: {
+        name: 'Segoe UI',
+        size: 9,
+        color: { argb: palette.textDark },
+      },
+      alignment: { horizontal: 'center' as const, vertical: 'middle' as const },
+    };
+    detailsWorksheet.getRow(currentDetailRow).height = 20;
+    currentDetailRow += 1;
+
+    detailsWorksheet.getCell(`A${currentDetailRow}`).value = '© 2025 Viadca - Expertos en crear experiencias inolvidables';
     detailsWorksheet.getCell(`A${currentDetailRow}`).style = {
       font: {
         name: 'Segoe UI',
@@ -1309,22 +1520,20 @@ export class PaqueteExcelTemplate {
   ): number {
     let currentRow = startRow;
     const palette = PaqueteExcelTemplate.COLORS;
-    const headerColor = color ?? palette.secondary;
-    // Ajuste solicitado: el cuerpo (contenido de requisitos/detalles) ahora será blanco en lugar de azul aclarado
-    const bodyFill = palette.white; // antes: this.lightenColor(headerColor, 25)
 
+    // Título de sección más limpio
     worksheet.getCell(`A${currentRow}`).value = title;
     worksheet.getCell(`A${currentRow}`).style = {
       font: {
         name: 'Segoe UI',
-        size: 14,
+        size: 12,
         bold: true,
         color: { argb: palette.white },
       },
       fill: {
         type: 'pattern' as const,
         pattern: 'solid' as const,
-        fgColor: { argb: headerColor },
+        fgColor: { argb: palette.primary },
       },
       alignment: {
         horizontal: 'left' as const,
@@ -1332,9 +1541,10 @@ export class PaqueteExcelTemplate {
         indent: 1,
       },
     };
-    worksheet.getRow(currentRow).height = 30;
+    worksheet.getRow(currentRow).height = 28;
     currentRow++;
 
+    // Contenido con fondo blanco y bordes sutiles
     worksheet.getCell(`A${currentRow}`).value = content;
     worksheet.getCell(`A${currentRow}`).style = {
       font: {
@@ -1349,15 +1559,15 @@ export class PaqueteExcelTemplate {
         indent: 1,
       },
       border: {
-        top: { style: 'thin' as const, color: { argb: palette.border } },
-        left: { style: 'thin' as const, color: { argb: palette.border } },
-        bottom: { style: 'thin' as const, color: { argb: palette.border } },
-        right: { style: 'thin' as const, color: { argb: palette.border } },
+        top: { style: 'thin' as const, color: { argb: 'DEE2E6' } },
+        left: { style: 'thin' as const, color: { argb: 'DEE2E6' } },
+        bottom: { style: 'thin' as const, color: { argb: 'DEE2E6' } },
+        right: { style: 'thin' as const, color: { argb: 'DEE2E6' } },
       },
       fill: {
         type: 'pattern' as const,
         pattern: 'solid' as const,
-        fgColor: { argb: bodyFill },
+        fgColor: { argb: palette.white },
       },
     };
 
@@ -1379,18 +1589,19 @@ export class PaqueteExcelTemplate {
     let currentRow = startRow;
     const palette = PaqueteExcelTemplate.COLORS;
 
+    // Título de sección
     worksheet.getCell(`A${currentRow}`).value = 'ITINERARIO DETALLADO';
     worksheet.getCell(`A${currentRow}`).style = {
       font: {
         name: 'Segoe UI',
-        size: 14,
+        size: 12,
         bold: true,
         color: { argb: palette.white },
       },
       fill: {
         type: 'pattern' as const,
         pattern: 'solid' as const,
-        fgColor: { argb: palette.secondary },
+        fgColor: { argb: palette.primary },
       },
       alignment: {
         horizontal: 'left' as const,
@@ -1398,42 +1609,49 @@ export class PaqueteExcelTemplate {
         indent: 1,
       },
     };
-    worksheet.getRow(currentRow).height = 30;
+    worksheet.getRow(currentRow).height = 28;
     currentRow++;
 
+    // Itinerarios con diseño limpio
     itinerarios
       .sort((a, b) => a.dia_numero - b.dia_numero)
-      .forEach((itinerario) => {
+      .forEach((itinerario, index) => {
+        // Día del itinerario
         const dayCell = worksheet.getCell(`A${currentRow}`);
         dayCell.value = `Día ${itinerario.dia_numero}`;
         dayCell.style = {
           font: {
             name: 'Segoe UI',
-            size: 12,
+            size: 11,
             bold: true,
-            color: { argb: palette.textDark },
+            color: { argb: palette.primary },
           },
           fill: {
             type: 'pattern' as const,
             pattern: 'solid' as const,
-            fgColor: { argb: palette.accent },
+            fgColor: { argb: 'E8F4FD' },
           },
           alignment: {
             horizontal: 'left' as const,
             vertical: 'middle' as const,
             indent: 1,
           },
-          border: this.getSubtleBorders(),
+          border: {
+            top: { style: 'thin' as const, color: { argb: 'DEE2E6' } },
+            left: { style: 'thin' as const, color: { argb: 'DEE2E6' } },
+            right: { style: 'thin' as const, color: { argb: 'DEE2E6' } },
+          },
         };
-        worksheet.getRow(currentRow).height = 25;
+        worksheet.getRow(currentRow).height = 24;
         currentRow++;
 
+        // Descripción del día
         const detailCell = worksheet.getCell(`A${currentRow}`);
         detailCell.value = itinerario.descripcion;
         detailCell.style = {
           font: {
             name: 'Segoe UI',
-            size: 11,
+            size: 10,
             color: { argb: palette.textDark },
           },
           alignment: {
@@ -1445,11 +1663,12 @@ export class PaqueteExcelTemplate {
           fill: {
             type: 'pattern' as const,
             pattern: 'solid' as const,
-            fgColor: { argb: palette.subtle },
+            fgColor: { argb: palette.white },
           },
           border: {
-            left: { style: 'thin' as const, color: { argb: palette.border } },
-            bottom: { style: 'thin' as const, color: { argb: palette.border } },
+            left: { style: 'thin' as const, color: { argb: 'DEE2E6' } },
+            bottom: { style: 'thin' as const, color: { argb: 'DEE2E6' } },
+            right: { style: 'thin' as const, color: { argb: 'DEE2E6' } },
           },
         };
 
