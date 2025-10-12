@@ -26,7 +26,7 @@ export class ExcelDataFormatterService {
   }
 
   formatBasicInfo(paquete: Paquete): Array<[string, string]> {
-    return [
+    const fields: Array<[string, string] | null> = [
       [this.config.texts.labels.title, paquete.titulo],
       [this.config.texts.labels.origin, paquete.origen],
       [
@@ -42,28 +42,40 @@ export class ExcelDataFormatterService {
         this.config.texts.labels.totalPrice,
         this.formatPrice(paquete.precio_total),
       ],
-      [
-        this.config.texts.labels.peopleCount,
-        paquete.personas && paquete.personas > 0
-          ? `${paquete.personas.toLocaleString(this.config.formatting.locale)} ${this.config.texts.labels.peopleUnit}`
-          : this.config.texts.labels.notSpecified,
-      ],
-      [
-        this.config.texts.labels.flightPrice,
-        this.formatPrice(paquete.precio_vuelo ?? null),
-      ],
-      [
-        this.config.texts.labels.lodgingPrice,
-        this.formatPrice(paquete.precio_hospedaje ?? null),
-      ],
-      [this.config.texts.labels.discount, `${paquete.descuento}%`],
-      [
-        this.config.texts.labels.advance,
-        paquete.anticipo
-          ? this.formatPrice(paquete.anticipo)
-          : this.config.texts.labels.notDefined,
-      ],
+      // Precio por persona solo si personas está definido
+      paquete.personas && paquete.personas > 0
+        ? [
+            'Precio por Persona',
+            this.formatPrice(paquete.precio_total / paquete.personas),
+          ]
+        : null,
+      // Personas solo si tiene valor
+      paquete.personas && paquete.personas > 0
+        ? [
+            this.config.texts.labels.peopleCount,
+            `${paquete.personas.toLocaleString(this.config.formatting.locale)} ${this.config.texts.labels.peopleUnit}`,
+          ]
+        : null,
+      // Precio vuelo solo si tiene valor
+      paquete.precio_vuelo && paquete.precio_vuelo > 0
+        ? [this.config.texts.labels.flightPrice, this.formatPrice(paquete.precio_vuelo)]
+        : null,
+      // Precio hospedaje solo si tiene valor
+      paquete.precio_hospedaje && paquete.precio_hospedaje > 0
+        ? [this.config.texts.labels.lodgingPrice, this.formatPrice(paquete.precio_hospedaje)]
+        : null,
+      // Descuento solo si es mayor a 0
+      paquete.descuento && paquete.descuento > 0
+        ? [this.config.texts.labels.discount, `${paquete.descuento}%`]
+        : null,
+      // Anticipo solo si tiene valor
+      paquete.anticipo && paquete.anticipo > 0
+        ? [this.config.texts.labels.advance, this.formatPrice(paquete.anticipo)]
+        : null,
     ];
+
+    // Filtrar nulls y devolver solo campos con valor
+    return fields.filter((field): field is [string, string] => field !== null);
   }
 
   formatPaqueteData(paquete: Paquete) {

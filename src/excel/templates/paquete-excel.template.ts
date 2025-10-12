@@ -1,5 +1,7 @@
 import * as ExcelJS from 'exceljs';
 import { Paquete } from '../../paquetes/entidades/paquete.entity';
+import * as fs from 'fs';
+import * as path from 'path';
 
 export class PaqueteExcelTemplate {
   private workbook: ExcelJS.Workbook;
@@ -8,27 +10,33 @@ export class PaqueteExcelTemplate {
 
   // Configuración directa y simple para modificar fácilmente
   private static readonly COLORS = {
-    primary: '0F3D73',
-    secondary: '145A9C',
-    accent: 'E8F1FD',
-    subtle: 'F5F8FE',
-    textDark: '1C2E4A',
-    textMuted: '3D5878',
+    primary: '0F3D73', // Azul corporativo oscuro
+    secondary: '145A9C', // Azul medio
+    accent: 'E8F1FD', // Azul muy claro
+    subtle: 'F5F8FE', // Casi blanco azulado
+    textDark: '1C2E4A', // Texto oscuro
+    textMuted: '3D5878', // Texto secundario
     white: 'FFFFFF',
     border: 'D5E1F2',
+    success: '28A745', // Verde para destacar
+    warning: 'FFC107', // Amarillo/dorado
+    gold: 'FFD700', // Dorado premium
   };
 
   private static readonly TEXTS = {
-    mainTitle: 'INFORMACIÓN COMPLETA DEL PAQUETE TURÍSTICO',
-    basicInfo: 'INFORMACIÓN BÁSICA',
+    mainTitle: 'COTIZACIÓN DE VIAJE',
+    quotation: 'COTIZACIÓN',
+    basicInfo: 'INFORMACIÓN DEL PAQUETE',
+    priceBreakdown: 'DESGLOSE DE PRECIOS',
     includes: 'QUÉ INCLUYE',
     notIncludes: 'QUÉ NO INCLUYE',
     requirements: 'REQUISITOS',
-    notes: 'NOTAS ADICIONALES',
+    notes: 'NOTAS IMPORTANTES',
     destinations: 'DESTINOS DEL VIAJE',
-    hotel: 'INFORMACIÓN DEL HOTEL',
+    hotel: 'ALOJAMIENTO',
     itinerary: 'ITINERARIO DETALLADO',
-    wholesalers: 'MAYORISTAS ASOCIADOS',
+    wholesalers: 'PROVEEDORES',
+    contact: 'INFORMACIÓN DE CONTACTO',
   };
 
   constructor() {
@@ -83,19 +91,22 @@ export class PaqueteExcelTemplate {
           name: 'Segoe UI',
           size: 24,
           bold: true,
-          color: { argb: palette.white },
+          color: { argb: palette.primary }, // Texto azul en lugar de blanco
         },
         fill: {
           type: 'pattern' as const,
           pattern: 'solid' as const,
-          fgColor: { argb: palette.primary },
+          fgColor: { argb: palette.white }, // Fondo blanco en lugar de azul
         },
         alignment: {
           horizontal: 'center' as const,
           vertical: 'middle' as const,
         },
         border: {
-          bottom: { style: 'thick' as const, color: { argb: palette.secondary } },
+          bottom: { style: 'thick' as const, color: { argb: palette.primary } }, // Borde azul
+          top: { style: 'thin' as const, color: { argb: palette.border } },
+          left: { style: 'thin' as const, color: { argb: palette.border } },
+          right: { style: 'thin' as const, color: { argb: palette.border } },
         },
       },
 
@@ -390,14 +401,39 @@ export class PaqueteExcelTemplate {
   private addBrandHeader(): void {
     const styles = this.getStyles();
 
+    // Merge cells para el header
     this.worksheet.mergeCells(`A${this.currentRow}:D${this.currentRow + 1}`);
     const brandCell = this.worksheet.getCell(`A${this.currentRow}`);
     brandCell.value = 'VIADCA';
     brandCell.style = styles.brandHeaderStyle;
     this.worksheet.getRow(this.currentRow).height = 45;
     this.worksheet.getRow(this.currentRow + 1).height = 15;
+
+    // Agregar logo PNG al lado derecho del texto
+    try {
+      const logoPath = path.join(__dirname, '../../assets/imagenes/logo.png');
+      
+      if (fs.existsSync(logoPath)) {
+        const imageBuffer = fs.readFileSync(logoPath);
+        const imageId = this.workbook.addImage({
+          buffer: imageBuffer as any,
+          extension: 'png',
+        });
+
+        // Posicionar logo en la esquina derecha del header
+        this.worksheet.addImage(imageId, {
+          tl: { col: 3.2, row: this.currentRow - 1 } as any,
+          br: { col: 4, row: this.currentRow + 0.8 } as any,
+          editAs: 'oneCell',
+        });
+      }
+    } catch (error: any) {
+      console.warn('No se pudo cargar el logo para el Excel:', error.message);
+    }
+
     this.currentRow += 3;
 
+    // Timestamp de generación
     this.worksheet.mergeCells(`A${this.currentRow}:D${this.currentRow}`);
     const timestampCell = this.worksheet.getCell(`A${this.currentRow}`);
     const now = new Date();
@@ -679,32 +715,42 @@ export class PaqueteExcelTemplate {
     basicFields: Array<[string, string]>,
     paquete: Paquete,
   ): void {
-    const iconMap: { [key: string]: string } = {
-      Título: '',
-      Precio: '',
-      Duración: '',
-      'Sitio Web': '',
-      Origen: '',
-      Fechas: '',
-      Cliente: '',
-    };
-
     const customFields: Array<
-      [string, string | { text: string; hyperlink: string }]
+      [string, string | { text: string; hyperlink: string }] | null
     > = [
       ['Cliente', ''],
       ['Título', paquete.titulo],
       ['Precio Total', this.formatPrice(paquete.precio_total)],
-      [
-        'Personas',
-        paquete.personas && paquete.personas > 0
-          ? `${paquete.personas} ${paquete.personas === 1 ? 'persona' : 'personas'}`
-          : 'No especificado',
-      ],
-      ['Precio Vuelo', this.formatPrice(paquete.precio_vuelo)],
-      ['Precio Hospedaje', this.formatPrice(paquete.precio_hospedaje)],
-      ['Descuento', this.formatPrice(paquete.descuento)],
-      ['Anticipo', this.formatPrice(paquete.anticipo)],
+      // Desglose: Precio por persona solo si personas está definido
+      paquete.personas && paquete.personas > 0
+        ? [
+            'Precio por Persona',
+            this.formatPrice(paquete.precio_total / paquete.personas),
+          ]
+        : null,
+      // Personas solo si está definido
+      paquete.personas && paquete.personas > 0
+        ? [
+            'Personas',
+            `${paquete.personas} ${paquete.personas === 1 ? 'persona' : 'personas'}`,
+          ]
+        : null,
+      // Precio vuelo solo si tiene valor
+      paquete.precio_vuelo && paquete.precio_vuelo > 0
+        ? ['Precio Vuelo', this.formatPrice(paquete.precio_vuelo)]
+        : null,
+      // Precio hospedaje solo si tiene valor
+      paquete.precio_hospedaje && paquete.precio_hospedaje > 0
+        ? ['Precio Hospedaje', this.formatPrice(paquete.precio_hospedaje)]
+        : null,
+      // Descuento solo si es mayor a 0
+      paquete.descuento && paquete.descuento > 0
+        ? ['Descuento', this.formatPrice(paquete.descuento)]
+        : null,
+      // Anticipo solo si tiene valor
+      paquete.anticipo && paquete.anticipo > 0
+        ? ['Anticipo', this.formatPrice(paquete.anticipo)]
+        : null,
       ['Duración', `${paquete.duracion_dias} días`],
       [
         'Sitio Web',
@@ -728,22 +774,23 @@ export class PaqueteExcelTemplate {
       ],
     ];
 
-    customFields.forEach(([field, value]) => {
-      const icon = '';
+    // Filtrar campos null (los opcionales sin valor)
+    customFields
+      .filter((field): field is [string, string | { text: string; hyperlink: string }] => field !== null)
+      .forEach(([field, value]) => {
+        const isHighlight = false;
 
-      const isHighlight = false;
-
-      if (typeof value === 'object' && value.hyperlink) {
-        this.addInfoCardWithLink('', field, value.text, value.hyperlink);
-      } else {
-        this.addInfoCard(
-          '',
-          field,
-          (value as string) || (field === 'Cliente' ? '' : 'No especificado'),
-          isHighlight,
-        );
-      }
-    });
+        if (typeof value === 'object' && value.hyperlink) {
+          this.addInfoCardWithLink('', field, value.text, value.hyperlink);
+        } else {
+          this.addInfoCard(
+            '',
+            field,
+            (value as string) || (field === 'Cliente' ? '' : 'No especificado'),
+            isHighlight,
+          );
+        }
+      });
 
     this.addSectionSpacer();
   }
