@@ -63,6 +63,9 @@ export class Paquete extends SoftDeleteEntity {
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   precio_total: number;
 
+  @Column({ type: 'int', unsigned: true, nullable: true })
+  personas: number | null;
+
   @Column({ type: 'varchar', length: 3, default: 'MXN' })
   moneda: 'MXN' | 'USD';
 

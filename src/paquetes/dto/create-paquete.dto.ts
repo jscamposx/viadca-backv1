@@ -14,6 +14,7 @@ import {
   MaxLength,
   IsIn,
   IsEnum,
+  IsInt,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CreateDestinoDto } from './create-destino.dto';
@@ -109,6 +110,12 @@ export class CreatePaqueteDto {
   @IsNumber({}, { message: 'El precio total debe ser un número' })
   @IsPositive({ message: 'El precio total debe ser un número positivo' })
   readonly precio_total: number;
+
+  @IsOptional()
+  @ValidateIf((o) => o.personas !== null)
+  @IsInt({ message: 'El número de personas debe ser un entero' })
+  @Min(1, { message: 'El número de personas debe ser al menos 1' })
+  readonly personas?: number | null;
 
   // Nueva moneda del paquete (MXN o USD)
   @IsOptional()

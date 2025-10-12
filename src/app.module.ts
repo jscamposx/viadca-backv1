@@ -5,7 +5,9 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { QueueInterceptor } from './common/interceptors/queue.interceptor';
+import { QueueModule } from './common/queue.module';
 
 import { Usuario } from './entities/usuario.entity';
 import { Paquete } from './paquetes/entidades/paquete.entity';
@@ -147,8 +149,13 @@ import { ContactoModule } from './contacto/contacto.module';
     CleanupModule,
     AdminModule,
     ContactoModule,
+    QueueModule,
   ],
   controllers: [AppController],
-  providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],
+  providers: [
+    AppService,
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_INTERCEPTOR, useClass: QueueInterceptor },
+  ],
 })
 export class AppModule {}

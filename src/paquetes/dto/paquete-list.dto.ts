@@ -11,4 +11,5 @@ export class PaqueteListDto {
   precio_total: number;
   moneda: MonedaPaquete;
   favorito?: boolean;
+  personas?: number | null;
 }

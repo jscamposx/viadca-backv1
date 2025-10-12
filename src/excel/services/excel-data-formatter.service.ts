@@ -43,6 +43,12 @@ export class ExcelDataFormatterService {
         this.formatPrice(paquete.precio_total),
       ],
       [
+        this.config.texts.labels.peopleCount,
+        paquete.personas && paquete.personas > 0
+          ? `${paquete.personas.toLocaleString(this.config.formatting.locale)} ${this.config.texts.labels.peopleUnit}`
+          : this.config.texts.labels.notSpecified,
+      ],
+      [
         this.config.texts.labels.flightPrice,
         this.formatPrice(paquete.precio_vuelo ?? null),
       ],

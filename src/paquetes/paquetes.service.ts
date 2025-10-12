@@ -75,6 +75,9 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
     if (paqueteData.precio_hospedaje === undefined) {
       paqueteData.precio_hospedaje = null;
     }
+    if (paqueteData.personas === undefined) {
+      (paqueteData as any).personas = null;
+    }
     if (paqueteData.notas === undefined) {
       paqueteData.notas = null;
     }
@@ -190,6 +193,7 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
         precio_total: Number(paquete.precio_total),
         moneda: paquete.moneda,
         favorito: paquete.favorito,
+        personas: paquete.personas ?? null,
       } as PaqueteListDto;
     });
   }
@@ -223,6 +227,7 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
         'p.titulo',
         'p.activo',
         'p.precio_total',
+        'p.personas',
         'p.moneda',
         'p.favorito',
         'p.creadoEn',
@@ -257,6 +262,7 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
         precio_total: Number(paquete.precio_total),
         moneda: paquete.moneda,
         favorito: paquete.favorito,
+        personas: paquete.personas ?? null,
       } as PaqueteListDto;
     });
 
@@ -350,6 +356,10 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
     if ('precio_hospedaje' in updatePaqueteDto) {
       paqueteDetails.precio_hospedaje =
         updatePaqueteDto.precio_hospedaje ?? null;
+    }
+    if ('personas' in updatePaqueteDto) {
+      (paqueteDetails as any).personas =
+        updatePaqueteDto.personas ?? null;
     }
     if ('notas' in updatePaqueteDto) {
       paqueteDetails.notas = updatePaqueteDto.notas;
@@ -850,6 +860,7 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
       fecha_inicio: formatDate(paquete.fecha_inicio),
       fecha_fin: formatDate(paquete.fecha_fin),
       duracion_dias: paquete.duracion_dias,
+  personas: paquete.personas ?? null,
       incluye: paquete.incluye,
       no_incluye: paquete.no_incluye,
       requisitos: paquete.requisitos,
@@ -930,6 +941,7 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
         descuento: paquete.descuento > 0 ? Number(paquete.descuento) : undefined,
         mayoristas_tipos: mayoristasTipos,
         favorito: paquete.favorito,
+        personas: paquete.personas ?? null,
       } as PaquetePublicListDto;
     });
   }

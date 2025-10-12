@@ -356,6 +356,7 @@ export class PaqueteExcelTemplate {
     };
   }
 
+
   private getModernBorders() {
     const palette = PaqueteExcelTemplate.COLORS;
     return {
@@ -694,8 +695,14 @@ export class PaqueteExcelTemplate {
       ['Cliente', ''],
       ['Título', paquete.titulo],
       ['Precio Total', this.formatPrice(paquete.precio_total)],
-  ['Precio Vuelo', this.formatPrice(paquete.precio_vuelo)],
-  ['Precio Hospedaje', this.formatPrice(paquete.precio_hospedaje)],
+      [
+        'Personas',
+        paquete.personas && paquete.personas > 0
+          ? `${paquete.personas} ${paquete.personas === 1 ? 'persona' : 'personas'}`
+          : 'No especificado',
+      ],
+      ['Precio Vuelo', this.formatPrice(paquete.precio_vuelo)],
+      ['Precio Hospedaje', this.formatPrice(paquete.precio_hospedaje)],
       ['Descuento', this.formatPrice(paquete.descuento)],
       ['Anticipo', this.formatPrice(paquete.anticipo)],
       ['Duración', `${paquete.duracion_dias} días`],
@@ -1126,7 +1133,6 @@ export class PaqueteExcelTemplate {
     );
 
     detailsWorksheet.columns = [{ key: 'content', width: 100 }];
-
     let currentDetailRow = 1;
 
     detailsWorksheet.mergeCells(`A${currentDetailRow}:A${currentDetailRow}`);
@@ -1257,7 +1263,8 @@ export class PaqueteExcelTemplate {
     let currentRow = startRow;
     const palette = PaqueteExcelTemplate.COLORS;
     const headerColor = color ?? palette.secondary;
-    const bodyFill = this.lightenColor(headerColor, 25);
+    // Ajuste solicitado: el cuerpo (contenido de requisitos/detalles) ahora será blanco en lugar de azul aclarado
+    const bodyFill = palette.white; // antes: this.lightenColor(headerColor, 25)
 
     worksheet.getCell(`A${currentRow}`).value = title;
     worksheet.getCell(`A${currentRow}`).style = {

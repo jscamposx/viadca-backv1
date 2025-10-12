@@ -12,6 +12,7 @@ import {
   ValidateIf,
   // MaxLength, // removido para liberar límites
   IsEnum,
+  IsInt,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { UpdateHotelDto } from './update-hotel.dto';
@@ -111,6 +112,12 @@ export class UpdatePaqueteDto {
   @IsNumber({}, { message: 'El precio total debe ser un número' })
   @IsPositive({ message: 'El precio total debe ser un número positivo' })
   readonly precio_total?: number;
+
+  @IsOptional()
+  @ValidateIf((o) => o.personas !== null)
+  @IsInt({ message: 'El número de personas debe ser un entero' })
+  @Min(1, { message: 'El número de personas debe ser al menos 1' })
+  readonly personas?: number | null;
 
   // Moneda editable en actualización
   @IsOptional()

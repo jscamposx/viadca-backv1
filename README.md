@@ -17,6 +17,7 @@ API REST de gestión de viajes y paquetes turísticos construida con NestJS, Typ
 - Endpoints principales (API)
 - Seguridad y buenas prácticas
 - Caché y rate limiting
+- Sistema de cola de solicitudes
 - Subida de imágenes (Cloudinary)
 - Generación de Excel
 - Limpieza automática (cron)
@@ -213,6 +214,12 @@ Base URL: `http://localhost:{PORT}` (por defecto `3000`).
   - `DELETE /:id/hard` — Eliminación permanente.
   - `GET /excel/:id` — Descargar Excel del paquete.
 
+  > **Nota para frontend**: A partir de esta versión puedes enviar el campo opcional `personas` (entero ≥ 1 o `null`) en el `PATCH /admin/paquetes/:id`. El backend lo persiste y lo expone en todas las respuestas:
+  > - Listado admin (`GET /admin/paquetes`): cada item incluye `personas`.
+  > - Detalle admin/público (`GET /admin/paquetes/:id`, `GET /paquetes/:codigoUrl`): devuelve `personas` o `null`.
+  > - Listado público (`GET /paquetes/listado`): el arreglo trae `personas` para pintar dividendo de precio.
+  > Si no envías el campo o lo mandas en `null`, el valor regresará como `null` y puedes omitir la división en el front.
+
 - Administración de mayoristas (`/admin/mayoristas`) [requiere rol admin]
   - CRUD completo, `GET /stats/overview` con cache 30s, soft/hard delete y restore.
 
@@ -257,6 +264,15 @@ Base URL: `http://localhost:{PORT}` (por defecto `3000`).
   - Auth sensible (`/usuarios/register|login|forgot-password|reset-password`): 5 req/min.
   - `GET /usuarios/profile`: 60 req/min.
   - `PATCH /usuarios/profile`: 20 req/min.
+
+## Sistema de cola de solicitudes
+
+- Todas las peticiones que modifican estado (`POST`, `PUT`, `PATCH`, `DELETE`) pasan por una cola FIFO en memoria (`RequestQueueService`).
+- Se procesan hasta **3 solicitudes en paralelo** como máximo; el resto espera su turno.
+- El tamaño máximo de la cola es **200**. Si se excede, la petición se rechaza con un error genérico de sistema ocupado.
+- Los `GET` públicos se sirven inmediatamente; si necesitas excluir otro handler puntual, marca el método con `@SkipQueue()`.
+- Endpoint de monitoreo rápido: `GET /admin/queue/status` (requiere rol admin). Devuelve longitud de cola, concurrencia, métricas, estimador de espera, totales diarios (últimos 7 días) y una lista corta de eventos recientes.
+- Objetivo: evitar que ráfagas de acciones administrativas pesadas saturen la app o tu instancia de base de datos.
 
 ## Subida de imágenes (Cloudinary)
 
