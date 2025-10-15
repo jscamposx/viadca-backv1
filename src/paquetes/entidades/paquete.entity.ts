@@ -78,6 +78,9 @@ export class Paquete extends SoftDeleteEntity {
   @Column({ type: 'boolean', default: false })
   favorito: boolean;
 
+  @Column({ type: 'boolean', default: true })
+  aptoParaMenores: boolean;
+
   @OneToMany(() => Itinerario, (itinerario) => itinerario.paquete, {
     cascade: true,
   })

@@ -11,5 +11,6 @@ export interface PaquetePublicListDto {
   mayoristas_tipos: string[]; // tipos de producto de mayoristas asociados
   favorito?: boolean;
   personas?: number | null;
+  aptoParaMenores: boolean; // indica si el paquete es apto para menores (true) o solo adultos (false)
   // destacado removido
 }

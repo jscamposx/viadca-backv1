@@ -170,4 +170,8 @@ export class CreatePaqueteDto {
   @IsOptional()
   @IsBoolean({ message: 'El campo favorito debe ser booleano' })
   readonly favorito?: boolean;
+
+  @IsOptional()
+  @IsBoolean({ message: 'El campo apto para menores debe ser booleano' })
+  readonly aptoParaMenores?: boolean;
 }

@@ -873,6 +873,7 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
       notas: paquete.notas,
       activo: paquete.activo,
       favorito: paquete.favorito,
+      aptoParaMenores: paquete.aptoParaMenores,
       destinos: (paquete.destinos || []).map((d) => ({
         ciudad: (d as any).ciudad,
         estado: (d as any).estado,
@@ -942,6 +943,7 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
         mayoristas_tipos: mayoristasTipos,
         favorito: paquete.favorito,
         personas: paquete.personas ?? null,
+        aptoParaMenores: paquete.aptoParaMenores,
       } as PaquetePublicListDto;
     });
   }

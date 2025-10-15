@@ -17,6 +17,7 @@ import { Destino } from './entities/destino.entity';
 import { Imagen } from './entities/imagen.entity';
 import { Mayoristas } from './entities/mayoristas.entity';
 import { Contacto } from './entities/contacto.entity';
+import { QueueTaskHistory } from './entities/queue-task-history.entity';
 
 import { PaquetesModule } from './paquetes/paquetes.module';
 import { MayoristasModule } from './mayoristas/mayoristas.module';
@@ -109,6 +110,7 @@ import { ContactoModule } from './contacto/contacto.module';
             Imagen,
             Mayoristas,
             Contacto,
+            QueueTaskHistory,
           ],
           // Ahora respetamos el valor explícito incluso en producción (bajo advertencia)
           synchronize,

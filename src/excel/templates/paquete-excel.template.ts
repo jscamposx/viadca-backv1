@@ -3,26 +3,64 @@ import { Paquete } from '../../paquetes/entidades/paquete.entity';
 import * as fs from 'fs';
 import * as path from 'path';
 
+/**
+ * ═══════════════════════════════════════════════════════════════════════════
+ * PLANTILLA DE EXCEL PARA COTIZACIONES DE PAQUETES VIADCA
+ * ═══════════════════════════════════════════════════════════════════════════
+ * 
+ * Este archivo genera un Excel profesional con 2 hojas:
+ * 1. "Información del Paquete" - Resumen ejecutivo y datos principales
+ * 2. "Detalles del Paquete" - Información detallada (incluye, requisitos, itinerario)
+ * 
+ * ESTRUCTURA:
+ * - SECCIÓN 1: CONFIGURACIÓN (colores, textos, contacto)
+ * - SECCIÓN 2: INICIALIZACIÓN (constructor, metadata, worksheet)
+ * - SECCIÓN 3: ESTILOS (definición de estilos reutilizables)
+ * - SECCIÓN 4: HEADER Y FOOTER (logo, contacto, copyright)
+ * - SECCIÓN 5: SECCIONES DE CONTENIDO (resumen, información general, tablas)
+ * - SECCIÓN 6: SEGUNDA HOJA (detalles del paquete)
+ * - SECCIÓN 7: GENERACIÓN FINAL (export del buffer)
+ */
+
 export class PaqueteExcelTemplate {
   private workbook: ExcelJS.Workbook;
   private worksheet: ExcelJS.Worksheet;
   private currentRow: number = 1;
 
-  // Configuración directa y simple para modificar fácilmente
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SECCIÓN 1: CONFIGURACIÓN - Modifica aquí colores, textos y contacto
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * PALETA DE COLORES
+   * Modificar estos valores para cambiar los colores del Excel
+   * Formato: Hexadecimal sin # (ejemplo: 'FF0000' para rojo)
+   */
   private static readonly COLORS = {
-    primary: '0F3D73', // Azul corporativo oscuro
-    secondary: '145A9C', // Azul medio
-    accent: 'E8F1FD', // Azul muy claro
-    subtle: 'F5F8FE', // Casi blanco azulado
-    textDark: '1C2E4A', // Texto oscuro
-    textMuted: '3D5878', // Texto secundario
-    white: 'FFFFFF',
-    border: 'D5E1F2',
-    success: '28A745', // Verde para destacar
-    warning: 'FFC107', // Amarillo/dorado
-    gold: 'FFD700', // Dorado premium
+    // Colores principales de la marca
+    primary: '0F3D73',      // Azul corporativo oscuro - Headers principales
+    secondary: '145A9C',    // Azul medio - Headers secundarios
+    accent: 'E8F1FD',       // Azul muy claro - Fondos suaves
+    
+    // Colores de texto
+    textDark: '1C2E4A',     // Texto principal oscuro
+    textMuted: '3D5878',    // Texto secundario/subtítulos
+    
+    // Colores de estados
+    success: '28A745',      // Verde - Precios y destacados positivos
+    warning: 'FFC107',      // Amarillo - Alertas
+    gold: 'FFD700',         // Dorado - Elementos premium
+    
+    // Colores base
+    white: 'FFFFFF',        // Blanco - Fondos limpios
+    subtle: 'F5F8FE',       // Casi blanco azulado - Fondos alternos
+    border: 'D5E1F2',       // Bordes sutiles
   };
 
+  /**
+   * TEXTOS Y ETIQUETAS
+   * Modificar estos textos para cambiar los títulos de las secciones
+   */
   private static readonly TEXTS = {
     mainTitle: 'COTIZACIÓN DE VIAJE',
     quotation: 'COTIZACIÓN',
@@ -39,7 +77,10 @@ export class PaqueteExcelTemplate {
     contact: 'INFORMACIÓN DE CONTACTO',
   };
 
-  // Información de contacto por defecto
+  /**
+   * INFORMACIÓN DE CONTACTO
+   * Modificar estos datos con la información real de la empresa
+   */
   private static readonly DEFAULT_CONTACT = {
     phone: '999 242 3321',
     email: 'viadca@zafirotours.mx',
@@ -48,12 +89,36 @@ export class PaqueteExcelTemplate {
     website: 'www.viadca.app',
   };
 
+  /**
+   * CONFIGURACIÓN DEL LOGO
+   * Ajusta la posición y tamaño del logo en el header
+   */
+  private static readonly LOGO_CONFIG = {
+    // Posición horizontal (col): 0=columna A, 1=columna B, etc.
+    // Valores decimales para posición intermedia (ej: 1.3 = entre B y C)
+    positionCol: 2.9,
+    
+    // Posición vertical (row): relativa al currentRow
+    positionRow: -1,
+    
+    // Dimensiones del logo en pixels
+    width: 180,
+    height: 115,
+  };
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SECCIÓN 2: INICIALIZACIÓN
+  // ═══════════════════════════════════════════════════════════════════════════
+
   constructor() {
     this.workbook = new ExcelJS.Workbook();
     this.setupWorkbookMetadata();
     this.createWorksheet();
   }
 
+  /**
+   * Configura los metadatos del archivo Excel
+   */
   private setupWorkbookMetadata(): void {
     this.workbook.creator = 'Viadca Sistema';
     this.workbook.lastModifiedBy = 'Viadca Sistema';
@@ -63,11 +128,14 @@ export class PaqueteExcelTemplate {
     this.workbook.category = 'Turismo';
   }
 
+  /**
+   * Crea la hoja principal del Excel con configuración de página
+   */
   private createWorksheet(): void {
     this.worksheet = this.workbook.addWorksheet('Información del Paquete', {
       pageSetup: {
-        paperSize: 9,
-        orientation: 'portrait',
+        paperSize: 9,           // Tamaño carta
+        orientation: 'portrait', // Vertical
         margins: {
           left: 0.4,
           right: 0.4,
@@ -83,14 +151,23 @@ export class PaqueteExcelTemplate {
       },
     });
 
+    // Configuración de columnas (anchos en caracteres)
     this.worksheet.columns = [
-      { key: 'icon', width: 7 },
-      { key: 'campo', width: 28 },
-      { key: 'valor', width: 62 },
-      { key: 'extra', width: 20 },
+      { key: 'icon', width: 7 },    // Columna A - Iconos
+      { key: 'campo', width: 28 },  // Columna B - Etiquetas
+      { key: 'valor', width: 62 },  // Columna C - Valores
+      { key: 'extra', width: 20 },  // Columna D - Extra
     ];
   }
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SECCIÓN 3: ESTILOS
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Define todos los estilos reutilizables del Excel
+   * Retorna un objeto con estilos predefinidos para diferentes elementos
+   */
   private getStyles() {
     const palette = PaqueteExcelTemplate.COLORS;
 
@@ -422,13 +499,39 @@ export class PaqueteExcelTemplate {
     };
   }
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SECCIÓN 4: HEADER Y FOOTER
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * HEADER CON LOGO CENTRADO
+   * 
+   * Esta función genera el header del Excel con el logo de Viadca centrado
+   * 
+   * PARA AJUSTAR EL LOGO:
+   * 1. Posición horizontal: Modifica LOGO_CONFIG.positionCol
+   *    - Valores menores = más a la izquierda
+   *    - Valores mayores = más a la derecha
+   *    - Ejemplo: 1.3 está entre las columnas B y C
+   * 
+   * 2. Tamaño: Modifica LOGO_CONFIG.width y LOGO_CONFIG.height
+   *    - width: ancho en pixels (ejemplo: 180)
+   *    - height: alto en pixels (ejemplo: 55)
+   * 
+   * 3. Altura del header: Modifica las siguientes líneas:
+   *    - this.worksheet.getRow(this.currentRow).height = 60; (altura fila 1)
+   *    - this.worksheet.getRow(this.currentRow + 1).height = 10; (altura fila 2)
+   */
   private addBrandHeader(): void {
     const styles = this.getStyles();
+    const logoConfig = PaqueteExcelTemplate.LOGO_CONFIG;
 
-    // Header con logo centrado (sin texto)
+    // Crear celda mergeada para el header (combina A1:D2)
     this.worksheet.mergeCells(`A${this.currentRow}:D${this.currentRow + 1}`);
     const brandCell = this.worksheet.getCell(`A${this.currentRow}`);
-    brandCell.value = ''; // Sin texto, solo logo
+    
+    // Configurar celda sin texto, solo como contenedor del logo
+    brandCell.value = '';
     brandCell.style = {
       fill: {
         type: 'pattern' as const,
@@ -440,10 +543,12 @@ export class PaqueteExcelTemplate {
         vertical: 'middle' as const,
       },
     };
-    this.worksheet.getRow(this.currentRow).height = 60;
-    this.worksheet.getRow(this.currentRow + 1).height = 10;
+    
+    // Configurar altura de las filas del header
+    this.worksheet.getRow(this.currentRow).height = 60;      // Fila principal
+    this.worksheet.getRow(this.currentRow + 1).height = 10;  // Fila secundaria
 
-    // Agregar logo PNG centrado con dimensiones específicas
+    // Intentar cargar y agregar el logo PNG
     try {
       const logoPath = path.join(__dirname, '../../assets/imagenes/logo.png');
       
@@ -454,10 +559,16 @@ export class PaqueteExcelTemplate {
           extension: 'png',
         });
 
-        // Centrar logo usando posición absoluta desde el top-left
+        // Insertar logo con posición y dimensiones desde LOGO_CONFIG
         this.worksheet.addImage(imageId, {
-          tl: { col: 2.9, row: this.currentRow - 1 },
-          ext: { width: 180, height: 115 },
+          tl: { 
+            col: logoConfig.positionCol,              // Posición horizontal
+            row: this.currentRow + logoConfig.positionRow  // Posición vertical
+          },
+          ext: { 
+            width: logoConfig.width,   // Ancho del logo
+            height: logoConfig.height  // Alto del logo
+          },
         } as any);
       }
     } catch (error: any) {

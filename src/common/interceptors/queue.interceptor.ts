@@ -1,7 +1,7 @@
 import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Observable, from } from 'rxjs';
-import { RequestQueueService } from '../services/request-queue.service';
+import { RequestQueueService, TaskMetadata } from '../services/request-queue.service';
 import { SKIP_QUEUE_KEY } from '../decorators/skip-queue.decorator';
 
 @Injectable()
@@ -13,7 +13,7 @@ export class QueueInterceptor implements NestInterceptor {
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     const ctx = context.switchToHttp();
-    const request = ctx.getRequest<Request & { method: string; originalUrl?: string }>();
+    const request = ctx.getRequest<any>();
 
     const skip = this.reflector.getAllAndOverride<boolean>(SKIP_QUEUE_KEY, [
       context.getHandler(),
@@ -28,10 +28,21 @@ export class QueueInterceptor implements NestInterceptor {
       return next.handle();
     }
 
+    // Capturar metadata del request
+    const metadata: TaskMetadata = {
+      userId: request.user?.id || request.user?.usuario || null,
+      userName: request.user?.usuario || request.user?.nombre_completo || 'Anónimo',
+      userRole: request.user?.rol || 'guest',
+      method: method,
+      endpoint: request.originalUrl || request.url || request.path || 'unknown',
+      ip: request.ip || request.connection?.remoteAddress || 'unknown',
+      userAgent: request.headers?.['user-agent'] || 'unknown',
+    };
+
     return from(
       this.queue.enqueue(async () => {
         return await next.handle().toPromise();
-      }),
+      }, metadata),
     );
   }
 }
