@@ -7,6 +7,7 @@ import {
   PaquetesPublicController,
 } from '../paquetes/paquetes.controller';
 import { PaquetesService } from '../paquetes/paquetes.service';
+import { PaquetesNotificacionService } from './paquetes-notificacion.service';
 import { Destino } from '../entities/destino.entity';
 import { Imagen } from '../entities/imagen.entity';
 import { Itinerario } from '../entities/itinerario.entity';
@@ -34,6 +35,6 @@ import { UsuariosModule } from '../usuarios/usuarios.module';
     CacheModule.register({ ttl: 30, max: 500 }),
   ],
   controllers: [PaquetesController, PaquetesPublicController],
-  providers: [PaquetesService],
+  providers: [PaquetesService, PaquetesNotificacionService],
 })
 export class PaquetesModule {}

@@ -19,6 +19,7 @@ import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { SoftDeleteService } from '../common/services/soft-delete.service';
 import { PaquetePublicListDto } from './dto/paquete-public-list.dto';
 import { Usuario } from '../entities/usuario.entity';
+import { PaquetesNotificacionService } from './paquetes-notificacion.service';
 import axios from 'axios';
 
 @Injectable()
@@ -39,6 +40,7 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
     @InjectRepository(Usuario)
     private readonly usuarioRepository: Repository<Usuario>,
     private readonly cloudinaryService: CloudinaryService,
+    private readonly notificacionService: PaquetesNotificacionService,
   ) {
     super(paqueteRepository);
   }
@@ -159,7 +161,24 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
       paquete.usuariosAutorizados = usuarios;
     }
 
-    return this.paqueteRepository.save(paquete);
+    // Guardar el paquete
+    const paqueteGuardado = await this.paqueteRepository.save(paquete);
+
+    // 📧 Enviar notificaciones si es privado y tiene usuarios autorizados
+    if (
+      paqueteGuardado.esPublico === false &&
+      paqueteGuardado.usuariosAutorizados?.length > 0
+    ) {
+      // Enviar notificaciones de forma asíncrona (no bloqueante)
+      this.notificacionService
+        .notificarAccesoMultiplesUsuarios(
+          paqueteGuardado.usuariosAutorizados,
+          paqueteGuardado,
+        )
+        .catch(err => console.error('Error enviando notificaciones:', err));
+    }
+
+    return paqueteGuardado;
   }
 
   async createImage(
@@ -435,6 +454,9 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
 
     if (favorito !== undefined) paquete.favorito = favorito;
 
+    // Guardar usuarios autorizados anteriores para detectar nuevos
+    const usuariosAnteriores = paquete.usuariosAutorizados || [];
+
     // Actualizar usuarios autorizados
     if (usuariosAutorizadosIds !== undefined) {
       if (usuariosAutorizadosIds.length > 0) {
@@ -447,7 +469,30 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
       }
     }
 
-    return this.paqueteRepository.save(paquete);
+    // Guardar el paquete
+    const paqueteActualizado = await this.paqueteRepository.save(paquete);
+
+    // 📧 Enviar notificaciones SOLO a NUEVOS usuarios autorizados
+    if (
+      paqueteActualizado.esPublico === false &&
+      usuariosAutorizadosIds !== undefined
+    ) {
+      const nuevosUsuarios = this.notificacionService.detectarNuevosUsuarios(
+        usuariosAnteriores,
+        paqueteActualizado.usuariosAutorizados || [],
+      );
+
+      if (nuevosUsuarios.length > 0) {
+        // Enviar notificaciones de forma asíncrona (no bloqueante)
+        this.notificacionService
+          .notificarAccesoMultiplesUsuarios(nuevosUsuarios, paqueteActualizado)
+          .catch(err =>
+            console.error('Error enviando notificaciones a nuevos usuarios:', err),
+          );
+      }
+    }
+
+    return paqueteActualizado;
   }
 
   async remove(id: string): Promise<void> {

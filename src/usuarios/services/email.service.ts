@@ -383,4 +383,40 @@ export class EmailService {
       );
     }
   }
+
+  /**
+   * Método genérico para enviar emails personalizados con HTML
+   * Útil para notificaciones de paquetes, promociones, etc.
+   */
+  async sendCustomEmail(
+    to: string,
+    subject: string,
+    htmlContent: string,
+  ): Promise<void> {
+    const attachments = this.logoPath
+      ? [
+          {
+            filename: 'logo.png',
+            path: this.logoPath,
+            cid: this.logoCid,
+          },
+        ]
+      : [];
+
+    const mailOptions: nodemailer.SendMailOptions = {
+      from: this.configService.get<string>('SMTP_FROM') || 'contacto@viadca.com',
+      to,
+      subject,
+      html: htmlContent,
+      attachments,
+    };
+
+    try {
+      await this.transporter.sendMail(mailOptions);
+      this.logger.log(`✅ Email personalizado enviado a: ${to} - Asunto: "${subject}"`);
+    } catch (error) {
+      this.logger.error(`❌ Error enviando email personalizado a ${to}:`, error);
+      throw error;
+    }
+  }
 }
