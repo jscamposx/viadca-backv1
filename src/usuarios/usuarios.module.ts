@@ -17,6 +17,6 @@ import { OptionalAuthGuard } from './guards/optional-auth.guard';
   ],
   controllers: [UsuariosController],
   providers: [UsuariosService, EmailService, AuthGuard, AdminGuard, OptionalAuthGuard],
-  exports: [UsuariosService, AuthGuard, AdminGuard, OptionalAuthGuard],
+  exports: [UsuariosService, EmailService, AuthGuard, AdminGuard, OptionalAuthGuard],
 })
 export class UsuariosModule {}
