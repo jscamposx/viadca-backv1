@@ -60,11 +60,10 @@ export class EmailService {
   }
 
   private getFrom(): { name: string; address: string } {
-    const name = this.configService.get<string>('SMTP_FROM_NAME') || 'Viadca Sistema';
+    const name = this.configService.get<string>('SMTP_FROM_NAME') || 'Viadca';
     const address =
       this.configService.get<string>('SMTP_FROM_EMAIL') ||
-      this.configService.get<string>('SMTP_USER') ||
-      '686653001@smtp-brevo.com';
+      'no-reply@viadca.app';
     return { name, address };
   }
 
@@ -404,7 +403,7 @@ export class EmailService {
       : [];
 
     const mailOptions: nodemailer.SendMailOptions = {
-      from: this.configService.get<string>('SMTP_FROM') || 'contacto@viadca.com',
+      from: this.configService.get<string>('SMTP_FROM') || 'Viadca <no-reply@viadca.app>',
       to,
       subject,
       html: htmlContent,
