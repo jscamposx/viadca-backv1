@@ -1,4 +1,4 @@
-import { Entity, Column } from 'typeorm';
+import { Entity, Column, ManyToMany } from 'typeorm';
 import { SoftDeleteEntity } from './base/soft-delete.entity';
 
 export enum UsuarioRol {
@@ -45,4 +45,10 @@ export class Usuario extends SoftDeleteEntity {
 
   @Column({ type: 'varchar', length: 100, nullable: true })
   nombre_completo: string;
+
+  @ManyToMany(() => Paquete, (paquete) => paquete.usuariosAutorizados)
+  paquetesPrivados: Paquete[];
 }
+
+// Import circular - se coloca al final del archivo
+import { Paquete } from '../paquetes/entidades/paquete.entity';

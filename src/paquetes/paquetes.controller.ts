@@ -17,6 +17,8 @@ import {
   NotFoundException,
   ValidationPipe,
   UseGuards,
+  ForbiddenException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { PaquetesService } from './paquetes.service';
@@ -26,7 +28,9 @@ import { CreateImagenDto } from './dto/create-imagen.dto';
 import { PaginationDto } from './dto/pagination.dto';
 import { LargePayloadInterceptor } from '../utils/large-payload.interceptor';
 import { ExcelService } from '../excel/excel.service';
+import { OptionalAuthGuard } from '../usuarios/guards/optional-auth.guard';
 import { AdminGuard } from '../usuarios/guards/admin.guard';
+import { AuthGuard } from '../usuarios/guards/auth.guard';
 import { Throttle, SkipThrottle } from '@nestjs/throttler';
 import { CacheInterceptor, CacheKey, CacheTTL } from '@nestjs/cache-manager';
 
@@ -34,7 +38,7 @@ import { CacheInterceptor, CacheKey, CacheTTL } from '@nestjs/cache-manager';
 export class PaquetesPublicController {
   constructor(private readonly paquetesService: PaquetesService) {}
 
-  // Listado público simplificado para tarjetas
+  // Listado público simplificado para tarjetas (sin autenticación)
   @Get('/listado')
   @UseInterceptors(CacheInterceptor)
   @CacheKey('paquetes:publico:simple')
@@ -44,10 +48,59 @@ export class PaquetesPublicController {
     return this.paquetesService.findAllPublicSimple();
   }
 
+  // Listado para usuario autenticado (incluye públicos + privados autorizados)
+  @Get('/mis-paquetes')
+  @UseGuards(AuthGuard)
+  @Throttle({ default: { limit: 100, ttl: 60_000 } })
+  findAllForUser(@Req() req: any) {
+    const user = req.user;
+    console.log('🔐 DEBUG /mis-paquetes - req.user completo:', user);
+    
+    // El ID está en 'sub' (estándar JWT) o 'id'
+    const userId = user.sub || user.id;
+    const userRole = user.rol || user.role;
+    
+    console.log('🔐 DEBUG /mis-paquetes - userId extraído:', userId);
+    console.log('🔐 DEBUG /mis-paquetes - userRole:', userRole);
+    
+    if (!userId) {
+      throw new UnauthorizedException('Usuario no autenticado correctamente');
+    }
+    
+    return this.paquetesService.findAllForUser(userId, userRole);
+  }
 
   @Get(':codigoUrl')
+  @UseGuards(OptionalAuthGuard)
   @Throttle({ default: { limit: 30, ttl: 60_000 } })
-  findOneByCodigoUrl(@Param('codigoUrl') codigoUrl: string) {
+  async findOneByCodigoUrl(@Param('codigoUrl') codigoUrl: string, @Req() req: any) {
+    const user = req.user;
+    
+    console.log('🔍 DEBUG /:codigoUrl - req.user completo:', user);
+    console.log('🔍 DEBUG /:codigoUrl - codigoUrl:', codigoUrl);
+    
+    // El ID está en 'sub' (estándar JWT) o 'id'
+    const userId = user?.sub || user?.id;
+    const userRole = user?.rol || user?.role;
+    
+    console.log('🔍 DEBUG /:codigoUrl - userId extraído:', userId);
+    console.log('🔍 DEBUG /:codigoUrl - userRole:', userRole);
+    
+    // Verificar si el usuario puede acceder a este paquete
+    const canAccess = await this.paquetesService.canUserAccessPaquete(
+      codigoUrl,
+      userId,
+      userRole
+    );
+    
+    console.log('🔍 DEBUG /:codigoUrl - canAccess:', canAccess);
+    
+    if (!canAccess) {
+      console.log('❌ DEBUG /:codigoUrl - Acceso DENEGADO');
+      throw new ForbiddenException('Este paquete es privado. Inicia sesión con una cuenta autorizada para verlo.');
+    }
+    
+    console.log('✅ DEBUG /:codigoUrl - Acceso PERMITIDO, devolviendo paquete');
     return this.paquetesService.findOnePublicByCodigoUrl(codigoUrl);
   }
 }
@@ -100,8 +153,14 @@ export class PaquetesController {
 
   @Get(':id')
   // Caché removido
-  findOne(@Param('id', ParseUUIDPipe) id: string) {
-    return this.paquetesService.findOne(id);
+  async findOne(@Param('id', ParseUUIDPipe) id: string) {
+    const paquete = await this.paquetesService.findOne(id);
+    
+    // Transformar usuariosAutorizados a usuariosAutorizadosIds para el frontend
+    return {
+      ...paquete,
+      usuariosAutorizadosIds: paquete.usuariosAutorizados?.map(u => u.id) || [],
+    };
   }
 
   @Patch('/:id')

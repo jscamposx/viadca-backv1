@@ -229,8 +229,48 @@ export class MayoristasService extends SoftDeleteService<Mayoristas> {
     }
   }
 
+  /**
+   * Elimina (soft delete) un mayorista
+   * Usa soft delete automáticamente desde SoftDeleteService
+   */
   async remove(id: string): Promise<void> {
-    const mayorista = await this.findOne(id);
-    await this.mayoristaRepository.remove(mayorista);
+    await this.softDelete(id);
+  }
+
+  /**
+   * Sobrescribe hardDelete para manejar relaciones con paquetes
+   * Elimina permanentemente un mayorista después de limpiar sus relaciones
+   */
+  async hardDelete(id: string): Promise<boolean> {
+    const mayorista = await this.mayoristaRepository.findOne({
+      where: { id },
+      relations: ['paquetes'],
+    });
+
+    if (!mayorista) {
+      return false;
+    }
+
+    // Limpiar relaciones con paquetes antes de eliminar
+    if (mayorista.paquetes && mayorista.paquetes.length > 0) {
+      mayorista.paquetes = [];
+      await this.mayoristaRepository.save(mayorista);
+    }
+
+    // Eliminar permanentemente
+    const result = await this.mayoristaRepository.delete(id);
+    return (result.affected || 0) > 0;
+  }
+
+  /**
+   * Elimina permanentemente un mayorista y sus relaciones con paquetes
+   * ADVERTENCIA: Esto elimina físicamente el registro de la base de datos
+   * @deprecated Use hardDelete() instead
+   */
+  async removeHard(id: string): Promise<void> {
+    const success = await this.hardDelete(id);
+    if (!success) {
+      throw new NotFoundException(`Mayorista con ID ${id} no encontrado`);
+    }
   }
 }

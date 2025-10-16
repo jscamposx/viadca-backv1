@@ -12,6 +12,7 @@ import { Imagen } from '../entities/imagen.entity';
 import { Itinerario } from '../entities/itinerario.entity';
 import { Mayoristas } from '../entities/mayoristas.entity';
 import { Hotel } from '../entities/hotel.entity';
+import { Usuario } from '../entities/usuario.entity';
 import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 import { ExcelModule } from '../excel/excel.module';
 import { UsuariosModule } from '../usuarios/usuarios.module';
@@ -25,6 +26,7 @@ import { UsuariosModule } from '../usuarios/usuarios.module';
       Itinerario,
       Mayoristas,
       Hotel,
+      Usuario,
     ]),
     CloudinaryModule,
     ExcelModule,

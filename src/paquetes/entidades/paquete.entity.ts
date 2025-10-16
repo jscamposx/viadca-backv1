@@ -12,6 +12,7 @@ import { Hotel } from '../../entities/hotel.entity';
 import { Destino } from '../../entities/destino.entity';
 import { Imagen } from '../../entities/imagen.entity';
 import { Mayoristas } from '../../entities/mayoristas.entity';
+import { Usuario } from '../../entities/usuario.entity';
 
 @Entity('paquetes')
 export class Paquete extends SoftDeleteEntity {
@@ -79,7 +80,7 @@ export class Paquete extends SoftDeleteEntity {
   favorito: boolean;
 
   @Column({ type: 'boolean', default: true })
-  aptoParaMenores: boolean;
+  esPublico: boolean;
 
   @OneToMany(() => Itinerario, (itinerario) => itinerario.paquete, {
     cascade: true,
@@ -111,4 +112,14 @@ export class Paquete extends SoftDeleteEntity {
     inverseJoinColumn: { name: 'mayorista_id', referencedColumnName: 'id' },
   })
   mayoristas: Mayoristas[];
+
+  @ManyToMany(() => Usuario, (usuario) => usuario.paquetesPrivados, {
+    onDelete: 'CASCADE',
+  })
+  @JoinTable({
+    name: 'paquete_usuarios_autorizados',
+    joinColumn: { name: 'paquete_id', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'usuario_id', referencedColumnName: 'id' },
+  })
+  usuariosAutorizados: Usuario[];
 }

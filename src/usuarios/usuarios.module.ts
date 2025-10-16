@@ -8,6 +8,7 @@ import { Usuario } from '../entities/usuario.entity';
 import { Contacto } from '../entities/contacto.entity';
 import { AuthGuard } from './guards/auth.guard';
 import { AdminGuard } from './guards/admin.guard';
+import { OptionalAuthGuard } from './guards/optional-auth.guard';
 
 @Module({
   imports: [
@@ -15,7 +16,7 @@ import { AdminGuard } from './guards/admin.guard';
     CacheModule.register({ ttl: 60, max: 1000 }),
   ],
   controllers: [UsuariosController],
-  providers: [UsuariosService, EmailService, AuthGuard, AdminGuard],
-  exports: [UsuariosService, AuthGuard, AdminGuard],
+  providers: [UsuariosService, EmailService, AuthGuard, AdminGuard, OptionalAuthGuard],
+  exports: [UsuariosService, AuthGuard, AdminGuard, OptionalAuthGuard],
 })
 export class UsuariosModule {}

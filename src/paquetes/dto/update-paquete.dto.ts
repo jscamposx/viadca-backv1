@@ -178,6 +178,14 @@ export class UpdatePaqueteDto {
   readonly favorito?: boolean;
 
   @IsOptional()
-  @IsBoolean({ message: 'El campo apto para menores debe ser booleano' })
-  readonly aptoParaMenores?: boolean;
+  @IsBoolean({ message: 'El campo es público debe ser booleano' })
+  readonly esPublico?: boolean;
+
+  @IsOptional()
+  @IsArray({ message: 'Los IDs de usuarios autorizados deben ser un arreglo' })
+  @IsUUID('4', {
+    each: true,
+    message: 'Cada ID de usuario debe ser un UUID válido',
+  })
+  readonly usuariosAutorizadosIds?: string[];
 }

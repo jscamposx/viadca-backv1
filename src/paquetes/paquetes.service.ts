@@ -18,6 +18,7 @@ import { PaginationDto, PaginatedResponse } from './dto/pagination.dto';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { SoftDeleteService } from '../common/services/soft-delete.service';
 import { PaquetePublicListDto } from './dto/paquete-public-list.dto';
+import { Usuario } from '../entities/usuario.entity';
 import axios from 'axios';
 
 @Injectable()
@@ -35,6 +36,8 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
     private readonly itinerarioRepository: Repository<Itinerario>,
     @InjectRepository(Destino)
     private readonly destinoRepository: Repository<Destino>,
+    @InjectRepository(Usuario)
+    private readonly usuarioRepository: Repository<Usuario>,
     private readonly cloudinaryService: CloudinaryService,
   ) {
     super(paqueteRepository);
@@ -49,7 +52,8 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
       itinerario_texto,
       fecha_inicio,
       fecha_fin,
-      favorito, // nuevo
+      favorito,
+      usuariosAutorizadosIds,
       ...paqueteData
     } = createPaqueteDto;
 
@@ -146,6 +150,14 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
     }
 
     if (favorito !== undefined) (paquete as any).favorito = favorito;
+
+    // Manejar usuarios autorizados para paquetes privados
+    if (usuariosAutorizadosIds && usuariosAutorizadosIds.length > 0) {
+      const usuarios = await this.usuarioRepository.find({
+        where: { id: In(usuariosAutorizadosIds) },
+      });
+      paquete.usuariosAutorizados = usuarios;
+    }
 
     return this.paqueteRepository.save(paquete);
   }
@@ -291,6 +303,7 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
         'imagenes',
         'mayoristas',
         'hotel.imagenes',
+        'usuariosAutorizados',
       ],
     });
     if (!paquete) {
@@ -327,7 +340,8 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
       itinerario_texto,
       fecha_inicio,
       fecha_fin,
-      favorito, // nuevo
+      favorito,
+      usuariosAutorizadosIds,
       ...paqueteDetails
     } = updatePaqueteDto;
 
@@ -421,11 +435,29 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
 
     if (favorito !== undefined) paquete.favorito = favorito;
 
+    // Actualizar usuarios autorizados
+    if (usuariosAutorizadosIds !== undefined) {
+      if (usuariosAutorizadosIds.length > 0) {
+        const usuarios = await this.usuarioRepository.find({
+          where: { id: In(usuariosAutorizadosIds) },
+        });
+        paquete.usuariosAutorizados = usuarios;
+      } else {
+        paquete.usuariosAutorizados = [];
+      }
+    }
+
     return this.paqueteRepository.save(paquete);
   }
 
   async remove(id: string): Promise<void> {
     const paquete = await this.findOne(id);
+
+    // Limpiar relación ManyToMany antes de eliminar
+    if (paquete.usuariosAutorizados && paquete.usuariosAutorizados.length > 0) {
+      paquete.usuariosAutorizados = [];
+      await this.paqueteRepository.save(paquete);
+    }
 
     if (paquete.imagenes && paquete.imagenes.length > 0) {
       for (const imagen of paquete.imagenes) {
@@ -472,6 +504,74 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
     }
 
     await this.paqueteRepository.remove(paquete);
+  }
+
+  /**
+   * Eliminación permanente (hard delete) de un paquete
+   * Limpia todas las relaciones antes de eliminar para evitar errores de FK
+   */
+  async hardDelete(id: string): Promise<boolean> {
+    try {
+      // Cargar el paquete con todas las relaciones
+      const paquete = await this.paqueteRepository.findOne({
+        where: { id },
+        relations: ['usuariosAutorizados', 'mayoristas', 'imagenes', 'destinos', 'itinerarios', 'hotel'],
+        withDeleted: true, // Incluir soft-deleted
+      });
+
+      if (!paquete) {
+        return false;
+      }
+
+      // 1. Limpiar relación ManyToMany con usuarios autorizados
+      if (paquete.usuariosAutorizados && paquete.usuariosAutorizados.length > 0) {
+        paquete.usuariosAutorizados = [];
+        await this.paqueteRepository.save(paquete);
+      }
+
+      // 2. Limpiar relación ManyToMany con mayoristas
+      if (paquete.mayoristas && paquete.mayoristas.length > 0) {
+        paquete.mayoristas = [];
+        await this.paqueteRepository.save(paquete);
+      }
+
+      // 3. Eliminar imágenes de Cloudinary
+      if (paquete.imagenes && paquete.imagenes.length > 0) {
+        for (const imagen of paquete.imagenes) {
+          if (imagen.tipo === 'cloudinary' && imagen.cloudinary_public_id) {
+            try {
+              await this.cloudinaryService.deleteFile(imagen.cloudinary_public_id);
+              console.log(`🗑️ Imagen eliminada de Cloudinary: ${imagen.cloudinary_public_id}`);
+            } catch (error) {
+              console.error(`❌ Error al eliminar imagen de Cloudinary:`, error);
+            }
+          }
+        }
+      }
+
+      // 4. Eliminar imágenes del hotel de Cloudinary
+      if (paquete.hotel?.imagenes && paquete.hotel.imagenes.length > 0) {
+        for (const imagen of paquete.hotel.imagenes) {
+          if (imagen.tipo === 'cloudinary' && imagen.cloudinary_public_id) {
+            try {
+              await this.cloudinaryService.deleteFile(imagen.cloudinary_public_id);
+              console.log(`🗑️ Imagen de hotel eliminada de Cloudinary: ${imagen.cloudinary_public_id}`);
+            } catch (error) {
+              console.error(`❌ Error al eliminar imagen de hotel:`, error);
+            }
+          }
+        }
+      }
+
+      // 5. Eliminar el paquete permanentemente (cascade eliminará destinos, itinerarios, hotel, imagenes)
+      await this.paqueteRepository.remove(paquete);
+      
+      console.log(`✅ Paquete ${id} eliminado permanentemente`);
+      return true;
+    } catch (error) {
+      console.error(`❌ Error en hardDelete del paquete ${id}:`, error);
+      throw error;
+    }
   }
 
   async removeImage(imagenId: string): Promise<void> {
@@ -873,7 +973,6 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
       notas: paquete.notas,
       activo: paquete.activo,
       favorito: paquete.favorito,
-      aptoParaMenores: paquete.aptoParaMenores,
       destinos: (paquete.destinos || []).map((d) => ({
         ciudad: (d as any).ciudad,
         estado: (d as any).estado,
@@ -899,12 +998,17 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
     };
   }
 
+  /**
+   * Obtiene SOLO paquetes públicos (sin autenticación)
+   * Los paquetes privados requieren login
+   */
   async findAllPublicSimple(): Promise<PaquetePublicListDto[]> {
     const paquetes = await this.paqueteRepository.find({
       relations: ['imagenes', 'destinos', 'mayoristas'],
       where: { 
         eliminadoEn: null,
-        activo: true
+        activo: true,
+        esPublico: true, // Solo paquetes públicos
       } as any,
       order: {
         creadoEn: 'DESC',
@@ -943,7 +1047,7 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
         mayoristas_tipos: mayoristasTipos,
         favorito: paquete.favorito,
         personas: paquete.personas ?? null,
-        aptoParaMenores: paquete.aptoParaMenores,
+        esPublico: paquete.esPublico, // Para que el front sepa
       } as PaquetePublicListDto;
     });
   }
@@ -1009,6 +1113,158 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
     }
 
     return result;
+  }
+
+  /**
+   * Obtiene paquetes accesibles para un usuario autenticado:
+   * - Paquetes públicos (esPublico = true)
+   * - Paquetes privados donde el usuario está autorizado
+   * - Todos los paquetes si el usuario es admin
+   */
+  async findAllForUser(userId: string, userRole: string): Promise<PaquetePublicListDto[]> {
+    let paquetes: Paquete[];
+
+    if (userRole === 'admin') {
+      // Admin ve todos los paquetes
+      paquetes = await this.paqueteRepository.find({
+        relations: ['imagenes', 'destinos', 'mayoristas', 'usuariosAutorizados'],
+        where: { 
+          eliminadoEn: null,
+          activo: true
+        } as any,
+        order: {
+          creadoEn: 'DESC',
+        },
+      });
+    } else {
+      // Usuario normal: solo públicos + privados autorizados
+      const allPaquetes = await this.paqueteRepository.find({
+        relations: ['imagenes', 'destinos', 'mayoristas', 'usuariosAutorizados'],
+        where: { 
+          eliminadoEn: null,
+          activo: true
+        } as any,
+        order: {
+          creadoEn: 'DESC',
+        },
+      });
+
+      console.log(`🔍 DEBUG findAllForUser - Usuario: ${userId}, Total paquetes: ${allPaquetes.length}`);
+
+      paquetes = allPaquetes.filter(p => {
+        // Si es público (true) o null/undefined, lo ve
+        if (p.esPublico !== false) {
+          console.log(`✅ Paquete PÚBLICO incluido: ${p.titulo} (esPublico: ${p.esPublico})`);
+          return true;
+        }
+        
+        // Si es privado (false), verificar si está autorizado
+        if (p.esPublico === false) {
+          const autorizado = p.usuariosAutorizados?.some(u => u.id === userId) || false;
+          console.log(`🔒 Paquete PRIVADO "${p.titulo}":`, {
+            usuariosAutorizados: p.usuariosAutorizados?.map(u => u.id) || [],
+            usuarioBuscado: userId,
+            autorizado
+          });
+          return autorizado;
+        }
+        
+        return false;
+      });
+
+      console.log(`📦 Total paquetes filtrados para usuario: ${paquetes.length}`);
+    }
+
+    return paquetes.map((paquete) => {
+      const imagenesOrdenadas = [...(paquete.imagenes || [])].sort(
+        (a, b) => a.orden - b.orden,
+      );
+      const primeraImagen = imagenesOrdenadas[0] || null;
+
+      const destinosOrdenados = [...(paquete.destinos || [])].sort(
+        (a, b) => a.orden - b.orden,
+      );
+      const destinos = destinosOrdenados.map(d => ({
+        ciudad: (d as any).ciudad,
+        estado: (d as any).estado,
+        pais: (d as any).pais,
+      }));
+
+      const mayoristasTipos = Array.from(
+        new Set((paquete.mayoristas || []).map(m => m.tipo_producto))
+      );
+
+      return {
+        codigoUrl: paquete.codigoUrl,
+        titulo: paquete.titulo,
+        destinos,
+        precio_total: Number(paquete.precio_total),
+        moneda: paquete.moneda,
+        duracion_dias: paquete.duracion_dias,
+        primera_imagen: primeraImagen ? primeraImagen.contenido : null,
+        activo: paquete.activo,
+        descuento: paquete.descuento > 0 ? Number(paquete.descuento) : undefined,
+        mayoristas_tipos: mayoristasTipos,
+        favorito: paquete.favorito,
+        personas: paquete.personas ?? null,
+      } as PaquetePublicListDto;
+    });
+  }
+
+  /**
+   * Verifica si un usuario tiene acceso a un paquete específico
+   * - Públicos: todos pueden verlo (con o sin login)
+   * - Privados: solo usuarios logueados autorizados o admin
+   * NO requiere verificación de email, solo login
+   */
+  async canUserAccessPaquete(codigoUrl: string, userId?: string, userRole?: string): Promise<boolean> {
+    console.log('🔐 DEBUG canUserAccessPaquete - codigoUrl:', codigoUrl);
+    console.log('🔐 DEBUG canUserAccessPaquete - userId:', userId);
+    console.log('🔐 DEBUG canUserAccessPaquete - userRole:', userRole);
+    
+    const paquete = await this.paqueteRepository.findOne({
+      where: { codigoUrl, eliminadoEn: null } as any,
+      relations: ['usuariosAutorizados'],
+    });
+
+    console.log('🔐 DEBUG canUserAccessPaquete - paquete encontrado:', !!paquete);
+    if (!paquete) {
+      console.log('❌ DEBUG canUserAccessPaquete - Paquete NO encontrado');
+      return false;
+    }
+    
+    console.log('🔐 DEBUG canUserAccessPaquete - paquete.activo:', paquete.activo);
+    if (!paquete.activo) {
+      console.log('❌ DEBUG canUserAccessPaquete - Paquete NO activo');
+      return false;
+    }
+    
+    console.log('🔐 DEBUG canUserAccessPaquete - paquete.esPublico:', paquete.esPublico);
+    // Si es público, todos pueden verlo (con o sin login)
+    if (paquete.esPublico) {
+      console.log('✅ DEBUG canUserAccessPaquete - Paquete PÚBLICO, acceso permitido');
+      return true;
+    }
+    
+    console.log('🔒 DEBUG canUserAccessPaquete - Paquete PRIVADO');
+    // Si es privado y no hay usuario logueado, no puede acceder
+    if (!userId) {
+      console.log('❌ DEBUG canUserAccessPaquete - No hay userId, acceso denegado');
+      return false;
+    }
+    
+    // Admin puede ver todos los privados
+    if (userRole === 'admin') {
+      console.log('✅ DEBUG canUserAccessPaquete - Usuario es ADMIN, acceso permitido');
+      return true;
+    }
+    
+    console.log('🔐 DEBUG canUserAccessPaquete - usuariosAutorizados IDs:', paquete.usuariosAutorizados?.map(u => u.id));
+    // Verificar si el usuario está en la lista de autorizados
+    const isAuthorized = paquete.usuariosAutorizados?.some(u => u.id === userId) || false;
+    console.log(`${isAuthorized ? '✅' : '❌'} DEBUG canUserAccessPaquete - Usuario ${isAuthorized ? 'AUTORIZADO' : 'NO autorizado'}`);
+    
+    return isAuthorized;
   }
 
 }
