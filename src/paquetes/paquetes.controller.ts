@@ -48,7 +48,12 @@ export class PaquetesPublicController {
     return this.paquetesService.findAllPublicSimple();
   }
 
-  // Listado para usuario autenticado (incluye públicos + privados autorizados)
+  /**
+   * Listado de paquetes PRIVADOS autorizados para el usuario
+   * - Usuario normal: SOLO paquetes privados donde está autorizado
+   * - Admin: TODOS los paquetes privados (para gestión)
+   * Los paquetes públicos NO se incluyen aquí (usar /paquetes/listado)
+   */
   @Get('/mis-paquetes')
   @UseGuards(AuthGuard)
   @Throttle({ default: { limit: 100, ttl: 60_000 } })

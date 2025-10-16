@@ -1125,54 +1125,46 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
     let paquetes: Paquete[];
 
     if (userRole === 'admin') {
-      // Admin ve todos los paquetes
+      // Admin ve TODOS los paquetes privados (para gestión)
       paquetes = await this.paqueteRepository.find({
         relations: ['imagenes', 'destinos', 'mayoristas', 'usuariosAutorizados'],
         where: { 
           eliminadoEn: null,
-          activo: true
+          activo: true,
+          esPublico: false, // Solo privados
         } as any,
         order: {
           creadoEn: 'DESC',
         },
       });
+      console.log(`🔐 ADMIN - Devolviendo ${paquetes.length} paquetes privados`);
     } else {
-      // Usuario normal: solo públicos + privados autorizados
+      // Usuario normal: SOLO privados donde está autorizado
       const allPaquetes = await this.paqueteRepository.find({
         relations: ['imagenes', 'destinos', 'mayoristas', 'usuariosAutorizados'],
         where: { 
           eliminadoEn: null,
-          activo: true
+          activo: true,
+          esPublico: false, // Solo privados
         } as any,
         order: {
           creadoEn: 'DESC',
         },
       });
 
-      console.log(`🔍 DEBUG findAllForUser - Usuario: ${userId}, Total paquetes: ${allPaquetes.length}`);
+      console.log(`🔍 DEBUG findAllForUser - Usuario: ${userId}, Total paquetes privados: ${allPaquetes.length}`);
 
       paquetes = allPaquetes.filter(p => {
-        // Si es público (true) o null/undefined, lo ve
-        if (p.esPublico !== false) {
-          console.log(`✅ Paquete PÚBLICO incluido: ${p.titulo} (esPublico: ${p.esPublico})`);
-          return true;
-        }
-        
-        // Si es privado (false), verificar si está autorizado
-        if (p.esPublico === false) {
-          const autorizado = p.usuariosAutorizados?.some(u => u.id === userId) || false;
-          console.log(`🔒 Paquete PRIVADO "${p.titulo}":`, {
-            usuariosAutorizados: p.usuariosAutorizados?.map(u => u.id) || [],
-            usuarioBuscado: userId,
-            autorizado
-          });
-          return autorizado;
-        }
-        
-        return false;
+        const autorizado = p.usuariosAutorizados?.some(u => u.id === userId) || false;
+        console.log(`🔒 Paquete PRIVADO "${p.titulo}":`, {
+          usuariosAutorizados: p.usuariosAutorizados?.map(u => u.id) || [],
+          usuarioBuscado: userId,
+          autorizado
+        });
+        return autorizado;
       });
 
-      console.log(`📦 Total paquetes filtrados para usuario: ${paquetes.length}`);
+      console.log(`📦 Total paquetes privados autorizados: ${paquetes.length}`);
     }
 
     return paquetes.map((paquete) => {
@@ -1207,6 +1199,7 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
         mayoristas_tipos: mayoristasTipos,
         favorito: paquete.favorito,
         personas: paquete.personas ?? null,
+        esPublico: paquete.esPublico, // ✅ Campo agregado
       } as PaquetePublicListDto;
     });
   }
