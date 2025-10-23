@@ -176,6 +176,12 @@ export class CreatePaqueteDto {
   readonly esPublico?: boolean;
 
   @IsOptional()
+  @IsIn(['publico', 'privado', 'link-privado'], {
+    message: 'El tipo de acceso debe ser: publico, privado o link-privado',
+  })
+  readonly tipoAcceso?: 'publico' | 'privado' | 'link-privado';
+
+  @IsOptional()
   @IsArray({ message: 'Los IDs de usuarios autorizados deben ser un arreglo' })
   @IsUUID('4', {
     each: true,

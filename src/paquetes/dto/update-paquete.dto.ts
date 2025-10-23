@@ -13,6 +13,7 @@ import {
   // MaxLength, // removido para liberar límites
   IsEnum,
   IsInt,
+  IsIn,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { UpdateHotelDto } from './update-hotel.dto';
@@ -180,6 +181,12 @@ export class UpdatePaqueteDto {
   @IsOptional()
   @IsBoolean({ message: 'El campo es público debe ser booleano' })
   readonly esPublico?: boolean;
+
+  @IsOptional()
+  @IsIn(['publico', 'privado', 'link-privado'], {
+    message: 'El tipo de acceso debe ser: publico, privado o link-privado',
+  })
+  readonly tipoAcceso?: 'publico' | 'privado' | 'link-privado';
 
   @IsOptional()
   @IsArray({ message: 'Los IDs de usuarios autorizados deben ser un arreglo' })

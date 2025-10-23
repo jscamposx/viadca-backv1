@@ -12,4 +12,5 @@ export interface PaquetePublicListDto {
   favorito?: boolean;
   personas?: number | null;
   esPublico?: boolean; // true = público, false = privado (solo informativo)
+  tipoAcceso?: 'publico' | 'privado' | 'link-privado'; // Tipo de acceso del paquete
 }

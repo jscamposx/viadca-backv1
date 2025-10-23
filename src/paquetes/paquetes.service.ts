@@ -164,9 +164,11 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
     // Guardar el paquete
     const paqueteGuardado = await this.paqueteRepository.save(paquete);
 
-    // 📧 Enviar notificaciones si es privado y tiene usuarios autorizados
+    // 📧 Enviar notificaciones solo si es tipo 'privado' y tiene usuarios autorizados
+    // No enviar notificaciones para 'link-privado' (acceso público con URL)
+    const tipoAcceso = paqueteGuardado.tipoAcceso || 'publico';
     if (
-      paqueteGuardado.esPublico === false &&
+      tipoAcceso === 'privado' &&
       paqueteGuardado.usuariosAutorizados?.length > 0
     ) {
       // Enviar notificaciones de forma asíncrona (no bloqueante)
@@ -473,8 +475,10 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
     const paqueteActualizado = await this.paqueteRepository.save(paquete);
 
     // 📧 Enviar notificaciones SOLO a NUEVOS usuarios autorizados
+    // Solo para paquetes tipo 'privado' (no para 'link-privado')
+    const tipoAcceso = paqueteActualizado.tipoAcceso || 'publico';
     if (
-      paqueteActualizado.esPublico === false &&
+      tipoAcceso === 'privado' &&
       usuariosAutorizadosIds !== undefined
     ) {
       const nuevosUsuarios = this.notificacionService.detectarNuevosUsuarios(
@@ -1026,6 +1030,12 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
         destino_lat: d.destino_lat,
         orden: d.orden,
       })),
+      itinerarios: (paquete.itinerarios || [])
+        .sort((a, b) => a.dia_numero - b.dia_numero)
+        .map((itinerario) => ({
+          dia_numero: itinerario.dia_numero,
+          descripcion: itinerario.descripcion,
+        })),
       imagenes: (paquete.imagenes || []).map(mapImagen),
       hotel: paquete.hotel
         ? {
@@ -1054,6 +1064,7 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
         eliminadoEn: null,
         activo: true,
         esPublico: true, // Solo paquetes públicos
+        tipoAcceso: 'publico', // Solo paquetes de tipo público (excluye link-privado)
       } as any,
       order: {
         creadoEn: 'DESC',
@@ -1093,6 +1104,7 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
         favorito: paquete.favorito,
         personas: paquete.personas ?? null,
         esPublico: paquete.esPublico, // Para que el front sepa
+        tipoAcceso: paquete.tipoAcceso || 'publico', // Tipo de acceso
       } as PaquetePublicListDto;
     });
   }
@@ -1170,13 +1182,14 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
     let paquetes: Paquete[];
 
     if (userRole === 'admin') {
-      // Admin ve TODOS los paquetes privados (para gestión)
+      // Admin ve TODOS los paquetes privados (para gestión), pero NO los link-privado
       paquetes = await this.paqueteRepository.find({
         relations: ['imagenes', 'destinos', 'mayoristas', 'usuariosAutorizados'],
         where: { 
           eliminadoEn: null,
           activo: true,
           esPublico: false, // Solo privados
+          tipoAcceso: 'privado', // Excluye link-privado
         } as any,
         order: {
           creadoEn: 'DESC',
@@ -1184,13 +1197,14 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
       });
       console.log(`🔐 ADMIN - Devolviendo ${paquetes.length} paquetes privados`);
     } else {
-      // Usuario normal: SOLO privados donde está autorizado
+      // Usuario normal: SOLO privados donde está autorizado (excluye link-privado)
       const allPaquetes = await this.paqueteRepository.find({
         relations: ['imagenes', 'destinos', 'mayoristas', 'usuariosAutorizados'],
         where: { 
           eliminadoEn: null,
           activo: true,
           esPublico: false, // Solo privados
+          tipoAcceso: 'privado', // Excluye link-privado
         } as any,
         order: {
           creadoEn: 'DESC',
@@ -1245,9 +1259,13 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
         favorito: paquete.favorito,
         personas: paquete.personas ?? null,
         esPublico: paquete.esPublico, // ✅ Campo agregado
+        tipoAcceso: paquete.tipoAcceso || 'publico', // Tipo de acceso
       } as PaquetePublicListDto;
     });
   }
+
+  /**
+   * Verifica si un usuario puede acceder a un paquete específico
 
   /**
    * Verifica si un usuario tiene acceso a un paquete específico
@@ -1277,14 +1295,24 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
       return false;
     }
     
-    console.log('🔐 DEBUG canUserAccessPaquete - paquete.esPublico:', paquete.esPublico);
-    // Si es público, todos pueden verlo (con o sin login)
-    if (paquete.esPublico) {
+    const tipoAcceso = paquete.tipoAcceso || 'publico'; // Default por si no existe
+    console.log('🔐 DEBUG canUserAccessPaquete - tipoAcceso:', tipoAcceso);
+    
+    // Tipo 1: PÚBLICO - Todos pueden verlo (aparece en listados)
+    if (tipoAcceso === 'publico') {
       console.log('✅ DEBUG canUserAccessPaquete - Paquete PÚBLICO, acceso permitido');
       return true;
     }
     
-    console.log('🔒 DEBUG canUserAccessPaquete - Paquete PRIVADO');
+    // Tipo 2: LINK-PRIVADO - Cualquiera con el link puede verlo (sin login)
+    if (tipoAcceso === 'link-privado') {
+      console.log('✅ DEBUG canUserAccessPaquete - Paquete LINK-PRIVADO, acceso permitido sin login');
+      return true;
+    }
+    
+    // Tipo 3: PRIVADO - Solo usuarios autorizados
+    console.log('🔒 DEBUG canUserAccessPaquete - Paquete PRIVADO, requiere autorización');
+    
     // Si es privado y no hay usuario logueado, no puede acceder
     if (!userId) {
       console.log('❌ DEBUG canUserAccessPaquete - No hay userId, acceso denegado');

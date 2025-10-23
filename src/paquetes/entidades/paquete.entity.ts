@@ -82,6 +82,15 @@ export class Paquete extends SoftDeleteEntity {
   @Column({ type: 'boolean', default: true })
   esPublico: boolean;
 
+  /**
+   * Tipo de acceso del paquete:
+   * - 'publico': Visible en listados públicos y accesible por todos
+   * - 'privado': Solo visible para usuarios autorizados (requiere login)
+   * - 'link-privado': Accesible solo mediante URL directa (no aparece en listados)
+   */
+  @Column({ type: 'varchar', default: 'publico' })
+  tipoAcceso: 'publico' | 'privado' | 'link-privado';
+
   @OneToMany(() => Itinerario, (itinerario) => itinerario.paquete, {
     cascade: true,
   })
