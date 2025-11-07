@@ -130,7 +130,13 @@ export class MayoristasService extends SoftDeleteService<Mayoristas> {
   async findAllPaginated(
     paginationDto: PaginationDto,
   ): Promise<PaginatedResponse<Mayoristas>> {
-    const { page = 1, limit = 6, search, noPagination } = paginationDto;
+    const { 
+      page = 1, 
+      limit = 6, 
+      search, 
+      noPagination,
+      ...filtrosDinamicos // <-- Filtros dinámicos
+    } = paginationDto;
     const skip = (page - 1) * limit;
 
     const qb = this.mayoristaRepository
@@ -145,6 +151,36 @@ export class MayoristasService extends SoftDeleteService<Mayoristas> {
         { s },
       );
     }
+
+    // 🔥 APLICAR FILTROS DINÁMICOS
+    const filtrosAplicables = Object.entries(filtrosDinamicos).filter(
+      ([key]) => !['page', 'limit', 'search', 'noPagination'].includes(key)
+    );
+
+    filtrosAplicables.forEach(([key, value]) => {
+      if (value === undefined || value === null || value === '') return;
+
+      const campoMapeado = this.mapearCampoFiltro(key);
+      
+      // Transformar string a boolean si es necesario
+      let valorTransformado = value;
+      if (value === 'true') valorTransformado = true;
+      if (value === 'false') valorTransformado = false;
+      
+      // Booleanos
+      if (typeof valorTransformado === 'boolean') {
+        qb.andWhere(`${campoMapeado} = :${key}`, { [key]: valorTransformado });
+      }
+      // Filtros de texto con LIKE
+      else if (key.includes('nombre') || key === 'tipoProducto' || key === 'clave') {
+        const likeValue = `%${String(valorTransformado).toLowerCase()}%`;
+        qb.andWhere(`LOWER(${campoMapeado}) LIKE :${key}`, { [key]: likeValue });
+      }
+      // Filtros exactos
+      else {
+        qb.andWhere(`${campoMapeado} = :${key}`, { [key]: valorTransformado });
+      }
+    });
 
     const total = await qb.clone().getCount();
 
@@ -170,6 +206,19 @@ export class MayoristasService extends SoftDeleteService<Mayoristas> {
         hasPreviousPage: noPagination ? false : page > 1,
       },
     };
+  }
+
+  /**
+   * Mapea campos del frontend a columnas de la base de datos
+   */
+  private mapearCampoFiltro(campo: string): string {
+    const mapeo: Record<string, string> = {
+      'nombre': 'm.nombre',
+      'tipoProducto': 'm.tipo_producto',
+      'clave': 'm.clave',
+    };
+
+    return mapeo[campo] || `m.${campo}`;
   }
 
   async getMayoristasStats() {

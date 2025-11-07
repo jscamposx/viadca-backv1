@@ -50,11 +50,15 @@ async function bootstrap() {
 
   app.use(cookieParser());
 
+  // ValidationPipe global - Configuración permisiva para query params dinámicos
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
+      whitelist: true, // Remueve propiedades no decoradas en el BODY
+      forbidNonWhitelisted: false, // PERMITE propiedades no decoradas (necesario para filtros dinámicos en query params)
+      transform: true, // Transforma los tipos automáticamente
+      transformOptions: {
+        enableImplicitConversion: true, // Convierte tipos automáticamente
+      },
       disableErrorMessages: false,
     }),
   );

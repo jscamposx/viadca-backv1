@@ -48,6 +48,35 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
     super(paqueteRepository);
   }
 
+  /**
+   * Mapea nombres de campos del frontend a nombres de columnas de la base de datos
+   * Esto permite que el frontend use nombres amigables y el backend los traduzca
+   */
+  private mapearCampoFiltro(campo: string): string {
+    const mapeo: Record<string, string> = {
+      // Campos de paquete
+      'activo': 'p.activo',
+      'favorito': 'p.favorito',
+      'tipoAcceso': 'p.tipoAcceso',
+      'moneda': 'p.moneda',
+      'titulo': 'p.titulo',
+      'personas': 'p.personas',
+      'precio_total': 'p.precio_total',
+      'descuento': 'p.descuento',
+      
+      // Campos de mayorista (join)
+      'mayorista': 'mayoristas.nombre',
+      'mayoristaNombre': 'mayoristas.nombre',
+      'mayoristaId': 'mayoristas.id',
+      'tipoProducto': 'mayoristas.tipo_producto',
+      
+      // Si el campo no está mapeado, intentar buscarlo en la entidad principal
+      // Esto permite agregar nuevos filtros sin modificar este mapeo
+    };
+
+    return mapeo[campo] || `p.${campo}`;
+  }
+
   async create(createPaqueteDto: CreatePaqueteDto): Promise<Paquete> {
     this.logger.log(`Creando nuevo paquete: ${createPaqueteDto.titulo}`);
 
@@ -333,11 +362,7 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
       limit = 6, 
       search, 
       noPagination,
-      activo,
-      favorito,
-      tipoAcceso,
-      mayorista,
-      moneda
+      ...filtrosDinamicos // <-- Todo lo demás son filtros dinámicos
     } = paginationDto;
     const skip = (page - 1) * limit;
 
@@ -356,31 +381,37 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
       );
     }
 
-    // Filtro por activo
-    if (activo !== undefined) {
-      qb.andWhere('p.activo = :activo', { activo });
-    }
+    // 🔥 APLICAR FILTROS DINÁMICOS
+    // Excluir parámetros de control (page, limit, search, noPagination)
+    const filtrosAplicables = Object.entries(filtrosDinamicos).filter(
+      ([key]) => !['page', 'limit', 'search', 'noPagination'].includes(key)
+    );
 
-    // Filtro por favorito
-    if (favorito !== undefined) {
-      qb.andWhere('p.favorito = :favorito', { favorito });
-    }
+    filtrosAplicables.forEach(([key, value]) => {
+      if (value === undefined || value === null || value === '') return;
 
-    // Filtro por tipo de acceso
-    if (tipoAcceso) {
-      qb.andWhere('p.tipoAcceso = :tipoAcceso', { tipoAcceso });
-    }
-
-    // Filtro por mayorista (nombre)
-    if (mayorista && mayorista.trim() !== '') {
-      const m = `%${mayorista.trim().toLowerCase()}%`;
-      qb.andWhere('LOWER(mayoristas.nombre) LIKE :m', { m });
-    }
-
-    // Filtro por moneda
-    if (moneda) {
-      qb.andWhere('p.moneda = :moneda', { moneda });
-    }
+      // Mapeo de campos del frontend a campos de la base de datos
+      const campoMapeado = this.mapearCampoFiltro(key);
+      
+      // Transformar string a boolean si es necesario
+      let valorTransformado = value;
+      if (value === 'true') valorTransformado = true;
+      if (value === 'false') valorTransformado = false;
+      
+      // Si el valor es booleano
+      if (typeof valorTransformado === 'boolean') {
+        qb.andWhere(`${campoMapeado} = :${key}`, { [key]: valorTransformado });
+      }
+      // Si es un filtro de texto (like para nombres, etc.)
+      else if (key === 'mayorista' || key.includes('nombre')) {
+        const likeValue = `%${String(valorTransformado).toLowerCase()}%`;
+        qb.andWhere(`LOWER(${campoMapeado}) LIKE :${key}`, { [key]: likeValue });
+      }
+      // Filtro exacto (para enums, moneda, etc.)
+      else {
+        qb.andWhere(`${campoMapeado} = :${key}`, { [key]: valorTransformado });
+      }
+    });
 
     const total = await qb.clone().distinct(true).getCount();
 

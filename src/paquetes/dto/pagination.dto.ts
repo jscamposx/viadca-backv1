@@ -1,51 +1,43 @@
-import { IsOptional, IsPositive, Min, IsString, IsBoolean, IsIn } from 'class-validator';
+import { IsOptional, IsPositive, Min, IsString, IsBoolean } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 
 export class PaginationDto {
   @IsOptional()
-  @IsPositive()
   @Type(() => Number)
   page?: number = 1;
 
   @IsOptional()
-  @IsPositive()
-  @Min(1)
   @Type(() => Number)
   limit?: number = 6;
 
   @IsOptional()
-  @IsString()
   search?: string;
 
-  // Si es true, ignora la paginación y devuelve todos los resultados
   @IsOptional()
-  @IsBoolean()
   @Transform(({ value }) => value === 'true' || value === true)
   noPagination?: boolean;
 
-  // Filtros específicos para paquetes
+  // Filtros dinámicos permitidos explícitamente
   @IsOptional()
-  @IsBoolean()
-  @Transform(({ value }) => value === 'true' || value === true)
-  activo?: boolean;
+  activo?: any;
 
   @IsOptional()
-  @IsBoolean()
-  @Transform(({ value }) => value === 'true' || value === true)
-  favorito?: boolean;
+  favorito?: any;
 
   @IsOptional()
-  @IsString()
-  @IsIn(['publico', 'privado', 'link-privado'])
-  tipoAcceso?: 'publico' | 'privado' | 'link-privado';
+  mayorista?: any;
 
   @IsOptional()
-  @IsString()
-  mayorista?: string; // Nombre o ID del mayorista
+  tipoProducto?: any;
 
   @IsOptional()
-  @IsString()
-  moneda?: string; // USD, EUR, MXN, etc.
+  moneda?: any;
+
+  @IsOptional()
+  pais?: any;
+
+  // Permite cualquier otro filtro dinámico
+  [key: string]: any;
 }
 
 export class PaginatedResponse<T> {

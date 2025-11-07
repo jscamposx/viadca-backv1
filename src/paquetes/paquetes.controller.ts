@@ -152,7 +152,19 @@ export class PaquetesController {
 
   @Get()
   // Caché removido para admin no-stats
-  findAll(@Query() paginationDto: PaginationDto) {
+  findAll(
+    @Query(new ValidationPipe({ 
+      transform: true,
+      transformOptions: {
+        enableImplicitConversion: true, // Convierte automáticamente tipos
+      },
+      forbidNonWhitelisted: false, // Permitir filtros dinámicos
+      whitelist: false, // No remover propiedades no decoradas
+      forbidUnknownValues: false, // No rechazar valores desconocidos
+    })) 
+    paginationDto: PaginationDto
+  ) {
+    console.log('📥 Query params recibidos:', paginationDto);
     return this.paquetesService.findAllPaginated(paginationDto);
   }
 

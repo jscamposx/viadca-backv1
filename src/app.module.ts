@@ -103,11 +103,17 @@ import { ContactoModule } from './contacto/contacto.module';
         const dbHost = configService.get<string>('DB_HOST');
         const dbPort = configService.get<string>('DB_PORT');
         const dbUsername = configService.get<string>('DB_USERNAME');
-        const dbPassword = configService.get<string>('DB_PASSWORD');
+        const dbPassword = configService.get<string>('DB_PASSWORD') ?? ''; // Permitir vacío en desarrollo
         const dbDatabase = configService.get<string>('DB_DATABASE');
 
-        if (!dbHost || !dbPort || !dbUsername || !dbPassword || !dbDatabase) {
-          throw new Error('❌ Variables de entorno de base de datos incompletas. Verifica DB_HOST, DB_PORT, DB_USERNAME, DB_PASSWORD, DB_DATABASE');
+        // Validar campos obligatorios
+        if (!dbHost || !dbPort || !dbUsername || !dbDatabase) {
+          throw new Error('❌ Variables de entorno de base de datos incompletas. Verifica DB_HOST, DB_PORT, DB_USERNAME, DB_DATABASE');
+        }
+
+        // En producción, DB_PASSWORD no puede estar vacía
+        if (isProd && dbPassword.trim() === '') {
+          throw new Error('❌ DB_PASSWORD es requerida en producción y no puede estar vacía');
         }
 
         const baseConfig: TypeOrmModuleOptions = {
