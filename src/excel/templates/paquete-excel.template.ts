@@ -211,12 +211,7 @@ export class PaqueteExcelTemplate {
           horizontal: 'center' as const,
           vertical: 'middle' as const,
         },
-        border: {
-          top: { style: 'thin' as const, color: { argb: palette.border } },
-          bottom: { style: 'thin' as const, color: { argb: palette.border } },
-          left: { style: 'thin' as const, color: { argb: palette.border } },
-          right: { style: 'thin' as const, color: { argb: palette.border } },
-        },
+        // Sin bordes
       },
 
       sectionHeaderStyle: {
@@ -356,12 +351,7 @@ export class PaqueteExcelTemplate {
           horizontal: 'center' as const,
           vertical: 'middle' as const,
         },
-        border: {
-          top: { style: 'medium' as const, color: { argb: palette.secondary } },
-          left: { style: 'thin' as const, color: { argb: palette.border } },
-          bottom: { style: 'medium' as const, color: { argb: palette.secondary } },
-          right: { style: 'thin' as const, color: { argb: palette.border } },
-        },
+        // Sin bordes
       },
 
       tableRowEvenStyle: {
@@ -635,11 +625,7 @@ export class PaqueteExcelTemplate {
       font: { name: 'Segoe UI', size: 12, bold: true, color: { argb: palette.primary } },
       alignment: { vertical: 'middle', horizontal: 'center' },
       fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'E8F4FD' } },
-      border: {
-        top: { style: 'medium', color: { argb: palette.primary } },
-        left: { style: 'thin', color: { argb: 'DEE2E6' } },
-        right: { style: 'thin', color: { argb: 'DEE2E6' } },
-      },
+      // Sin bordes
     };
     this.worksheet.getRow(this.currentRow).height = 25;
     this.currentRow += 1;
@@ -652,10 +638,7 @@ export class PaqueteExcelTemplate {
       font: { name: 'Segoe UI', size: 10, color: { argb: palette.secondary } },
       alignment: { vertical: 'middle', horizontal: 'center' },
       fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F8F9FA' } },
-      border: {
-        left: { style: 'thin', color: { argb: 'DEE2E6' } },
-        right: { style: 'thin', color: { argb: 'DEE2E6' } },
-      },
+      // Sin bordes
     };
     this.worksheet.getRow(this.currentRow).height = 20;
     this.currentRow += 1;
@@ -675,10 +658,7 @@ export class PaqueteExcelTemplate {
       font: { name: 'Segoe UI', size: 14, bold: true, color: { argb: palette.success } },
       alignment: { vertical: 'middle', horizontal: 'center' },
       fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F8F9FA' } },
-      border: {
-        left: { style: 'thin', color: { argb: 'DEE2E6' } },
-        right: { style: 'thin', color: { argb: 'DEE2E6' } },
-      },
+      // Sin bordes
     };
     this.worksheet.getRow(this.currentRow).height = 30;
     this.currentRow += 1;
@@ -693,21 +673,10 @@ export class PaqueteExcelTemplate {
         font: { name: 'Segoe UI', size: 11, color: { argb: palette.primary } },
         alignment: { vertical: 'middle', horizontal: 'center' },
         fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F8F9FA' } },
-        border: {
-          bottom: { style: 'medium', color: { argb: palette.primary } },
-          left: { style: 'thin', color: { argb: 'DEE2E6' } },
-          right: { style: 'thin', color: { argb: 'DEE2E6' } },
-        },
+        // Sin bordes
       };
       this.worksheet.getRow(this.currentRow).height = 22;
       this.currentRow += 1;
-    } else {
-      // Si no hay personas, cerrar el borde en el precio
-      priceCell.style.border = {
-        bottom: { style: 'medium', color: { argb: palette.primary } },
-        left: { style: 'thin', color: { argb: 'DEE2E6' } },
-        right: { style: 'thin', color: { argb: 'DEE2E6' } },
-      };
     }
 
     this.currentRow += 1;
@@ -1674,9 +1643,12 @@ export class PaqueteExcelTemplate {
       },
     };
 
+    // Cálculo mejorado de altura con margen superior
+    // Formula: caracteres / 75 (más generoso) * 18 pixeles por línea
+    // Altura mínima: 35px (con margen), Altura máxima: 400px
     const rowHeight = Math.max(
-      25,
-      Math.min(Math.ceil(content.length / 110) * 18, 220),
+      35,  // Altura mínima aumentada para dar margen
+      Math.min(Math.ceil(content.length / 75) * 18, 400), // Más generoso y mayor límite
     );
     worksheet.getRow(currentRow).height = rowHeight;
     currentRow += 3;
