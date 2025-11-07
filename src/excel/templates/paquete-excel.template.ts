@@ -73,7 +73,6 @@ export class PaqueteExcelTemplate {
     destinations: 'DESTINOS DEL VIAJE',
     hotel: 'ALOJAMIENTO',
     itinerary: 'ITINERARIO DETALLADO',
-    wholesalers: 'PROVEEDORES',
     contact: 'INFORMACIÓN DE CONTACTO',
   };
 
@@ -346,21 +345,21 @@ export class PaqueteExcelTemplate {
           name: 'Segoe UI',
           size: 11,
           bold: true,
-          color: { argb: palette.white },
+          color: { argb: palette.primary }, // Texto azul oscuro para contraste
         },
         fill: {
           type: 'pattern' as const,
           pattern: 'solid' as const,
-          fgColor: { argb: palette.primary },
+          fgColor: { argb: palette.accent }, // Azul claro como fondo
         },
         alignment: {
           horizontal: 'center' as const,
           vertical: 'middle' as const,
         },
         border: {
-          top: { style: 'medium' as const, color: { argb: palette.primary } },
+          top: { style: 'medium' as const, color: { argb: palette.secondary } },
           left: { style: 'thin' as const, color: { argb: palette.border } },
-          bottom: { style: 'medium' as const, color: { argb: palette.primary } },
+          bottom: { style: 'medium' as const, color: { argb: palette.secondary } },
           right: { style: 'thin' as const, color: { argb: palette.border } },
         },
       },
@@ -664,11 +663,11 @@ export class PaqueteExcelTemplate {
     // Precio destacado
     this.worksheet.mergeCells(`A${this.currentRow}:D${this.currentRow}`);
     const priceCell = this.worksheet.getCell(`A${this.currentRow}`);
-    let priceText = `💰 PRECIO TOTAL: ${this.formatPrice(paquete.precio_total)}`;
+    let priceText = `💰 PRECIO TOTAL: ${this.formatPrice(paquete.precio_total, paquete.moneda)}`;
     
     // Agregar descuento si existe
     if (paquete.descuento && paquete.descuento > 0) {
-      priceText += `  🎁 Descuento: ${this.formatPrice(paquete.descuento)}`;
+      priceText += `  🎁 Descuento: ${this.formatPrice(paquete.descuento, paquete.moneda)}`;
     }
     
     priceCell.value = priceText;
@@ -689,7 +688,7 @@ export class PaqueteExcelTemplate {
       this.worksheet.mergeCells(`A${this.currentRow}:D${this.currentRow}`);
       const perPersonCell = this.worksheet.getCell(`A${this.currentRow}`);
       const pricePerPerson = paquete.precio_total / paquete.personas;
-      perPersonCell.value = `👥 ${paquete.personas} ${paquete.personas === 1 ? 'persona' : 'personas'}  •  ${this.formatPrice(pricePerPerson)} por persona`;
+      perPersonCell.value = `👥 ${paquete.personas} ${paquete.personas === 1 ? 'persona' : 'personas'}  •  ${this.formatPrice(pricePerPerson, paquete.moneda)} por persona`;
       perPersonCell.style = {
         font: { name: 'Segoe UI', size: 11, color: { argb: palette.primary } },
         alignment: { vertical: 'middle', horizontal: 'center' },
@@ -938,10 +937,12 @@ export class PaqueteExcelTemplate {
     if (!text) return 22;
 
     const baseHeight = 22;
-    const charWidth = isLongText ? 100 : 60;
+    // Más generoso: 80 caracteres por línea para textos largos, 50 para cortos
+    const charWidth = isLongText ? 80 : 50;
     const lines = Math.ceil(text.length / charWidth);
 
-    return Math.max(baseHeight, Math.min(lines * 18, isLongText ? 200 : 120));
+    // Altura máxima aumentada: 300px para textos largos, 150px para cortos
+    return Math.max(baseHeight, Math.min(lines * 18, isLongText ? 300 : 150));
   }
 
   private addSectionSpacer(): void {
@@ -974,9 +975,7 @@ export class PaqueteExcelTemplate {
       this.buildModernHotel(paquete.hotel);
     }
 
-    if (paquete.mayoristas && paquete.mayoristas.length > 0) {
-      this.buildModernMayoristas(paquete.mayoristas);
-    }
+    // Sección de mayoristas eliminada - ya no se muestra en el Excel
 
     this.addModernFooter();
 
@@ -992,12 +991,12 @@ export class PaqueteExcelTemplate {
     > = [
       ['Cliente', ''],
       ['Título', paquete.titulo],
-      ['Precio Total', this.formatPrice(paquete.precio_total)],
+      ['Precio Total', this.formatPrice(paquete.precio_total, paquete.moneda)],
       // Desglose: Precio por persona solo si personas está definido
       paquete.personas && paquete.personas > 0
         ? [
             'Precio por Persona',
-            this.formatPrice(paquete.precio_total / paquete.personas),
+            this.formatPrice(paquete.precio_total / paquete.personas, paquete.moneda),
           ]
         : null,
       // Personas solo si está definido
@@ -1009,19 +1008,19 @@ export class PaqueteExcelTemplate {
         : null,
       // Precio vuelo solo si tiene valor
       paquete.precio_vuelo && paquete.precio_vuelo > 0
-        ? ['Precio Vuelo', this.formatPrice(paquete.precio_vuelo)]
+        ? ['Precio Vuelo', this.formatPrice(paquete.precio_vuelo, paquete.moneda)]
         : null,
       // Precio hospedaje solo si tiene valor
       paquete.precio_hospedaje && paquete.precio_hospedaje > 0
-        ? ['Precio Hospedaje', this.formatPrice(paquete.precio_hospedaje)]
+        ? ['Precio Hospedaje', this.formatPrice(paquete.precio_hospedaje, paquete.moneda)]
         : null,
       // Descuento solo si es mayor a 0
       paquete.descuento && paquete.descuento > 0
-        ? ['Descuento', this.formatPrice(paquete.descuento)]
+        ? ['Descuento', this.formatPrice(paquete.descuento, paquete.moneda)]
         : null,
       // Anticipo solo si tiene valor
       paquete.anticipo && paquete.anticipo > 0
-        ? ['Anticipo', this.formatPrice(paquete.anticipo)]
+        ? ['Anticipo', this.formatPrice(paquete.anticipo, paquete.moneda)]
         : null,
       ['Duración', `${paquete.duracion_dias} días`],
       [
@@ -1108,18 +1107,7 @@ export class PaqueteExcelTemplate {
     this.addSectionSpacer();
   }
 
-  private buildModernMayoristas(mayoristas: any[]): void {
-    this.addModernSection('MAYORISTAS ASOCIADOS');
-
-    const tableData = mayoristas.map((mayorista) => [
-      mayorista.nombre,
-      mayorista.tipo_producto,
-      mayorista.clave || 'N/A',
-    ]);
-
-    this.addModernTable(['Nombre', 'Tipo de Producto', 'Clave'], tableData);
-    this.addSectionSpacer();
-  }
+  // Método buildModernMayoristas eliminado - ya no se usa
 
   private addModernFooter(): void {
     this.currentRow += 3;
@@ -1226,9 +1214,13 @@ export class PaqueteExcelTemplate {
     return parts.join(', ');
   }
 
-  private formatPrice(price: number | null): string {
+  private formatPrice(price: number | null, moneda: string = 'MXN'): string {
     if (!price || price <= 0) return 'No especificado';
-    return `$${price.toLocaleString('es-ES')}`;
+    
+    // Determinar el símbolo de moneda
+    const simboloMoneda = moneda === 'USD' ? 'USD $' : '$';
+    
+    return `${simboloMoneda}${price.toLocaleString('es-ES')} ${moneda}`;
   }
 
   private generateWebsiteUrl(codigoUrl: string): string {
@@ -1783,9 +1775,12 @@ export class PaqueteExcelTemplate {
           },
         };
 
+        // Cálculo mejorado de altura: más generoso para textos largos
+        // Formula: caracteres / 80 (más generoso) * 18 pixeles por línea
+        // Altura mínima: 30px, Altura máxima: 300px
         const rowHeight = Math.max(
-          20,
-          Math.min(Math.ceil(itinerario.descripcion.length / 110) * 18, 180),
+          30,
+          Math.min(Math.ceil(itinerario.descripcion.length / 80) * 18, 300),
         );
         worksheet.getRow(currentRow).height = rowHeight;
         currentRow += 2;
