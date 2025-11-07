@@ -59,14 +59,17 @@ import { ContactoModule } from './contacto/contacto.module';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService): TypeOrmModuleOptions => {
-        const isProd = (configService.get<string>('NODE_ENV') || 'development') === 'production';
-  // Forzado temporal: siempre true mientras la BD es nueva.
-  const synchronizeEnv = configService.get<string>('DB_SYNCHRONIZE');
-  const synchronize = true; // <== FORZADO (recordar quitar luego)
+        const isProd = configService.get<string>('NODE_ENV') === 'production';
+        
+        // ⚠️ PRODUCCIÓN: synchronize debe ser false y usar migraciones
+        const synchronize = configService.get<string>('DB_SYNCHRONIZE') === 'true';
         const logging = configService.get<string>('DB_LOGGING') === 'true';
         const sslEnabled = configService.get<string>('DB_SSL') === 'true';
 
-        const type = (configService.get<string>('DB_TYPE') || 'mysql') as any;
+        const type = configService.get<string>('DB_TYPE') as any;
+        if (!type) {
+          throw new Error('❌ DB_TYPE no está configurado en variables de entorno');
+        }
 
         // Helper para enmascarar password
         const mask = (val?: string | null) => {
@@ -90,17 +93,30 @@ import { ContactoModule } from './contacto/contacto.module';
 
         console.log('🧪 Variables de entorno (DB) detectadas:', rawDbEnvLog);
 
-        if (isProd) {
-          console.warn('⚠️  WARNING: synchronize FORZADO = true en producción (BD nueva). Quitar cuando el esquema esté estable. Valor env original:', synchronizeEnv);
+        // ⚠️ Advertencia si synchronize está activo en producción
+        if (isProd && synchronize) {
+          console.warn('⚠️  PELIGRO: DB_SYNCHRONIZE=true en PRODUCCIÓN. Esto puede causar pérdida de datos.');
+          console.warn('⚠️  Recomendación: Usar DB_SYNCHRONIZE=false y migraciones en producción.');
+        }
+
+        // Validar variables de entorno críticas
+        const dbHost = configService.get<string>('DB_HOST');
+        const dbPort = configService.get<string>('DB_PORT');
+        const dbUsername = configService.get<string>('DB_USERNAME');
+        const dbPassword = configService.get<string>('DB_PASSWORD');
+        const dbDatabase = configService.get<string>('DB_DATABASE');
+
+        if (!dbHost || !dbPort || !dbUsername || !dbPassword || !dbDatabase) {
+          throw new Error('❌ Variables de entorno de base de datos incompletas. Verifica DB_HOST, DB_PORT, DB_USERNAME, DB_PASSWORD, DB_DATABASE');
         }
 
         const baseConfig: TypeOrmModuleOptions = {
           type,
-          host: configService.get<string>('DB_HOST'),
-          port: parseInt(configService.get<string>('DB_PORT') || '3306', 10),
-          username: configService.get<string>('DB_USERNAME'),
-          password: configService.get<string>('DB_PASSWORD'),
-          database: configService.get<string>('DB_DATABASE'),
+          host: dbHost,
+          port: parseInt(dbPort, 10),
+          username: dbUsername,
+          password: dbPassword,
+          database: dbDatabase,
           entities: [
             Usuario,
             Paquete,
@@ -112,7 +128,6 @@ import { ContactoModule } from './contacto/contacto.module';
             Contacto,
             QueueTaskHistory,
           ],
-          // Ahora respetamos el valor explícito incluso en producción (bajo advertencia)
           synchronize,
           logging,
           ssl: sslEnabled

@@ -46,8 +46,13 @@ export class UsuariosController {
 
     // Config de cookie compatible con iOS/Safari y entornos locales
     const isProd = process.env.NODE_ENV === 'production';
-    const frontendUrl = process.env.FRONTEND_URL || '';
-    const isHttps = isProd && /^https:\/\//i.test(frontendUrl);
+    const frontendUrl = process.env.FRONTEND_URL;
+    
+    if (isProd && !frontendUrl) {
+      throw new Error('❌ Variable de entorno FRONTEND_URL no configurada en producción');
+    }
+    
+    const isHttps = isProd && frontendUrl ? /^https:\/\//i.test(frontendUrl) : false;
     const cookieDomain = process.env.COOKIE_DOMAIN || undefined; // ej: .tudominio.com
 
     res.cookie('access_token', result.access_token, {
@@ -69,9 +74,14 @@ export class UsuariosController {
   @Post('logout')
   @HttpCode(200)
   async logout(@Res({ passthrough: true }) res: Response) {
-    const frontendUrl = process.env.FRONTEND_URL || '';
     const isProd = process.env.NODE_ENV === 'production';
-    const isHttps = isProd && /^https:\/\//i.test(frontendUrl);
+    const frontendUrl = process.env.FRONTEND_URL;
+    
+    if (isProd && !frontendUrl) {
+      throw new Error('❌ Variable de entorno FRONTEND_URL no configurada en producción');
+    }
+    
+    const isHttps = isProd && frontendUrl ? /^https:\/\//i.test(frontendUrl) : false;
     const cookieDomain = process.env.COOKIE_DOMAIN || undefined;
 
     res.clearCookie('access_token', {

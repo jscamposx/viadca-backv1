@@ -130,13 +130,14 @@ export class MayoristasService extends SoftDeleteService<Mayoristas> {
   async findAllPaginated(
     paginationDto: PaginationDto,
   ): Promise<PaginatedResponse<Mayoristas>> {
-    const { page = 1, limit = 6, search } = paginationDto;
+    const { page = 1, limit = 6, search, noPagination } = paginationDto;
     const skip = (page - 1) * limit;
 
     const qb = this.mayoristaRepository
       .createQueryBuilder('m')
       .where('m.eliminado_en IS NULL');
 
+    // Filtro de búsqueda
     if (search && search.trim() !== '') {
       const s = `%${search.trim().toLowerCase()}%`;
       qb.andWhere(
@@ -147,23 +148,26 @@ export class MayoristasService extends SoftDeleteService<Mayoristas> {
 
     const total = await qb.clone().getCount();
 
-    const rows = await qb
-      .orderBy('m.creadoEn', 'DESC')
-      .skip(skip)
-      .take(limit)
-      .getMany();
+    // Aplicar paginación solo si noPagination no está activo
+    qb.orderBy('m.creadoEn', 'DESC');
+    
+    if (!noPagination) {
+      qb.skip(skip).take(limit);
+    }
 
-    const totalPages = Math.ceil(total / limit) || 1;
+    const rows = await qb.getMany();
+
+    const totalPages = noPagination ? 1 : Math.ceil(total / limit) || 1;
 
     return {
       data: rows,
       pagination: {
-        currentPage: page,
+        currentPage: noPagination ? 1 : page,
         totalPages,
         totalItems: total,
-        itemsPerPage: limit,
-        hasNextPage: page < totalPages,
-        hasPreviousPage: page > 1,
+        itemsPerPage: noPagination ? total : limit,
+        hasNextPage: noPagination ? false : page < totalPages,
+        hasPreviousPage: noPagination ? false : page > 1,
       },
     };
   }

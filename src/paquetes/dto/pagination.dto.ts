@@ -1,5 +1,5 @@
-import { IsOptional, IsPositive, Min, IsString } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsOptional, IsPositive, Min, IsString, IsBoolean, IsIn } from 'class-validator';
+import { Type, Transform } from 'class-transformer';
 
 export class PaginationDto {
   @IsOptional()
@@ -16,6 +16,36 @@ export class PaginationDto {
   @IsOptional()
   @IsString()
   search?: string;
+
+  // Si es true, ignora la paginación y devuelve todos los resultados
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => value === 'true' || value === true)
+  noPagination?: boolean;
+
+  // Filtros específicos para paquetes
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => value === 'true' || value === true)
+  activo?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => value === 'true' || value === true)
+  favorito?: boolean;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(['publico', 'privado', 'link-privado'])
+  tipoAcceso?: 'publico' | 'privado' | 'link-privado';
+
+  @IsOptional()
+  @IsString()
+  mayorista?: string; // Nombre o ID del mayorista
+
+  @IsOptional()
+  @IsString()
+  moneda?: string; // USD, EUR, MXN, etc.
 }
 
 export class PaginatedResponse<T> {

@@ -20,12 +20,18 @@ export class EmailService {
     private readonly configService: ConfigService,
     @InjectRepository(Contacto) private readonly contactoRepo: Repository<Contacto>,
   ) {
-    const host = this.configService.get<string>('SMTP_HOST') || 'smtp-relay.brevo.com';
-    const port = parseInt(this.configService.get<string>('SMTP_PORT') || '587', 10);
+    const host = this.configService.get<string>('SMTP_HOST');
+    const portStr = this.configService.get<string>('SMTP_PORT');
+    const user = this.configService.get<string>('SMTP_USER');
+    const pass = this.configService.get<string>('SMTP_PASS');
+
+    if (!host || !portStr || !user || !pass) {
+      throw new Error('❌ Variables de entorno SMTP incompletas. Verifica SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS');
+    }
+
+    const port = parseInt(portStr, 10);
     const secureEnv = this.configService.get<string>('SMTP_SECURE');
     const secure = secureEnv ? secureEnv === 'true' : port === 465;
-    const user = this.configService.get<string>('SMTP_USER') || '686653001@smtp-brevo.com';
-    const pass = this.configService.get<string>('SMTP_PASS') || 'wbH7NAYdMnD1FvqI';
 
     this.transporter = nodemailer.createTransport({
       host,
@@ -60,10 +66,13 @@ export class EmailService {
   }
 
   private getFrom(): { name: string; address: string } {
-    const name = this.configService.get<string>('SMTP_FROM_NAME') || 'Viadca';
-    const address =
-      this.configService.get<string>('SMTP_FROM_EMAIL') ||
-      'no-reply@viadca.app';
+    const name = this.configService.get<string>('SMTP_FROM_NAME');
+    const address = this.configService.get<string>('SMTP_FROM_EMAIL');
+
+    if (!name || !address) {
+      throw new Error('❌ Variables de entorno SMTP_FROM_NAME y SMTP_FROM_EMAIL son requeridas');
+    }
+
     return { name, address };
   }
 
@@ -191,7 +200,12 @@ export class EmailService {
       return;
     }
 
-    const verificationUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verificar-correo?token=${token}`;
+    const frontendUrl = process.env.FRONTEND_URL;
+    if (!frontendUrl) {
+      throw new Error('❌ Variable de entorno FRONTEND_URL no configurada');
+    }
+
+    const verificationUrl = `${frontendUrl}/verificar-correo?token=${token}`;
 
     const content = `
       ${nombre ? `<p style=\"font-size: 16px;\">Hola ${nombre},</p>` : '<p style="font-size: 16px;">Hola,</p>'}
@@ -256,7 +270,12 @@ export class EmailService {
       return;
     }
 
-    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/restablecer-contraseña?token=${token}`;
+    const frontendUrl = process.env.FRONTEND_URL;
+    if (!frontendUrl) {
+      throw new Error('❌ Variable de entorno FRONTEND_URL no configurada');
+    }
+
+    const resetUrl = `${frontendUrl}/restablecer-contraseña?token=${token}`;
 
     const content = `
       ${nombre ? `<p style=\"font-size: 16px;\">Hola ${nombre},</p>` : '<p style="font-size: 16px;">Hola,</p>'}
@@ -325,7 +344,12 @@ export class EmailService {
       return;
     }
 
-    const loginUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/iniciar-sesion`;
+    const frontendUrl = process.env.FRONTEND_URL;
+    if (!frontendUrl) {
+      throw new Error('❌ Variable de entorno FRONTEND_URL no configurada');
+    }
+
+    const loginUrl = `${frontendUrl}/iniciar-sesion`;
 
     const content = `
       ${nombre ? `<p style=\"font-size: 16px;\">Hola ${nombre},</p>` : '<p style="font-size: 16px;">Hola,</p>'}
@@ -403,12 +427,16 @@ export class EmailService {
       : [];
 
     const mailOptions: nodemailer.SendMailOptions = {
-      from: this.configService.get<string>('SMTP_FROM') || 'Viadca <no-reply@viadca.app>',
+      from: this.configService.get<string>('SMTP_FROM'),
       to,
       subject,
       html: htmlContent,
       attachments,
     };
+
+    if (!mailOptions.from) {
+      throw new Error('❌ Variable de entorno SMTP_FROM no configurada');
+    }
 
     try {
       await this.transporter.sendMail(mailOptions);

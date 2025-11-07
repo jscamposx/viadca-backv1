@@ -1,6 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, InternalServerErrorException, Logger, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { In, Repository, QueryRunner, DataSource } from 'typeorm';
 import { Paquete } from './entidades/paquete.entity';
 import { CreatePaqueteDto, MonedaPaquete } from './dto/create-paquete.dto';
 import { UpdatePaqueteDto } from './dto/update-paquete.dto';
@@ -24,6 +24,8 @@ import axios from 'axios';
 
 @Injectable()
 export class PaquetesService extends SoftDeleteService<Paquete> {
+  private readonly logger = new Logger(PaquetesService.name);
+
   constructor(
     @InjectRepository(Paquete)
     private readonly paqueteRepository: Repository<Paquete>,
@@ -41,146 +43,238 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
     private readonly usuarioRepository: Repository<Usuario>,
     private readonly cloudinaryService: CloudinaryService,
     private readonly notificacionService: PaquetesNotificacionService,
+    private readonly dataSource: DataSource,
   ) {
     super(paqueteRepository);
   }
 
   async create(createPaqueteDto: CreatePaqueteDto): Promise<Paquete> {
-    const {
-      mayoristasIds,
-      destinos: destinosDto,
-      imagenes: imagenesDto,
-      hotel: hotelDto,
-      itinerario_texto,
-      fecha_inicio,
-      fecha_fin,
-      favorito,
-      usuariosAutorizadosIds,
-      ...paqueteData
-    } = createPaqueteDto;
+    this.logger.log(`Creando nuevo paquete: ${createPaqueteDto.titulo}`);
 
-    if (paqueteData.descuento === null || paqueteData.descuento === undefined) {
-      paqueteData.descuento = 0;
-    }
+    // Usar transacción para garantizar consistencia
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    if (paqueteData.incluye === undefined) {
-      paqueteData.incluye = null;
-    }
-    if (paqueteData.no_incluye === undefined) {
-      paqueteData.no_incluye = null;
-    }
-    if (paqueteData.requisitos === undefined) {
-      paqueteData.requisitos = null;
-    }
-    if (paqueteData.anticipo === undefined) {
-      paqueteData.anticipo = null;
-    }
-    if (paqueteData.precio_vuelo === undefined) {
-      paqueteData.precio_vuelo = null;
-    }
-    if (paqueteData.precio_hospedaje === undefined) {
-      paqueteData.precio_hospedaje = null;
-    }
-    if (paqueteData.personas === undefined) {
-      (paqueteData as any).personas = null;
-    }
-    if (paqueteData.notas === undefined) {
-      paqueteData.notas = null;
-    }
+    try {
+      const {
+        mayoristasIds,
+        destinos: destinosDto,
+        imagenes: imagenesDto,
+        hotel: hotelDto,
+        itinerario_texto,
+        fecha_inicio,
+        fecha_fin,
+        favorito,
+        usuariosAutorizadosIds,
+        ...paqueteData
+      } = createPaqueteDto;
 
-    // Moneda por defecto MXN
-    if (
-      !('moneda' in paqueteData) ||
-      paqueteData.moneda === undefined ||
-      paqueteData.moneda === null
-    ) {
-      (paqueteData as any).moneda = 'MXN' as MonedaPaquete;
-    }
-
-    const paquete = this.paqueteRepository.create(
-      paqueteData as unknown as Partial<Paquete>,
-    );
-
-    const inicio = new Date(fecha_inicio);
-    const fin = new Date(fecha_fin);
-    const diffTime = Math.abs(fin.getTime() - inicio.getTime());
-    paquete.duracion_dias = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-    paquete.fecha_inicio = inicio;
-    paquete.fecha_fin = fin;
-
-    let codigoUrl: string = '';
-    let isCodeUnique = false;
-    while (!isCodeUnique) {
-      codigoUrl = generarCodigo(5);
-      const existingPaquete = await this.paqueteRepository.findOneBy({
-        codigoUrl,
-      });
-      if (!existingPaquete) {
-        isCodeUnique = true;
+      // Validación de fechas
+      const inicio = new Date(fecha_inicio);
+      const fin = new Date(fecha_fin);
+      
+      if (isNaN(inicio.getTime()) || isNaN(fin.getTime())) {
+        throw new BadRequestException('Fechas inválidas');
       }
-    }
-    paquete.codigoUrl = codigoUrl;
+      
+      if (fin < inicio) {
+        throw new BadRequestException('La fecha de fin debe ser posterior a la fecha de inicio');
+      }
 
-    if (mayoristasIds && mayoristasIds.length > 0) {
-      paquete.mayoristas = await this.findMayoristasByIds(mayoristasIds);
-    }
-    if (destinosDto && destinosDto.length > 0) {
-      paquete.destinos = await this.processDestinosAsync(destinosDto);
-    }
+      if (paqueteData.descuento === null || paqueteData.descuento === undefined) {
+        paqueteData.descuento = 0;
+      }
 
-    if (imagenesDto && imagenesDto.length > 0) {
-      paquete.imagenes = await this.processImagenesWithCloudinary(
-        imagenesDto,
-        'paquetes',
+      if (paqueteData.incluye === undefined) {
+        paqueteData.incluye = null;
+      }
+      if (paqueteData.no_incluye === undefined) {
+        paqueteData.no_incluye = null;
+      }
+      if (paqueteData.requisitos === undefined) {
+        paqueteData.requisitos = null;
+      }
+      if (paqueteData.anticipo === undefined) {
+        paqueteData.anticipo = null;
+      }
+      if (paqueteData.precio_vuelo === undefined) {
+        paqueteData.precio_vuelo = null;
+      }
+      if (paqueteData.precio_hospedaje === undefined) {
+        paqueteData.precio_hospedaje = null;
+      }
+      if (paqueteData.personas === undefined) {
+        (paqueteData as any).personas = null;
+      }
+      if (paqueteData.notas === undefined) {
+        paqueteData.notas = null;
+      }
+
+      // Moneda por defecto MXN
+      if (
+        !('moneda' in paqueteData) ||
+        paqueteData.moneda === undefined ||
+        paqueteData.moneda === null
+      ) {
+        (paqueteData as any).moneda = 'MXN' as MonedaPaquete;
+      }
+
+      const paquete = this.paqueteRepository.create(
+        paqueteData as unknown as Partial<Paquete>,
       );
+
+      const diffTime = Math.abs(fin.getTime() - inicio.getTime());
+      paquete.duracion_dias = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+      paquete.fecha_inicio = inicio;
+      paquete.fecha_fin = fin;
+
+      // Generar código único
+      let codigoUrl: string = '';
+      let isCodeUnique = false;
+      let attempts = 0;
+      const maxAttempts = 10;
+
+      while (!isCodeUnique && attempts < maxAttempts) {
+        codigoUrl = generarCodigo(5);
+        const existingPaquete = await this.paqueteRepository.findOneBy({
+          codigoUrl,
+        });
+        if (!existingPaquete) {
+          isCodeUnique = true;
+        }
+        attempts++;
+      }
+
+      if (!isCodeUnique) {
+        throw new InternalServerErrorException('No se pudo generar un código único para el paquete');
+      }
+
+      paquete.codigoUrl = codigoUrl;
+
+      if (mayoristasIds && mayoristasIds.length > 0) {
+        try {
+          paquete.mayoristas = await this.findMayoristasByIds(mayoristasIds);
+        } catch (error) {
+          this.logger.error('Error cargando mayoristas', error);
+          throw new BadRequestException('Uno o más mayoristas no existen');
+        }
+      }
+
+      if (destinosDto && destinosDto.length > 0) {
+        try {
+          paquete.destinos = await this.processDestinosAsync(destinosDto);
+        } catch (error) {
+          this.logger.error('Error procesando destinos', error);
+          throw new InternalServerErrorException('Error al procesar los destinos del paquete');
+        }
+      }
+
+      if (imagenesDto && imagenesDto.length > 0) {
+        try {
+          paquete.imagenes = await this.processImagenesWithCloudinary(
+            imagenesDto,
+            'paquetes',
+          );
+        } catch (error) {
+          this.logger.error('Error subiendo imágenes del paquete', error);
+          throw new InternalServerErrorException('Error al subir las imágenes del paquete');
+        }
+      }
+
+      if (hotelDto !== null && hotelDto !== undefined) {
+        try {
+          const hotelImagenes = hotelDto.imagenes
+            ? await this.processImagenesWithCloudinary(hotelDto.imagenes, 'hoteles')
+            : [];
+
+          paquete.hotel = this.hotelRepository.create({
+            ...hotelDto,
+            imagenes: hotelImagenes,
+          });
+        } catch (error) {
+          this.logger.error('Error procesando hotel', error);
+          throw new InternalServerErrorException('Error al procesar el hotel del paquete');
+        }
+      } else {
+        paquete.hotel = null;
+      }
+
+      if (itinerario_texto) {
+        try {
+          paquete.itinerarios = this.parseItinerario(itinerario_texto);
+        } catch (error) {
+          this.logger.error('Error parseando itinerario', error);
+          throw new BadRequestException('Formato de itinerario inválido');
+        }
+      }
+
+      if (favorito !== undefined) (paquete as any).favorito = favorito;
+
+      // Manejar usuarios autorizados para paquetes privados
+      if (usuariosAutorizadosIds && usuariosAutorizadosIds.length > 0) {
+        try {
+          const usuarios = await this.usuarioRepository.find({
+            where: { id: In(usuariosAutorizadosIds) },
+          });
+
+          if (usuarios.length !== usuariosAutorizadosIds.length) {
+            this.logger.warn('Algunos usuarios autorizados no existen');
+          }
+
+          paquete.usuariosAutorizados = usuarios;
+        } catch (error) {
+          this.logger.error('Error cargando usuarios autorizados', error);
+          throw new BadRequestException('Error al verificar usuarios autorizados');
+        }
+      }
+
+      // Guardar el paquete con la transacción
+      const paqueteGuardado = await queryRunner.manager.save(paquete);
+
+      // Commit de la transacción
+      await queryRunner.commitTransaction();
+
+      this.logger.log(`✅ Paquete creado exitosamente: ${paqueteGuardado.codigoUrl}`);
+
+      // 📧 Enviar notificaciones solo si es tipo 'privado' y tiene usuarios autorizados
+      // No enviar notificaciones para 'link-privado' (acceso público con URL)
+      const tipoAcceso = paqueteGuardado.tipoAcceso || 'publico';
+      if (
+        tipoAcceso === 'privado' &&
+        paqueteGuardado.usuariosAutorizados?.length > 0
+      ) {
+        // Enviar notificaciones de forma asíncrona (no bloqueante)
+        this.notificacionService
+          .notificarAccesoMultiplesUsuarios(
+            paqueteGuardado.usuariosAutorizados,
+            paqueteGuardado,
+          )
+          .catch(err => {
+            this.logger.error('Error enviando notificaciones por email', err);
+            // No fallar la creación del paquete si falla el email
+          });
+      }
+
+      return paqueteGuardado;
+    } catch (error) {
+      // Rollback de la transacción en caso de error
+      await queryRunner.rollbackTransaction();
+      
+      this.logger.error('Error creando paquete', error);
+      
+      // Re-lanzar errores específicos
+      if (error instanceof BadRequestException || 
+          error instanceof InternalServerErrorException) {
+        throw error;
+      }
+      
+      // Error genérico
+      throw new InternalServerErrorException('Error al crear el paquete. Por favor, intenta nuevamente.');
+    } finally {
+      // Liberar el queryRunner
+      await queryRunner.release();
     }
-
-    if (hotelDto !== null && hotelDto !== undefined) {
-      const hotelImagenes = hotelDto.imagenes
-        ? await this.processImagenesWithCloudinary(hotelDto.imagenes, 'hoteles')
-        : [];
-
-      paquete.hotel = this.hotelRepository.create({
-        ...hotelDto,
-        imagenes: hotelImagenes,
-      });
-    } else {
-      paquete.hotel = null;
-    }
-    if (itinerario_texto) {
-      paquete.itinerarios = this.parseItinerario(itinerario_texto);
-    }
-
-    if (favorito !== undefined) (paquete as any).favorito = favorito;
-
-    // Manejar usuarios autorizados para paquetes privados
-    if (usuariosAutorizadosIds && usuariosAutorizadosIds.length > 0) {
-      const usuarios = await this.usuarioRepository.find({
-        where: { id: In(usuariosAutorizadosIds) },
-      });
-      paquete.usuariosAutorizados = usuarios;
-    }
-
-    // Guardar el paquete
-    const paqueteGuardado = await this.paqueteRepository.save(paquete);
-
-    // 📧 Enviar notificaciones solo si es tipo 'privado' y tiene usuarios autorizados
-    // No enviar notificaciones para 'link-privado' (acceso público con URL)
-    const tipoAcceso = paqueteGuardado.tipoAcceso || 'publico';
-    if (
-      tipoAcceso === 'privado' &&
-      paqueteGuardado.usuariosAutorizados?.length > 0
-    ) {
-      // Enviar notificaciones de forma asíncrona (no bloqueante)
-      this.notificacionService
-        .notificarAccesoMultiplesUsuarios(
-          paqueteGuardado.usuariosAutorizados,
-          paqueteGuardado,
-        )
-        .catch(err => console.error('Error enviando notificaciones:', err));
-    }
-
-    return paqueteGuardado;
   }
 
   async createImage(
@@ -234,7 +328,17 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
   async findAllPaginated(
     paginationDto: PaginationDto,
   ): Promise<PaginatedResponse<PaqueteListDto>> {
-    const { page = 1, limit = 6, search } = paginationDto;
+    const { 
+      page = 1, 
+      limit = 6, 
+      search, 
+      noPagination,
+      activo,
+      favorito,
+      tipoAcceso,
+      mayorista,
+      moneda
+    } = paginationDto;
     const skip = (page - 1) * limit;
 
     const qb = this.paqueteRepository
@@ -243,6 +347,7 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
       .leftJoinAndSelect('p.mayoristas', 'mayoristas')
       .where('p.eliminado_en IS NULL');
 
+    // Filtro de búsqueda general
     if (search && search.trim() !== '') {
       const s = `%${search.trim().toLowerCase()}%`;
       qb.andWhere(
@@ -251,9 +356,35 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
       );
     }
 
+    // Filtro por activo
+    if (activo !== undefined) {
+      qb.andWhere('p.activo = :activo', { activo });
+    }
+
+    // Filtro por favorito
+    if (favorito !== undefined) {
+      qb.andWhere('p.favorito = :favorito', { favorito });
+    }
+
+    // Filtro por tipo de acceso
+    if (tipoAcceso) {
+      qb.andWhere('p.tipoAcceso = :tipoAcceso', { tipoAcceso });
+    }
+
+    // Filtro por mayorista (nombre)
+    if (mayorista && mayorista.trim() !== '') {
+      const m = `%${mayorista.trim().toLowerCase()}%`;
+      qb.andWhere('LOWER(mayoristas.nombre) LIKE :m', { m });
+    }
+
+    // Filtro por moneda
+    if (moneda) {
+      qb.andWhere('p.moneda = :moneda', { moneda });
+    }
+
     const total = await qb.clone().distinct(true).getCount();
 
-    const paquetes = await qb
+    const qbSelect = qb
       .select([
         'p.id',
         'p.codigoUrl',
@@ -274,10 +405,14 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
         'mayoristas.nombre',
         'mayoristas.tipo_producto',
       ])
-      .orderBy('p.creadoEn', 'DESC')
-      .skip(skip)
-      .take(limit)
-      .getMany();
+      .orderBy('p.creadoEn', 'DESC');
+
+    // Aplicar paginación solo si noPagination no está activo
+    if (!noPagination) {
+      qbSelect.skip(skip).take(limit);
+    }
+
+    const paquetes = await qbSelect.getMany();
 
     const paquetesTransformados = paquetes.map((paquete) => {
       const imagenesOrdenadas = [...(paquete.imagenes || [])].sort(
@@ -299,17 +434,17 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
       } as PaqueteListDto;
     });
 
-    const totalPages = Math.ceil(total / limit) || 1;
+    const totalPages = noPagination ? 1 : Math.ceil(total / limit) || 1;
 
     return {
       data: paquetesTransformados,
       pagination: {
-        currentPage: page,
+        currentPage: noPagination ? 1 : page,
         totalPages,
         totalItems: total,
-        itemsPerPage: limit,
-        hasNextPage: page < totalPages,
-        hasPreviousPage: page > 1,
+        itemsPerPage: noPagination ? total : limit,
+        hasNextPage: noPagination ? false : page < totalPages,
+        hasPreviousPage: noPagination ? false : page > 1,
       },
     };
   }
@@ -500,59 +635,73 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
   }
 
   async remove(id: string): Promise<void> {
-    const paquete = await this.findOne(id);
+    this.logger.log(`Iniciando eliminación (soft delete) del paquete: ${id}`);
 
-    // Limpiar relación ManyToMany antes de eliminar
-    if (paquete.usuariosAutorizados && paquete.usuariosAutorizados.length > 0) {
-      paquete.usuariosAutorizados = [];
-      await this.paqueteRepository.save(paquete);
-    }
+    try {
+      const paquete = await this.findOne(id);
 
-    if (paquete.imagenes && paquete.imagenes.length > 0) {
-      for (const imagen of paquete.imagenes) {
-        if (imagen.tipo === 'cloudinary' && imagen.cloudinary_public_id) {
-          try {
-            await this.cloudinaryService.deleteFile(
-              imagen.cloudinary_public_id,
-            );
-            console.log(
-              `Imagen eliminada de Cloudinary: ${imagen.cloudinary_public_id}`,
-            );
-          } catch (error) {
-            console.error(
-              `Error al eliminar imagen de Cloudinary ${imagen.cloudinary_public_id}:`,
-              error,
-            );
+      // Limpiar relación ManyToMany antes de eliminar
+      if (paquete.usuariosAutorizados && paquete.usuariosAutorizados.length > 0) {
+        this.logger.log(`Limpiando ${paquete.usuariosAutorizados.length} usuarios autorizados`);
+        paquete.usuariosAutorizados = [];
+        await this.paqueteRepository.save(paquete);
+      }
+
+      // Eliminar imágenes del paquete de Cloudinary
+      if (paquete.imagenes && paquete.imagenes.length > 0) {
+        this.logger.log(`Eliminando ${paquete.imagenes.length} imágenes del paquete de Cloudinary`);
+        for (const imagen of paquete.imagenes) {
+          if (imagen.tipo === 'cloudinary' && imagen.cloudinary_public_id) {
+            try {
+              await this.cloudinaryService.deleteFile(imagen.cloudinary_public_id);
+              this.logger.log(`✅ Imagen eliminada de Cloudinary: ${imagen.cloudinary_public_id}`);
+            } catch (error) {
+              this.logger.error(
+                `❌ Error eliminando imagen de Cloudinary ${imagen.cloudinary_public_id}`,
+                error
+              );
+              // Continuar con las demás imágenes
+            }
           }
         }
       }
-    }
 
-    if (
-      paquete.hotel &&
-      paquete.hotel.imagenes &&
-      paquete.hotel.imagenes.length > 0
-    ) {
-      for (const imagen of paquete.hotel.imagenes) {
-        if (imagen.tipo === 'cloudinary' && imagen.cloudinary_public_id) {
-          try {
-            await this.cloudinaryService.deleteFile(
-              imagen.cloudinary_public_id,
-            );
-            console.log(
-              `Imagen de hotel eliminada de Cloudinary: ${imagen.cloudinary_public_id}`,
-            );
-          } catch (error) {
-            console.error(
-              `Error al eliminar imagen de hotel de Cloudinary ${imagen.cloudinary_public_id}:`,
-              error,
-            );
+      // Eliminar imágenes del hotel de Cloudinary
+      if (
+        paquete.hotel &&
+        paquete.hotel.imagenes &&
+        paquete.hotel.imagenes.length > 0
+      ) {
+        this.logger.log(`Eliminando ${paquete.hotel.imagenes.length} imágenes del hotel de Cloudinary`);
+        for (const imagen of paquete.hotel.imagenes) {
+          if (imagen.tipo === 'cloudinary' && imagen.cloudinary_public_id) {
+            try {
+              await this.cloudinaryService.deleteFile(imagen.cloudinary_public_id);
+              this.logger.log(`✅ Imagen de hotel eliminada de Cloudinary: ${imagen.cloudinary_public_id}`);
+            } catch (error) {
+              this.logger.error(
+                `❌ Error eliminando imagen de hotel de Cloudinary ${imagen.cloudinary_public_id}`,
+                error
+              );
+              // Continuar con las demás imágenes
+            }
           }
         }
       }
-    }
 
-    await this.paqueteRepository.remove(paquete);
+      // Soft delete del paquete
+      await this.softDelete(id);
+      
+      this.logger.log(`✅ Paquete eliminado (soft delete) exitosamente: ${id}`);
+    } catch (error) {
+      this.logger.error(`Error eliminando paquete ${id}`, error);
+      
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      
+      throw new InternalServerErrorException('Error al eliminar el paquete');
+    }
   }
 
   /**

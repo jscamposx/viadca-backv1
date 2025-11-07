@@ -16,7 +16,10 @@ export class PaquetesNotificacionService {
   async notificarAccesoUsuario(usuario: Usuario, paquete: Paquete): Promise<void> {
     try {
       // Obtener la URL del frontend desde variables de entorno
-      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+      const frontendUrl = process.env.FRONTEND_URL;
+      if (!frontendUrl) {
+        throw new Error('❌ Variable de entorno FRONTEND_URL no configurada');
+      }
 
       // Preparar destinos como string
       const destinosStr = paquete.destinos
