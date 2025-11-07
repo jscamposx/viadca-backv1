@@ -781,6 +781,7 @@ export class PaqueteExcelTemplate {
     const styles = this.getStyles();
     const palette = PaqueteExcelTemplate.COLORS;
 
+    // Columna A con el mismo fondo que las demás celdas (sin el accent azul)
     this.worksheet.getCell(`A${this.currentRow}`).value = '';
     this.worksheet.getCell(`A${this.currentRow}`).style = {
       font: { name: 'Segoe UI', size: 12 },
@@ -788,7 +789,7 @@ export class PaqueteExcelTemplate {
       fill: {
         type: 'pattern' as const,
         pattern: 'solid' as const,
-        fgColor: { argb: palette.accent },
+        fgColor: { argb: 'E8F4FD' }, // Mismo color que otras celdas de icono
       },
       border: this.getSubtleBorders(),
     };
@@ -799,8 +800,10 @@ export class PaqueteExcelTemplate {
 
     this.worksheet.mergeCells(`C${this.currentRow}:D${this.currentRow}`);
     const linkCell = this.worksheet.getCell(`C${this.currentRow}`);
+    
+    // Mostrar la URL completa como texto con hipervínculo
     linkCell.value = {
-      text: text,
+      text: hyperlink, // Mostrar URL completa en lugar de "Ver paquete online"
       hyperlink: hyperlink,
     };
     linkCell.style = {
@@ -808,15 +811,15 @@ export class PaqueteExcelTemplate {
       font: {
         name: 'Segoe UI',
         size: 11,
-        color: { argb: palette.textDark },
+        color: { argb: '0563C1' }, // Azul estándar de hipervínculo
         underline: true,
         bold: false,
       },
     };
 
     this.worksheet.getRow(this.currentRow).height = Math.max(
-      22,
-      this.calculateRowHeight(text),
+      26,
+      this.calculateRowHeight(hyperlink), // Calcular altura basada en la URL completa
     );
     this.currentRow++;
   }
