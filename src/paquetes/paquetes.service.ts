@@ -99,9 +99,12 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
         ...paqueteData
       } = createPaqueteDto;
 
-      // Validación de fechas
-      const inicio = new Date(fecha_inicio);
-      const fin = new Date(fecha_fin);
+      // Validación de fechas - Crear en hora local (no UTC) para evitar cambio de día
+      const [year_inicio, month_inicio, day_inicio] = fecha_inicio.split('-').map(Number);
+      const [year_fin, month_fin, day_fin] = fecha_fin.split('-').map(Number);
+      
+      const inicio = new Date(year_inicio, month_inicio - 1, day_inicio);
+      const fin = new Date(year_fin, month_fin - 1, day_fin);
       
       if (isNaN(inicio.getTime()) || isNaN(fin.getTime())) {
         throw new BadRequestException('Fechas inválidas');
@@ -576,8 +579,15 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
 
     // Actualizar fechas solo si se envían AMBAS
     if (fecha_inicio && fecha_fin) {
-      const inicio = new Date(fecha_inicio);
-      const fin = new Date(fecha_fin);
+      // Crear fechas en hora local (no UTC) para evitar cambio de día
+      const [year_inicio, month_inicio, day_inicio] = fecha_inicio.split('-').map(Number);
+      const [year_fin, month_fin, day_fin] = fecha_fin.split('-').map(Number);
+      
+      const inicio = new Date(year_inicio, month_inicio - 1, day_inicio);
+      const fin = new Date(year_fin, month_fin - 1, day_fin);
+      
+      console.log('🔍 [UPDATE FECHAS] Recibido:', { fecha_inicio, fecha_fin });
+      console.log('🔍 [UPDATE FECHAS] Convertido (hora local):', { inicio, fin });
       
       // Validar que la fecha de fin sea mayor que la de inicio
       if (fin <= inicio) {
@@ -590,6 +600,12 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
       paquete.duracion_dias = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
       paquete.fecha_inicio = inicio;
       paquete.fecha_fin = fin;
+      
+      console.log('🔍 [UPDATE FECHAS] Guardando en BD:', { 
+        fecha_inicio: paquete.fecha_inicio, 
+        fecha_fin: paquete.fecha_fin,
+        duracion_dias: paquete.duracion_dias 
+      });
     }
 
     if (mayoristasIds) {
