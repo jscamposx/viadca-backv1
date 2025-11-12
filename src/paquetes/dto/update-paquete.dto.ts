@@ -14,6 +14,7 @@ import {
   IsEnum,
   IsInt,
   IsIn,
+  IsDate,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { UpdateHotelDto } from './update-hotel.dto';
@@ -49,11 +50,11 @@ export class UpdatePaqueteDto {
   readonly origen_lng?: number;
 
   @IsOptional()
-  @IsDateString({}, { message: 'La fecha de inicio debe ser una fecha válida' })
+  @IsDate({ message: 'La fecha de inicio debe ser una fecha válida' })
   readonly fecha_inicio?: Date;
 
   @IsOptional()
-  @IsDateString({}, { message: 'La fecha de fin debe ser una fecha válida' })
+  @IsDate({ message: 'La fecha de fin debe ser una fecha válida' })
   readonly fecha_fin?: Date;
 
   @IsOptional()

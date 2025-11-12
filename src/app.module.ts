@@ -62,9 +62,12 @@ import { ContactoModule } from './contacto/contacto.module';
         const isProd = configService.get<string>('NODE_ENV') === 'production';
         
         // ⚠️ PRODUCCIÓN: synchronize debe ser false y usar migraciones
-        const synchronize = configService.get<string>('DB_SYNCHRONIZE') === 'true';
+        // 🔧 DESARROLLO: Sincronización forzada activada
+        const synchronize = !isProd ? true : configService.get<string>('DB_SYNCHRONIZE') === 'true';
         const logging = configService.get<string>('DB_LOGGING') === 'true';
         const sslEnabled = configService.get<string>('DB_SSL') === 'true';
+
+        console.log(`🔧 MODO DESARROLLO: synchronize=${synchronize} (forzado en desarrollo)`);
 
         const type = configService.get<string>('DB_TYPE') as any;
         if (!type) {

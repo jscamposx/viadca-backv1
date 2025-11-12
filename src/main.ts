@@ -1,7 +1,7 @@
 import { NestFactory, Reflector } from '@nestjs/core';
 import { AppModule } from './app.module';
 import * as compression from 'compression';
-import { ValidationPipe, ClassSerializerInterceptor } from '@nestjs/common';
+import { ValidationPipe, ClassSerializerInterceptor, BadRequestException } from '@nestjs/common';
 import { json, urlencoded } from 'express';
 import * as cookieParser from 'cookie-parser';
 import helmet from 'helmet';
@@ -60,6 +60,14 @@ async function bootstrap() {
         enableImplicitConversion: true, // Convierte tipos automáticamente
       },
       disableErrorMessages: false,
+      exceptionFactory: (errors) => {
+        console.error('❌ [GLOBAL VALIDATION] Errores:', JSON.stringify(errors, null, 2));
+        return new BadRequestException({
+          message: errors,
+          error: 'Bad Request',
+          statusCode: 400,
+        });
+      },
     }),
   );
 

@@ -15,6 +15,7 @@ import {
   IsIn,
   IsEnum,
   IsInt,
+  IsDate,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CreateDestinoDto } from './create-destino.dto';
@@ -51,10 +52,10 @@ export class CreatePaqueteDto {
   @IsNumber({}, { message: 'La longitud del origen debe ser un número' })
   readonly origen_lng: number;
 
-  @IsDateString({}, { message: 'La fecha de inicio debe ser una fecha válida' })
+  @IsDate({ message: 'La fecha de inicio debe ser una fecha válida' })
   readonly fecha_inicio: Date;
 
-  @IsDateString({}, { message: 'La fecha de fin debe ser una fecha válida' })
+  @IsDate({ message: 'La fecha de fin debe ser una fecha válida' })
   readonly fecha_fin: Date;
 
   @IsOptional()

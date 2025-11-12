@@ -28,6 +28,7 @@ import { UpdatePaqueteDto } from './dto/update-paquete.dto';
 import { CreateImagenDto } from './dto/create-imagen.dto';
 import { PaginationDto } from './dto/pagination.dto';
 import { LargePayloadInterceptor } from '../utils/large-payload.interceptor';
+import { DebugBodyInterceptor } from '../utils/debug-body.interceptor';
 import { ExcelService } from '../excel/excel.service';
 import { OptionalAuthGuard } from '../usuarios/guards/optional-auth.guard';
 import { AdminGuard } from '../usuarios/guards/admin.guard';
@@ -129,13 +130,24 @@ export class PaquetesController {
   @Post()
   @UseGuards(AdminGuard)
   @HttpCode(HttpStatus.CREATED)
-  @UseInterceptors(LargePayloadInterceptor)
+  @UseInterceptors(DebugBodyInterceptor, LargePayloadInterceptor)
   @SkipThrottle()
   async create(
-    @Body(ValidationPipe) createPaqueteDto: CreatePaqueteDto,
+    @Body(new ValidationPipe({
+      transform: true,
+      whitelist: true,
+      forbidNonWhitelisted: false,
+      skipMissingProperties: false, // En creación NO saltamos campos requeridos
+      exceptionFactory: (errors) => {
+        console.error('❌ ERRORES DE VALIDACIÓN (CREATE):', JSON.stringify(errors, null, 2));
+        return new BadRequestException(errors);
+      }
+    })) createPaqueteDto: CreatePaqueteDto,
     @Req() req: Request,
   ) {
     req.setTimeout(600000);
+
+    console.log('✅ Payload recibido (CREATE - después de validación):', JSON.stringify(createPaqueteDto, null, 2));
 
     return this.paquetesService.create(createPaqueteDto);
   }
