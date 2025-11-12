@@ -53,7 +53,7 @@ async function bootstrap() {
   // ValidationPipe global - Configuración permisiva para query params dinámicos
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true, // Remueve propiedades no decoradas en el BODY
+      whitelist: false, // NO remueve propiedades (para permitir todos los campos del DTO)
       forbidNonWhitelisted: false, // PERMITE propiedades no decoradas (necesario para filtros dinámicos en query params)
       transform: true, // Transforma los tipos automáticamente
       transformOptions: {

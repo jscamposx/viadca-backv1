@@ -574,13 +574,27 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
       paqueteDetails as unknown as Partial<Paquete>,
     );
 
-    if (fecha_inicio && fecha_fin) {
-      const inicio = new Date(fecha_inicio);
-      const fin = new Date(fecha_fin);
-      const diffTime = Math.abs(fin.getTime() - inicio.getTime());
-      paquete.duracion_dias = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-      paquete.fecha_inicio = inicio;
-      paquete.fecha_fin = fin;
+    // Actualizar fechas individualmente o ambas
+    if (fecha_inicio || fecha_fin) {
+      const inicio = fecha_inicio ? new Date(fecha_inicio) : paquete.fecha_inicio;
+      const fin = fecha_fin ? new Date(fecha_fin) : paquete.fecha_fin;
+      
+      // Validar que la fecha de fin sea mayor que la de inicio
+      if (inicio && fin && fin <= inicio) {
+        throw new BadRequestException(
+          'La fecha de fin debe ser posterior a la fecha de inicio',
+        );
+      }
+      
+      // Calcular duración si ambas fechas están disponibles
+      if (inicio && fin) {
+        const diffTime = Math.abs(fin.getTime() - inicio.getTime());
+        paquete.duracion_dias = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+      }
+      
+      // Actualizar las fechas que fueron enviadas
+      if (fecha_inicio) paquete.fecha_inicio = inicio;
+      if (fecha_fin) paquete.fecha_fin = fin;
     }
 
     if (mayoristasIds) {
