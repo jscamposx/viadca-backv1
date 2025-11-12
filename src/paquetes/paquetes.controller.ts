@@ -19,6 +19,7 @@ import {
   UseGuards,
   ForbiddenException,
   UnauthorizedException,
+  BadRequestException,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { PaquetesService } from './paquetes.service';
@@ -186,12 +187,22 @@ export class PaquetesController {
   @SkipThrottle()
   async update(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body(ValidationPipe) updatePaqueteDto: UpdatePaqueteDto,
+    @Body(new ValidationPipe({
+      transform: true,
+      whitelist: true,
+      forbidNonWhitelisted: false, // No rechazar propiedades extra
+      skipMissingProperties: true,  // Permitir campos opcionales
+      exceptionFactory: (errors) => {
+        // Log detallado de errores de validación
+        console.error('❌ ERRORES DE VALIDACIÓN:', JSON.stringify(errors, null, 2));
+        return new BadRequestException(errors);
+      }
+    })) updatePaqueteDto: UpdatePaqueteDto,
     @Req() req: Request,
   ) {
     req.setTimeout(600000);
 
-    console.log('Payload recibido:', JSON.stringify(updatePaqueteDto, null, 2));
+    console.log('✅ Payload recibido (después de validación):', JSON.stringify(updatePaqueteDto, null, 2));
 
     return this.paquetesService.update(id, updatePaqueteDto);
   }
