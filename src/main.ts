@@ -58,7 +58,9 @@ async function bootstrap() {
       transform: true, // Transforma los tipos automáticamente
       transformOptions: {
         enableImplicitConversion: true, // Convierte tipos automáticamente
+        excludeExtraneousValues: false,
       },
+      enableDebugMessages: false,
       disableErrorMessages: false,
       exceptionFactory: (errors) => {
         console.error('❌ [GLOBAL VALIDATION] Errores:', JSON.stringify(errors, null, 2));

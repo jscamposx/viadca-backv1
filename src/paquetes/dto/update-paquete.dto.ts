@@ -50,12 +50,12 @@ export class UpdatePaqueteDto {
   readonly origen_lng?: number;
 
   @IsOptional()
-  @IsDate({ message: 'La fecha de inicio debe ser una fecha válida' })
-  readonly fecha_inicio?: Date;
+  @IsDateString({}, { message: 'La fecha de inicio debe ser una fecha válida en formato YYYY-MM-DD' })
+  readonly fecha_inicio?: string;
 
   @IsOptional()
-  @IsDate({ message: 'La fecha de fin debe ser una fecha válida' })
-  readonly fecha_fin?: Date;
+  @IsDateString({}, { message: 'La fecha de fin debe ser una fecha válida en formato YYYY-MM-DD' })
+  readonly fecha_fin?: string;
 
   @IsOptional()
   @ValidateIf((o) => o.incluye !== null)
