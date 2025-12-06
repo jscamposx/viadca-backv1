@@ -77,6 +77,18 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
     return mapeo[campo] || `p.${campo}`;
   }
 
+  private mapearCampoOrdenamiento(campo: string): string {
+    const mapeo: Record<string, string> = {
+      'titulo': 'p.titulo',
+      'precio_total': 'p.precio_total',
+      'fecha_inicio': 'p.fecha_inicio',
+      'activo': 'p.activo',
+      'created_at': 'p.creadoEn',
+    };
+
+    return mapeo[campo] || 'p.creadoEn';
+  }
+
   async create(createPaqueteDto: CreatePaqueteDto): Promise<Paquete> {
     this.logger.log(`Creando nuevo paquete: ${createPaqueteDto.titulo}`);
 
@@ -365,6 +377,8 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
       limit = 6, 
       search, 
       noPagination,
+      sortBy = 'created_at',
+      sortOrder = 'DESC',
       ...filtrosDinamicos // <-- Todo lo demás son filtros dinámicos
     } = paginationDto;
     const skip = (page - 1) * limit;
@@ -385,9 +399,9 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
     }
 
     // 🔥 APLICAR FILTROS DINÁMICOS
-    // Excluir parámetros de control (page, limit, search, noPagination)
+    // Excluir parámetros de control (page, limit, search, noPagination, sortBy, sortOrder)
     const filtrosAplicables = Object.entries(filtrosDinamicos).filter(
-      ([key]) => !['page', 'limit', 'search', 'noPagination'].includes(key)
+      ([key]) => !['page', 'limit', 'search', 'noPagination', 'sortBy', 'sortOrder'].includes(key)
     );
 
     filtrosAplicables.forEach(([key, value]) => {
@@ -438,8 +452,11 @@ export class PaquetesService extends SoftDeleteService<Paquete> {
         'mayoristas.id',
         'mayoristas.nombre',
         'mayoristas.tipo_producto',
-      ])
-      .orderBy('p.creadoEn', 'DESC');
+      ]);
+
+    // Aplicar ordenamiento dinámico
+    const sortColumn = this.mapearCampoOrdenamiento(sortBy);
+    qbSelect.orderBy(sortColumn, sortOrder as 'ASC' | 'DESC');
 
     // Aplicar paginación solo si noPagination no está activo
     if (!noPagination) {
