@@ -35,6 +35,10 @@ export class CreateHotelDto {
   @IsCleanText({ message: 'El nombre contiene contenido no válido' })
   readonly nombre: string;
 
+  @IsOptional()
+  @IsString({ message: 'La descripción debe ser una cadena de texto' })
+  readonly descripcion?: string;
+
   @IsNumber({}, { message: 'Las estrellas deben ser un número' })
   @Min(0, { message: 'Las estrellas no pueden ser negativas' })
   @Max(5, { message: 'Las estrellas no pueden ser más de 5' })

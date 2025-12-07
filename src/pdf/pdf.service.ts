@@ -8,14 +8,14 @@ import * as fs from 'fs';
 
 @Injectable()
 export class PdfService {
-  // Colores del diseño - paleta profesional sin azul
+  // Colores del diseño - paleta Azul Profesional
   private readonly COLORS = {
-    primary: '#2D3748', // Gris oscuro profesional
-    accent: '#D97706', // Naranja/dorado
-    success: '#059669', // Verde
-    text: '#374151', // Gris medio
-    lightGray: '#F3F4F6',
-    border: '#E5E7EB',
+    primary: '#1E3A8A',
+    accent: '#3B82F6',
+    success: '#059669',
+    text: '#334155',
+    lightGray: '#F1F5F9',
+    border: '#CBD5E1',
     white: '#FFFFFF',
   };
 
@@ -25,10 +25,8 @@ export class PdfService {
   ) { }
 
   async generarCotizacionPDF(id: string): Promise<Buffer> {
-    // Obtener el paquete con todas sus relaciones
     const paquete = await this.paqueteRepository.findOne({
       where: { id },
-      // IMPORTANTE: NO incluir 'mayoristas' en las relaciones para evitar mostrar esa información
       relations: ['destinos', 'imagenes', 'hotel', 'hotel.imagenes', 'itinerarios'],
     });
 
@@ -39,8 +37,9 @@ export class PdfService {
     return new Promise((resolve, reject) => {
       const doc = new PDFDocument({
         size: 'LETTER',
-        margins: { top: 40, bottom: 40, left: 40, right: 40 },
+        margins: { top: 40, bottom: 60, left: 40, right: 40 },
         bufferPages: true,
+        autoFirstPage: true,
       });
 
       const buffers: Buffer[] = [];
@@ -49,7 +48,12 @@ export class PdfService {
       doc.on('error', reject);
 
       try {
+        // Configurar fuentes base
+        doc.font('Helvetica');
+
+        // Generar contenido
         this.generarContenido(doc, paquete);
+
         doc.end();
       } catch (error) {
         reject(error);
@@ -58,23 +62,22 @@ export class PdfService {
   }
 
   private generarContenido(doc: PDFKit.PDFDocument, paquete: Paquete) {
-    // Página 1: Portada con imagen principal
+    // Página 1: Portada
     this.generarPortada(doc, paquete);
 
-    // Página 2: Detalles del paquete
-    doc.addPage();
+    // Generar detalles en las páginas siguientes
     this.generarDetalles(doc, paquete);
 
-    // Agregar número de páginas
+    // Agregar número de páginas y pie de página DESPUÉS de generar todo el contenido
     this.agregarNumeroPaginas(doc);
+    this.agregarPieDePagina(doc);
   }
 
   private generarPortada(doc: PDFKit.PDFDocument, paquete: Paquete) {
     const pageWidth = doc.page.width;
     const pageHeight = doc.page.height;
 
-    // Header elegante sin fondo de color
-    // Logo (si existe)
+    // Header
     const logoPath = path.join(process.cwd(), 'src', 'assets', 'imagenes', 'logo.png');
     if (fs.existsSync(logoPath)) {
       doc.image(logoPath, 40, 30, { width: 100 });
@@ -82,16 +85,19 @@ export class PdfService {
 
     // Línea decorativa superior
     doc.strokeColor(this.COLORS.accent)
-      .lineWidth(3)
+      .lineWidth(1.5)
       .moveTo(40, 80)
       .lineTo(pageWidth - 40, 80)
       .stroke();
 
-    // Título "COTIZACIÓN" - sin fondo
-    doc.fontSize(40)
+    // Título "COTIZACIÓN"
+    doc.fontSize(36)
       .fillColor(this.COLORS.primary)
       .font('Helvetica-Bold')
-      .text('COTIZACIÓN', 40, 100, { align: 'center', width: pageWidth - 80 });
+      .text('COTIZACIÓN', 0, 100, {
+        align: 'center',
+        width: pageWidth
+      });
 
     // Fecha
     const fecha = new Date().toLocaleDateString('es-MX', {
@@ -99,16 +105,20 @@ export class PdfService {
       month: 'long',
       day: 'numeric'
     });
+
     doc.fontSize(11)
       .fillColor(this.COLORS.text)
       .font('Helvetica')
-      .text(fecha, 40, 150, { align: 'center', width: pageWidth - 80 });
+      .text(fecha, 0, 145, {
+        align: 'center',
+        width: pageWidth
+      });
 
-    // Espacio para separación
-    let y = 190;
+    // Título del paquete (centrado verticalmente)
+    const startY = 200;
+    let y = startY;
 
-    // Título del paquete - más prominente
-    doc.fontSize(32)
+    doc.fontSize(28)
       .fillColor(this.COLORS.primary)
       .font('Helvetica-Bold')
       .text(paquete.titulo, 40, y, {
@@ -116,16 +126,16 @@ export class PdfService {
         align: 'center'
       });
 
-    y += 50;
+    y += doc.heightOfString(paquete.titulo, { width: pageWidth - 80 }) + 20;
 
-    // Destinos con estilo
+    // Destinos
     const destinos = paquete.destinos
       ?.sort((a, b) => a.orden - b.orden)
       .map(d => d.ciudad)
       .join(' • ');
 
     if (destinos) {
-      doc.fontSize(16)
+      doc.fontSize(14)
         .fillColor(this.COLORS.accent)
         .font('Helvetica-Bold')
         .text(destinos, 40, y, {
@@ -135,20 +145,19 @@ export class PdfService {
       y += 40;
     }
 
-    // Duración en recuadro
+    // Duración
     if (paquete.duracion_dias) {
       const duracionText = `${paquete.duracion_dias} días / ${paquete.duracion_dias - 1} noches`;
       const textWidth = doc.widthOfString(duracionText);
-      const boxWidth = textWidth + 40;
+      const boxWidth = textWidth + 60;
       const boxX = (pageWidth - boxWidth) / 2;
 
-      // Recuadro con borde
       doc.rect(boxX, y, boxWidth, 35)
         .strokeColor(this.COLORS.border)
-        .lineWidth(1.5)
+        .lineWidth(1)
         .stroke();
 
-      doc.fontSize(13)
+      doc.fontSize(12)
         .fillColor(this.COLORS.text)
         .font('Helvetica')
         .text(duracionText, boxX, y + 10, {
@@ -159,19 +168,16 @@ export class PdfService {
       y += 60;
     }
 
-    // PRECIO DESTACADO - En recuadro grande y visible
+    // PRECIO - centrado en la mitad inferior de la página
     const precio = this.formatearPrecio(paquete.precio_total, paquete.moneda);
-
-    // Recuadro para el precio
     const precioBoxHeight = 90;
-    const precioBoxY = y + 20;
+    const precioBoxY = pageHeight / 2;
 
     doc.rect(60, precioBoxY, pageWidth - 120, precioBoxHeight)
       .fillAndStroke(this.COLORS.lightGray, this.COLORS.accent)
-      .lineWidth(2);
+      .lineWidth(1);
 
-    // Etiqueta "PRECIO TOTAL"
-    doc.fontSize(12)
+    doc.fontSize(11)
       .fillColor(this.COLORS.text)
       .font('Helvetica')
       .text('PRECIO TOTAL', 60, precioBoxY + 15, {
@@ -179,23 +185,21 @@ export class PdfService {
         align: 'center'
       });
 
-    // Precio en grande
-    doc.fontSize(42)
-      .fillColor(this.COLORS.accent)
+    doc.fontSize(38)
+      .fillColor(this.COLORS.primary)
       .font('Helvetica-Bold')
       .text(precio, 60, precioBoxY + 35, {
         width: pageWidth - 120,
         align: 'center'
       });
 
-    y = precioBoxY + precioBoxHeight + 15;
-
-    // Personas (si aplica)
+    // Personas
     if (paquete.personas) {
       doc.fontSize(11)
         .fillColor(this.COLORS.text)
         .font('Helvetica-Oblique')
-        .text(`Por ${paquete.personas} ${paquete.personas === 1 ? 'persona' : 'personas'}`, 60, y, {
+        .text(`Por ${paquete.personas} ${paquete.personas === 1 ? 'persona' : 'personas'}`,
+          60, precioBoxY + precioBoxHeight + 15, {
           width: pageWidth - 120,
           align: 'center'
         });
@@ -203,19 +207,56 @@ export class PdfService {
   }
 
   private generarDetalles(doc: PDFKit.PDFDocument, paquete: Paquete) {
-    let y = 50; // Margen superior inicial para páginas nuevas
+    let y = 50;
     const pageWidth = doc.page.width;
+    const pageHeight = doc.page.height;
+    const marginBottom = 80; // Espacio para pie de página
 
-    // Sección: Fechas con diseño mejorado
+    // Configurar fuente base
+    doc.font('Helvetica').fontSize(11);
+
+    // Variable para controlar si ya agregamos la página de detalles
+    let paginaDetallesCreada = false;
+
+    // Función para agregar nueva página solo cuando sea necesario
+    const agregarPaginaSiEsNecesario = (alturaNecesaria: number): void => {
+      if (y + alturaNecesaria > pageHeight - marginBottom) {
+        doc.addPage();
+        y = 50;
+        paginaDetallesCreada = true;
+      }
+    };
+
+    // Función para agregar nueva sección con control de página
+    const agregarSeccionConControl = (titulo: string, alturaContenido: number): boolean => {
+      const alturaSeccion = 45 + alturaContenido + 20;
+      agregarPaginaSiEsNecesario(alturaSeccion);
+
+      // Solo agregar sección si hay espacio
+      if (y + alturaSeccion <= pageHeight - marginBottom) {
+        y = this.agregarSeccion(doc, titulo, y);
+        return true;
+      }
+      return false;
+    };
+
+    // Primero, verificar si necesitamos crear la página de detalles
+    // Solo crear página si hay contenido para mostrar
+    const hayContenido = paquete.fecha_inicio || paquete.incluye || paquete.no_incluye ||
+      paquete.hotel || (paquete.itinerarios && paquete.itinerarios.length > 0) ||
+      paquete.requisitos || paquete.notas;
+
+    if (hayContenido) {
+      doc.addPage();
+      y = 50;
+    } else {
+      // Si no hay contenido, ir directamente a términos y condiciones
+      return;
+    }
+
+    // Sección: Fechas
     if (paquete.fecha_inicio && paquete.fecha_fin) {
-      // Calculamos altura necesaria: título + cajas
-      const boxHeight = 50;
-      const sectionHeight = 48 + boxHeight + 30;
-
-      // Verificamos salto
-      y = this.checkPageBreak(doc, y, sectionHeight);
-
-      // Dibujamos sección
+      agregarPaginaSiEsNecesario(120);
       y = this.agregarSeccion(doc, 'FECHAS DEL VIAJE', y);
 
       const fechaInicio = new Date(paquete.fecha_inicio).toLocaleDateString('es-MX', {
@@ -223,14 +264,15 @@ export class PdfService {
         month: 'long',
         day: 'numeric'
       });
+
       const fechaFin = new Date(paquete.fecha_fin).toLocaleDateString('es-MX', {
         year: 'numeric',
         month: 'long',
         day: 'numeric'
       });
 
-      // Recuadros para fechas
       const boxWidth = (pageWidth - 160) / 2;
+      const boxHeight = 50;
 
       // Salida
       doc.rect(60, y, boxWidth, boxHeight)
@@ -239,7 +281,6 @@ export class PdfService {
 
       doc.fontSize(10)
         .fillColor(this.COLORS.text)
-        .font('Helvetica')
         .text('SALIDA', 70, y + 10, { width: boxWidth - 20 });
 
       doc.fontSize(12)
@@ -263,34 +304,35 @@ export class PdfService {
         .font('Helvetica-Bold')
         .text(fechaFin, box2X + 10, y + 26, { width: boxWidth - 20 });
 
-      y += boxHeight + 30;
+      y += boxHeight + 40;
     }
 
     // Sección: Incluye
-    if (paquete.incluye) {
-      // Estimación
-      const contentHeight = doc.heightOfString(paquete.incluye, { width: pageWidth - 130 }) * 1.5; // *1.5 por espaciado
-      y = this.checkPageBreak(doc, y, 60 + contentHeight); // 60 header
+    if (paquete.incluye && paquete.incluye.trim()) {
+      doc.font('Helvetica').fontSize(11);
+      const contenidoAltura = this.calcularAlturaTexto(doc, paquete.incluye, pageWidth - 130);
 
-      y = this.agregarSeccion(doc, 'QUÉ INCLUYE', y);
-      y = this.agregarTextoConViñetas(doc, paquete.incluye, y);
-      y += 20;
+      if (agregarSeccionConControl('QUÉ INCLUYE', contenidoAltura)) {
+        y = this.agregarTextoConViñetas(doc, paquete.incluye, y, pageWidth);
+        y += 20;
+      }
     }
 
     // Sección: No Incluye
-    if (paquete.no_incluye) {
-      const contentHeight = doc.heightOfString(paquete.no_incluye, { width: pageWidth - 130 }) * 1.5;
-      y = this.checkPageBreak(doc, y, 60 + contentHeight);
+    if (paquete.no_incluye && paquete.no_incluye.trim()) {
+      doc.font('Helvetica').fontSize(11);
+      const contenidoAltura = this.calcularAlturaTexto(doc, paquete.no_incluye, pageWidth - 130);
 
-      y = this.agregarSeccion(doc, 'QUÉ NO INCLUYE', y);
-      y = this.agregarTextoConViñetas(doc, paquete.no_incluye, y);
-      y += 20;
+      if (agregarSeccionConControl('QUÉ NO INCLUYE', contenidoAltura)) {
+        y = this.agregarTextoConViñetas(doc, paquete.no_incluye, y, pageWidth);
+        y += 20;
+      }
     }
 
     // Sección: Hotel
     if (paquete.hotel) {
-      y = this.checkPageBreak(doc, y, 100);
-
+      const alturaHotel = 100;
+      agregarPaginaSiEsNecesario(alturaHotel);
       y = this.agregarSeccion(doc, 'HOSPEDAJE', y);
 
       doc.fontSize(14)
@@ -298,53 +340,50 @@ export class PdfService {
         .font('Helvetica-Bold')
         .text(paquete.hotel.nombre, 60, y);
 
-      y += 20;
+      y += 25;
 
       if (paquete.hotel.estrellas) {
         const estrellas = '⭐'.repeat(Math.floor(paquete.hotel.estrellas));
         doc.fontSize(12)
           .fillColor(this.COLORS.accent)
           .text(estrellas, 60, y);
-        y += 25;
+        y += 30;
       }
     }
 
-    // Sección: Itinerario con diseño mejorado
+    // Sección: Itinerario
     if (paquete.itinerarios && paquete.itinerarios.length > 0) {
-      y = this.checkPageBreak(doc, y, 60);
-
-      y = this.agregarSeccion(doc, 'ITINERARIO DETALLADO', y);
-
-      // Ordenar itinerarios por día
       const itinerariosOrdenados = [...paquete.itinerarios].sort(
         (a, b) => a.dia_numero - b.dia_numero
       );
 
-      itinerariosOrdenados.forEach((itinerario, index) => {
-        // Calcular altura estimada de este día
+      let primeraPaginaItinerario = true;
+
+      for (const itinerario of itinerariosOrdenados) {
+        // Calcular altura necesaria para este día
+        doc.font('Helvetica').fontSize(11);
+        const alturaDescripcion = this.calcularAlturaTexto(doc, itinerario.descripcion, pageWidth - 150);
+        const alturaTotalDia = 45 + alturaDescripcion + 30;
+
+        agregarPaginaSiEsNecesario(alturaTotalDia);
+
+        // Si estamos al inicio de una nueva página y es la primera vez que mostramos itinerario
+        if (primeraPaginaItinerario) {
+          y = this.agregarSeccion(doc, 'ITINERARIO DETALLADO', y);
+          primeraPaginaItinerario = false;
+        } else if (y === 50) {
+          // Si ya mostramos el título pero estamos en nueva página, no mostrar título otra vez
+          y += 20;
+        }
+
+        // Recuadro para el día
         const diaBoxHeight = 30;
-        const descTextoHeight = Math.max(
-          doc.heightOfString(itinerario.descripcion, {
-            width: pageWidth - 140,
-            lineGap: 2
-          }) + 20,
-          40
-        );
-        const totalDayHeight = diaBoxHeight + 5 + descTextoHeight + 15;
-
-        // Verificar si cabe TODO el día junto
-        y = this.checkPageBreak(doc, y, totalDayHeight);
-
-        // --- Renderizar Día ---
-
-        // Recuadro para el día con fondo de color
         const diaBoxWidth = 80;
 
         doc.rect(60, y, diaBoxWidth, diaBoxHeight)
-          .fill(this.COLORS.accent);
+          .fill(this.COLORS.primary);
 
-        // Número de día en blanco dentro del recuadro
-        doc.fontSize(14)
+        doc.fontSize(12)
           .fillColor(this.COLORS.white)
           .font('Helvetica-Bold')
           .text(`DÍA ${itinerario.dia_numero}`, 60, y + 8, {
@@ -352,166 +391,153 @@ export class PdfService {
             align: 'center'
           });
 
-        // Descripción con fondo suave
-        const descY = y + diaBoxHeight + 5;
+        y += diaBoxHeight + 10;
 
-        // Recuadro de fondo para la descripción
-        doc.rect(60, descY, pageWidth - 120, descTextoHeight)
+        // Descripción
+        doc.rect(60, y, pageWidth - 120, alturaDescripcion + 20)
           .fillAndStroke(this.COLORS.lightGray, this.COLORS.border)
           .lineWidth(0.5);
 
-        // Texto de la descripción
         doc.fontSize(11)
           .fillColor(this.COLORS.text)
           .font('Helvetica')
-          .text(itinerario.descripcion, 70, descY + 10, {
-            width: pageWidth - 140,
+          .text(itinerario.descripcion, 75, y + 12, {
+            width: pageWidth - 150,
             align: 'left',
-            lineGap: 2
+            lineGap: 4
           });
 
-        y = descY + descTextoHeight + 15;
-      });
-
-      y += 10;
+        y += alturaDescripcion + 35;
+      }
     }
 
     // Sección: Requisitos
-    if (paquete.requisitos) {
-      const contentHeight = doc.heightOfString(paquete.requisitos, { width: pageWidth - 130 }) * 1.5;
-      y = this.checkPageBreak(doc, y, 60 + contentHeight);
+    if (paquete.requisitos && paquete.requisitos.trim()) {
+      doc.font('Helvetica').fontSize(11);
+      const contenidoAltura = this.calcularAlturaTexto(doc, paquete.requisitos, pageWidth - 130);
 
-      y = this.agregarSeccion(doc, 'REQUISITOS', y);
-      y = this.agregarTextoConViñetas(doc, paquete.requisitos, y);
-      y += 20;
+      if (agregarSeccionConControl('REQUISITOS', contenidoAltura)) {
+        y = this.agregarTextoConViñetas(doc, paquete.requisitos, y, pageWidth);
+        y += 20;
+      }
     }
 
     // Sección: Notas
-    if (paquete.notas) {
-      const w = pageWidth - 100;
-      const contentHeight = doc.heightOfString(paquete.notas, { width: w, lineGap: 3 }) + 10;
-      y = this.checkPageBreak(doc, y, 60 + contentHeight);
+    if (paquete.notas && paquete.notas.trim()) {
+      doc.font('Helvetica').fontSize(11);
+      const contenidoAltura = this.calcularAlturaTexto(doc, paquete.notas, pageWidth - 130);
 
-      y = this.agregarSeccion(doc, 'NOTAS IMPORTANTES', y);
-      y = this.agregarTexto(doc, paquete.notas, y);
+      if (agregarSeccionConControl('NOTAS IMPORTANTES', contenidoAltura)) {
+        y = this.agregarTextoConViñetas(doc, paquete.notas, y, pageWidth);
+        y += 20;
+      }
     }
 
-    // Pie de página con información de contacto
-    this.agregarPieDePagina(doc);
+    // Sección: Términos y Condiciones (SIEMPRE al final en la MISMA página)
+    // Calcular altura de términos
+    const terminos = `
+1. Los precios están sujetos a cambio sin previo aviso.
+2. Se requiere depósito del 50% para confirmar la reserva.
+3. Cancelaciones con menos de 30 días de anticipación pueden tener penalidades.
+4. Los itinerarios pueden estar sujetos a cambios por condiciones climáticas o de operación.
+5. Los precios no incluyen propinas ni gastos personales no especificados.
+    `.trim();
+
+    doc.font('Helvetica').fontSize(11);
+    const terminosAltura = this.calcularAlturaTexto(doc, terminos, pageWidth - 130);
+
+    // Forzar nueva página solo si no cabe en la actual
+    if (y + terminosAltura + 80 > pageHeight - marginBottom) {
+      doc.addPage();
+      y = 50;
+    }
+
+    // Agregar términos en la última página
+    y = this.agregarSeccion(doc, 'TÉRMINOS Y CONDICIONES', y);
+    this.agregarTextoConViñetas(doc, terminos, y, pageWidth);
   }
 
   private agregarSeccion(doc: PDFKit.PDFDocument, titulo: string, y: number): number {
-    const pageWidth = doc.page.width;
-
-    // Línea decorativa más prominente
     doc.strokeColor(this.COLORS.accent)
-      .lineWidth(3)
+      .lineWidth(2)
       .moveTo(40, y)
-      .lineTo(140, y)
+      .lineTo(100, y)
       .stroke();
 
-    // Título de la sección más grande
-    doc.fontSize(18)
+    doc.fontSize(16)
       .fillColor(this.COLORS.primary)
       .font('Helvetica-Bold')
-      .text(titulo, 40, y + 12);
+      .text(titulo, 40, y + 10);
 
-    return y + 48;
+    return y + 45;
   }
 
-  private agregarTexto(doc: PDFKit.PDFDocument, texto: string, y: number): number {
-    const pageWidth = doc.page.width;
-    const maxWidth = pageWidth - 100;
-
-    doc.fontSize(11)
-      .fillColor(this.COLORS.text)
-      .font('Helvetica')
-      .text(texto, 60, y, {
-        width: maxWidth,
-        align: 'left',
-        lineGap: 3
-      });
-
-    return y + doc.heightOfString(texto, { width: maxWidth, lineGap: 3 }) + 10;
-  }
-
-  private agregarTextoConViñetas(doc: PDFKit.PDFDocument, texto: string, y: number): number {
+  private agregarTextoConViñetas(doc: PDFKit.PDFDocument, texto: string, y: number, pageWidth: number): number {
     const lineas = texto.split('\n').filter(l => l.trim().length > 0);
-    const pageWidth = doc.page.width;
     const maxWidth = pageWidth - 130;
 
     lineas.forEach((linea) => {
-      // Calcular altura de la línea para verificar salto (usando +15 como buffer por renglón)
-      const lineaHeight = doc.heightOfString(linea.trim(), { width: maxWidth, lineGap: 2 });
-      y = this.checkPageBreak(doc, y, lineaHeight + 10);
+      // Configurar fuente ANTES de medir
+      doc.font('Helvetica').fontSize(11);
+      const alturaLinea = doc.heightOfString(linea.trim(), {
+        width: maxWidth,
+        lineGap: 4
+      });
 
-      // Círculo como viñeta (más visible que un punto)
-      doc.circle(67, y + 5, 3)
+      // Viñeta
+      doc.save();
+      doc.circle(50, y + 6, 3)
         .fill(this.COLORS.accent);
+      doc.restore();
 
       // Texto
       doc.fontSize(11)
         .fillColor(this.COLORS.text)
         .font('Helvetica')
-        .text(linea.trim(), 85, y, {
+        .text(linea.trim(), 65, y, {
           width: maxWidth,
           align: 'left',
-          lineGap: 2
+          lineGap: 4
         });
 
+      y += alturaLinea + 8;
     });
 
     return y;
   }
 
-  // Helper para controlar saltos de página dinámicos
-  private checkPageBreak(doc: PDFKit.PDFDocument, y: number, heightNeeded: number): number {
-    const pageHeight = doc.page.height;
-    const margin = 40; // Margen inferior
-    const limit = pageHeight - margin - 50; // Dejar espacio para pie de página
-
-    if (y + heightNeeded > limit) {
-      doc.addPage();
-      // Reiniciar y para la nueva página (margen superior)
-      return 50;
-    }
-    return y;
+  private calcularAlturaTexto(doc: PDFKit.PDFDocument, texto: string, ancho: number): number {
+    // Configurar la fuente antes de medir
+    doc.font('Helvetica').fontSize(11);
+    return doc.heightOfString(texto, {
+      width: ancho,
+      lineGap: 4
+    });
   }
 
   private agregarPieDePagina(doc: PDFKit.PDFDocument) {
-    const pageHeight = doc.page.height;
-    // ...Rest of footer logic stays similar but we treat it as absolute positioning usually
-    // But let's check the original code. It uses absolute y calculation.
-    // We only need to ensure we don't write *over* it.
-    // The checkPageBreak limit ensures that.
+    const pageCount = doc.bufferedPageRange().count;
 
-    // Pie de página manual para cada página existente
-    // (Este método se llamaba una sola vez al final, recorriendo las páginas)
-    // El original estaba bien, solo reescribimos el contenido.
+    for (let i = 0; i < pageCount; i++) {
+      doc.switchToPage(i);
+      const pageHeight = doc.page.height;
+      const pageWidth = doc.page.width;
+      const y = pageHeight - 40;
 
-    const pageWidth = doc.page.width;
-    const y = pageHeight - 70;
+      doc.strokeColor(this.COLORS.border)
+        .lineWidth(1)
+        .moveTo(40, y)
+        .lineTo(pageWidth - 40, y)
+        .stroke();
 
-    // Línea superior decorativa
-    doc.strokeColor(this.COLORS.accent)
-      .lineWidth(2)
-      .moveTo(40, y)
-      .lineTo(pageWidth - 40, y)
-      .stroke();
-
-    // Información de contacto en formato más limpio
-    doc.fontSize(9)
-      .fillColor(this.COLORS.text)
-      .font('Helvetica-Bold')
-      .text('CONTACTO', 40, y + 12);
-
-    doc.fontSize(8)
-      .font('Helvetica')
-      .fillColor(this.COLORS.text)
-      .text('contacto@viadca.com  |  +52 618 123 4567  |  www.viadca.com', 40, y + 28, {
-        align: 'center',
-        width: pageWidth - 80
-      });
+      doc.fontSize(9)
+        .fillColor(this.COLORS.text)
+        .font('Helvetica')
+        .text('contacto@viadca.com  |  www.viadca.app', 40, y + 10, {
+          align: 'center',
+          width: pageWidth - 80
+        });
+    }
   }
 
   private agregarNumeroPaginas(doc: PDFKit.PDFDocument) {
@@ -522,12 +548,11 @@ export class PdfService {
 
       doc.fontSize(9)
         .fillColor(this.COLORS.text)
-        .font('Helvetica')
         .text(
           `Página ${i + 1} de ${pageCount}`,
-          40,
+          doc.page.width - 60,
           doc.page.height - 30,
-          { align: 'right', width: doc.page.width - 80 }
+          { align: 'right' }
         );
     }
   }
