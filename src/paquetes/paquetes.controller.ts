@@ -30,6 +30,7 @@ import { PaginationDto } from './dto/pagination.dto';
 import { LargePayloadInterceptor } from '../utils/large-payload.interceptor';
 import { DebugBodyInterceptor } from '../utils/debug-body.interceptor';
 import { ExcelService } from '../excel/excel.service';
+import { PdfService } from '../pdf/pdf.service';
 import { OptionalAuthGuard } from '../usuarios/guards/optional-auth.guard';
 import { AdminGuard } from '../usuarios/guards/admin.guard';
 import { AuthGuard } from '../usuarios/guards/auth.guard';
@@ -118,6 +119,7 @@ export class PaquetesController {
   constructor(
     private readonly paquetesService: PaquetesService,
     private readonly excelService: ExcelService,
+    private readonly pdfService: PdfService,
   ) {}
 
   @Get('stats/overview')
@@ -310,6 +312,37 @@ export class PaquetesController {
       if (!res.headersSent) {
         res.status(500).json({
           message: 'Error interno del servidor al generar el Excel',
+          error: error.message,
+        });
+      }
+    }
+  }
+
+  @Get('pdf/:id')
+  @SkipThrottle()
+  async generatePDF(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Res() res: Response,
+  ) {
+    try {
+      const pdfBuffer = await this.pdfService.generarCotizacionPDF(id);
+
+      const fileName = `cotizacion_${id}_${new Date().toISOString().split('T')[0]}.pdf`;
+
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${fileName}"`,
+      );
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Length', pdfBuffer.length);
+
+      res.end(pdfBuffer);
+    } catch (error) {
+      console.error('Error generando PDF:', error);
+
+      if (!res.headersSent) {
+        res.status(500).json({
+          message: 'Error interno del servidor al generar el PDF',
           error: error.message,
         });
       }

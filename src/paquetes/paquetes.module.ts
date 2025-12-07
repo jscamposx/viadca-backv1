@@ -16,6 +16,7 @@ import { Hotel } from '../entities/hotel.entity';
 import { Usuario } from '../entities/usuario.entity';
 import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 import { ExcelModule } from '../excel/excel.module';
+import { PdfModule } from '../pdf/pdf.module';
 import { UsuariosModule } from '../usuarios/usuarios.module';
 
 @Module({
@@ -31,6 +32,7 @@ import { UsuariosModule } from '../usuarios/usuarios.module';
     ]),
     CloudinaryModule,
     ExcelModule,
+    PdfModule,
     UsuariosModule,
     CacheModule.register({ ttl: 30, max: 500 }),
   ],

@@ -26,6 +26,7 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { CleanupModule } from './common/cleanup.module';
 import { AdminModule } from './admin/admin.module';
 import { ContactoModule } from './contacto/contacto.module';
+import { PdfModule } from './pdf/pdf.module';
 
 @Module({
   imports: [
@@ -176,6 +177,7 @@ import { ContactoModule } from './contacto/contacto.module';
     AdminModule,
     ContactoModule,
     QueueModule,
+    PdfModule,
   ],
   controllers: [AppController],
   providers: [
