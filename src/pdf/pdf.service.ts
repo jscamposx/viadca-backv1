@@ -39,7 +39,7 @@ export class PdfService {
         size: 'LETTER',
         margins: { top: 40, bottom: 60, left: 40, right: 40 },
         bufferPages: true,
-        autoFirstPage: true,
+        autoFirstPage: false,
       });
 
       const buffers: Buffer[] = [];
@@ -54,6 +54,12 @@ export class PdfService {
         // Generar contenido
         this.generarContenido(doc, paquete);
 
+        // Agregar número de páginas
+        this.agregarNumeroPaginas(doc);
+
+        // Agregar pie de página a todas las páginas
+        this.agregarPieDePagina(doc);
+
         doc.end();
       } catch (error) {
         reject(error);
@@ -62,39 +68,31 @@ export class PdfService {
   }
 
   private generarContenido(doc: PDFKit.PDFDocument, paquete: Paquete) {
-    // Página 1: Portada
-    this.generarPortada(doc, paquete);
+    // Página 1
+    doc.addPage();
+    this.generarPagina1(doc, paquete);
 
-    // Generar detalles en las páginas siguientes
-    this.generarDetalles(doc, paquete);
-
-    // Agregar número de páginas y pie de página DESPUÉS de generar todo el contenido
-    this.agregarNumeroPaginas(doc);
-    this.agregarPieDePagina(doc);
+    // Página 2 (forzamos nueva página)
+    doc.addPage();
+    this.generarPagina2(doc, paquete);
   }
 
-  private generarPortada(doc: PDFKit.PDFDocument, paquete: Paquete) {
+  private generarPagina1(doc: PDFKit.PDFDocument, paquete: Paquete) {
     const pageWidth = doc.page.width;
-    const pageHeight = doc.page.height;
+    let y = 30;
 
-    // Header
+    // --- HEADER ---
+    // Logo
     const logoPath = path.join(process.cwd(), 'src', 'assets', 'imagenes', 'logo.png');
     if (fs.existsSync(logoPath)) {
-      doc.image(logoPath, 40, 30, { width: 100 });
+      doc.image(logoPath, 40, y, { width: 100 });
     }
 
-    // Línea decorativa superior
-    doc.strokeColor(this.COLORS.accent)
-      .lineWidth(1.5)
-      .moveTo(40, 80)
-      .lineTo(pageWidth - 40, 80)
-      .stroke();
-
     // Título "COTIZACIÓN"
-    doc.fontSize(36)
+    doc.fontSize(24)
       .fillColor(this.COLORS.primary)
       .font('Helvetica-Bold')
-      .text('COTIZACIÓN', 0, 100, {
+      .text('COTIZACIÓN', 0, y + 20, {
         align: 'center',
         width: pageWidth
       });
@@ -106,413 +104,146 @@ export class PdfService {
       day: 'numeric'
     });
 
-    doc.fontSize(11)
+    doc.fontSize(10)
       .fillColor(this.COLORS.text)
       .font('Helvetica')
-      .text(fecha, 0, 145, {
+      .text(fecha, 0, y + 50, {
         align: 'center',
         width: pageWidth
       });
 
-    // Título del paquete (centrado verticalmente)
-    const startY = 200;
-    let y = startY;
+    y = 120;
 
-    doc.fontSize(28)
+    // --- DETALLE DEL VIAJE ---
+    this.agregarSeccion(doc, 'DETALLE DEL VIAJE', y);
+    y += 35;
+
+    // Título del paquete
+    doc.fontSize(16)
       .fillColor(this.COLORS.primary)
       .font('Helvetica-Bold')
-      .text(paquete.titulo, 40, y, {
-        width: pageWidth - 80,
-        align: 'center'
-      });
+      .text(paquete.titulo, 40, y);
+    y += 25;
 
-    y += doc.heightOfString(paquete.titulo, { width: pageWidth - 80 }) + 20;
-
-    // Destinos
-    const destinos = paquete.destinos
-      ?.sort((a, b) => a.orden - b.orden)
-      .map(d => d.ciudad)
-      .join(' • ');
-
-    if (destinos) {
-      doc.fontSize(14)
+    // Ubicación (Destinos)
+    if (paquete.destinos && paquete.destinos.length > 0) {
+      const destinosApp = paquete.destinos.map(d => d.ciudad).join(' • ');
+      doc.fontSize(12)
         .fillColor(this.COLORS.accent)
         .font('Helvetica-Bold')
-        .text(destinos, 40, y, {
-          width: pageWidth - 80,
-          align: 'center'
-        });
+        .text(destinosApp, 40, y);
+      y += 20;
+    }
+
+    // Ubicación (Origen)
+    doc.fontSize(12)
+      .fillColor(this.COLORS.text)
+      .font('Helvetica')
+      .text(`Salida desde: ${paquete.origen}`, 40, y);
+    y += 25;
+
+    // Fechas
+    if (paquete.fecha_inicio && paquete.fecha_fin) {
+      const fInicio = new Date(paquete.fecha_inicio).toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' });
+      const fFin = new Date(paquete.fecha_fin).toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' });
+
+      doc.fontSize(12)
+        .font('Helvetica-Bold')
+        .text(`Fecha de salida: ${fInicio}`, 40, y);
+      y += 20;
+      doc.text(`Fecha de regreso: ${fFin}`, 40, y);
       y += 40;
     }
 
-    // Duración
-    if (paquete.duracion_dias) {
-      const duracionText = `${paquete.duracion_dias} días / ${paquete.duracion_dias - 1} noches`;
-      const textWidth = doc.widthOfString(duracionText);
-      const boxWidth = textWidth + 60;
-      const boxX = (pageWidth - boxWidth) / 2;
-
-      doc.rect(boxX, y, boxWidth, 35)
-        .strokeColor(this.COLORS.border)
-        .lineWidth(1)
-        .stroke();
-
-      doc.fontSize(12)
-        .fillColor(this.COLORS.text)
-        .font('Helvetica')
-        .text(duracionText, boxX, y + 10, {
-          width: boxWidth,
-          align: 'center'
-        });
-
-      y += 60;
+    // --- REQUISITOS ---
+    if (paquete.requisitos) {
+      this.agregarSeccion(doc, 'REQUISITOS', y);
+      y += 35;
+      this.agregarTextoConViñetas(doc, paquete.requisitos, y, pageWidth, 450); // Limit height to avoid spill
     }
+  }
 
-    // PRECIO - centrado en la mitad inferior de la página
-    const precio = this.formatearPrecio(paquete.precio_total, paquete.moneda);
-    const precioBoxHeight = 90;
-    const precioBoxY = pageHeight / 2;
+  private generarPagina2(doc: PDFKit.PDFDocument, paquete: Paquete) {
+    const pageWidth = doc.page.width;
+    let y = 40;
 
-    doc.rect(60, precioBoxY, pageWidth - 120, precioBoxHeight)
+    // --- IMPORTANTE ---
+    this.agregarSeccion(doc, 'IMPORTANTE', y);
+    y += 35;
+
+    const importanteTxt = `Ten en cuenta que no es posible garantizar la disponibilidad ni la tarifa hasta que se concrete el pago. Recuerda que el precio final puede variar en base al medio de pago seleccionado al momento de concretar la compra.`;
+
+    doc.fontSize(10)
+      .fillColor(this.COLORS.text)
+      .font('Helvetica')
+      .text(importanteTxt, 40, y, { width: pageWidth - 80, align: 'justify' });
+
+    y += 60;
+
+    // --- TOTAL A PAGAR ---
+    doc.rect(40, y, pageWidth - 80, 80)
       .fillAndStroke(this.COLORS.lightGray, this.COLORS.accent)
       .lineWidth(1);
 
-    doc.fontSize(11)
+    doc.fontSize(14)
       .fillColor(this.COLORS.text)
-      .font('Helvetica')
-      .text('PRECIO TOTAL', 60, precioBoxY + 15, {
-        width: pageWidth - 120,
-        align: 'center'
-      });
-
-    doc.fontSize(38)
-      .fillColor(this.COLORS.primary)
       .font('Helvetica-Bold')
-      .text(precio, 60, precioBoxY + 35, {
-        width: pageWidth - 120,
-        align: 'center'
-      });
+      .text('TOTAL A PAGAR', 0, y + 15, { width: pageWidth, align: 'center' });
 
-    // Personas
-    if (paquete.personas) {
-      doc.fontSize(11)
-        .fillColor(this.COLORS.text)
-        .font('Helvetica-Oblique')
-        .text(`Por ${paquete.personas} ${paquete.personas === 1 ? 'persona' : 'personas'}`,
-          60, precioBoxY + precioBoxHeight + 15, {
-          width: pageWidth - 120,
-          align: 'center'
-        });
-    }
-  }
+    const precioFmt = this.formatearPrecio(paquete.precio_total, paquete.moneda);
+    doc.fontSize(24)
+      .fillColor(this.COLORS.primary)
+      .text(`TOTAL ${precioFmt}`, 0, y + 40, { width: pageWidth, align: 'center' });
 
-  private generarDetalles(doc: PDFKit.PDFDocument, paquete: Paquete) {
-    let y = 50;
-    const pageWidth = doc.page.width;
-    const pageHeight = doc.page.height;
-    const marginBottom = 80; // Espacio para pie de página
+    y += 100;
 
-    // Configurar fuente base
-    doc.font('Helvetica').fontSize(11);
+    // --- TÉRMINOS Y CONDICIONES ---
+    this.agregarSeccion(doc, 'TÉRMINOS Y CONDICIONES', y);
+    y += 35;
 
-    // Variable para controlar si ya agregamos la página de detalles
-    let paginaDetallesCreada = false;
+    const terminos = `Válido solo para reservas prepagas seleccionadas efectuadas a través de Viadca. Las tarifas pueden ser modificadas por las compañías aéreas y/o demás proveedores de Viadca, toda vez que las mismas solo se garantizan con el pago y la emisión del servicio. Vigencia: durante la media hora posterior al envío de este correo o hasta agotar stock de 8 cupos por destino, lo que primero suceda. Reservas no endosables ni reembolsables. No acumulable con otras promociones. Aplica un máximo de 8 personas por reserva. En caso de requerir cambios, estos se encuentran condicionados a la autorización del proveedor y de ser procedentes se aplicará la penalidad correspondiente. Valido solo para ciudadanos o residentes de México. Las tarifas incluyen: Tarifa neta, Tasa aeroportuaria, Tasa administrativa, impuestos, tasas, IVA y sobre cargo de combustible. No incluye otros impuestos o tasas. Cada pasajero es responsable de su documentación de viaje válida y de las vacunas requeridas. No acumulable con otras promociones. Para más información consulte nuestro aviso de privacidad y más detalles en Viadca, , , , Mexico.. Ver términos y condiciones en Viadca.`;
 
-    // Función para agregar nueva página solo cuando sea necesario
-    const agregarPaginaSiEsNecesario = (alturaNecesaria: number): void => {
-      if (y + alturaNecesaria > pageHeight - marginBottom) {
-        doc.addPage();
-        y = 50;
-        paginaDetallesCreada = true;
-      }
-    };
-
-    // Función para agregar nueva sección con control de página
-    const agregarSeccionConControl = (titulo: string, alturaContenido: number): boolean => {
-      const alturaSeccion = 45 + alturaContenido + 20;
-      agregarPaginaSiEsNecesario(alturaSeccion);
-
-      // Solo agregar sección si hay espacio
-      if (y + alturaSeccion <= pageHeight - marginBottom) {
-        y = this.agregarSeccion(doc, titulo, y);
-        return true;
-      }
-      return false;
-    };
-
-    // Primero, verificar si necesitamos crear la página de detalles
-    // Solo crear página si hay contenido para mostrar
-    const hayContenido = paquete.fecha_inicio || paquete.incluye || paquete.no_incluye ||
-      paquete.hotel || (paquete.itinerarios && paquete.itinerarios.length > 0) ||
-      paquete.requisitos || paquete.notas;
-
-    if (hayContenido) {
-      doc.addPage();
-      y = 50;
-    } else {
-      // Si no hay contenido, ir directamente a términos y condiciones
-      return;
-    }
-
-    // Sección: Fechas
-    if (paquete.fecha_inicio && paquete.fecha_fin) {
-      agregarPaginaSiEsNecesario(120);
-      y = this.agregarSeccion(doc, 'FECHAS DEL VIAJE', y);
-
-      const fechaInicio = new Date(paquete.fecha_inicio).toLocaleDateString('es-MX', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
-
-      const fechaFin = new Date(paquete.fecha_fin).toLocaleDateString('es-MX', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
-
-      const boxWidth = (pageWidth - 160) / 2;
-      const boxHeight = 50;
-
-      // Salida
-      doc.rect(60, y, boxWidth, boxHeight)
-        .fillAndStroke(this.COLORS.lightGray, this.COLORS.border)
-        .lineWidth(1);
-
-      doc.fontSize(10)
-        .fillColor(this.COLORS.text)
-        .text('SALIDA', 70, y + 10, { width: boxWidth - 20 });
-
-      doc.fontSize(12)
-        .fillColor(this.COLORS.primary)
-        .font('Helvetica-Bold')
-        .text(fechaInicio, 70, y + 26, { width: boxWidth - 20 });
-
-      // Regreso
-      const box2X = 60 + boxWidth + 40;
-      doc.rect(box2X, y, boxWidth, boxHeight)
-        .fillAndStroke(this.COLORS.lightGray, this.COLORS.border)
-        .lineWidth(1);
-
-      doc.fontSize(10)
-        .fillColor(this.COLORS.text)
-        .font('Helvetica')
-        .text('REGRESO', box2X + 10, y + 10, { width: boxWidth - 20 });
-
-      doc.fontSize(12)
-        .fillColor(this.COLORS.primary)
-        .font('Helvetica-Bold')
-        .text(fechaFin, box2X + 10, y + 26, { width: boxWidth - 20 });
-
-      y += boxHeight + 40;
-    }
-
-    // Sección: Incluye
-    if (paquete.incluye && paquete.incluye.trim()) {
-      doc.font('Helvetica').fontSize(11);
-      const contenidoAltura = this.calcularAlturaTexto(doc, paquete.incluye, pageWidth - 130);
-
-      if (agregarSeccionConControl('QUÉ INCLUYE', contenidoAltura)) {
-        y = this.agregarTextoConViñetas(doc, paquete.incluye, y, pageWidth);
-        y += 20;
-      }
-    }
-
-    // Sección: No Incluye
-    if (paquete.no_incluye && paquete.no_incluye.trim()) {
-      doc.font('Helvetica').fontSize(11);
-      const contenidoAltura = this.calcularAlturaTexto(doc, paquete.no_incluye, pageWidth - 130);
-
-      if (agregarSeccionConControl('QUÉ NO INCLUYE', contenidoAltura)) {
-        y = this.agregarTextoConViñetas(doc, paquete.no_incluye, y, pageWidth);
-        y += 20;
-      }
-    }
-
-    // Sección: Hotel
-    if (paquete.hotel) {
-      const alturaHotel = 100;
-      agregarPaginaSiEsNecesario(alturaHotel);
-      y = this.agregarSeccion(doc, 'HOSPEDAJE', y);
-
-      doc.fontSize(14)
-        .fillColor(this.COLORS.primary)
-        .font('Helvetica-Bold')
-        .text(paquete.hotel.nombre, 60, y);
-
-      y += 25;
-
-      if (paquete.hotel.estrellas) {
-        const estrellas = '⭐'.repeat(Math.floor(paquete.hotel.estrellas));
-        doc.fontSize(12)
-          .fillColor(this.COLORS.accent)
-          .text(estrellas, 60, y);
-        y += 30;
-      }
-    }
-
-    // Sección: Itinerario
-    if (paquete.itinerarios && paquete.itinerarios.length > 0) {
-      const itinerariosOrdenados = [...paquete.itinerarios].sort(
-        (a, b) => a.dia_numero - b.dia_numero
-      );
-
-      let primeraPaginaItinerario = true;
-
-      for (const itinerario of itinerariosOrdenados) {
-        // Calcular altura necesaria para este día
-        doc.font('Helvetica').fontSize(11);
-        const alturaDescripcion = this.calcularAlturaTexto(doc, itinerario.descripcion, pageWidth - 150);
-        const alturaTotalDia = 45 + alturaDescripcion + 30;
-
-        agregarPaginaSiEsNecesario(alturaTotalDia);
-
-        // Si estamos al inicio de una nueva página y es la primera vez que mostramos itinerario
-        if (primeraPaginaItinerario) {
-          y = this.agregarSeccion(doc, 'ITINERARIO DETALLADO', y);
-          primeraPaginaItinerario = false;
-        } else if (y === 50) {
-          // Si ya mostramos el título pero estamos en nueva página, no mostrar título otra vez
-          y += 20;
-        }
-
-        // Recuadro para el día
-        const diaBoxHeight = 30;
-        const diaBoxWidth = 80;
-
-        doc.rect(60, y, diaBoxWidth, diaBoxHeight)
-          .fill(this.COLORS.primary);
-
-        doc.fontSize(12)
-          .fillColor(this.COLORS.white)
-          .font('Helvetica-Bold')
-          .text(`DÍA ${itinerario.dia_numero}`, 60, y + 8, {
-            width: diaBoxWidth,
-            align: 'center'
-          });
-
-        y += diaBoxHeight + 10;
-
-        // Descripción
-        doc.rect(60, y, pageWidth - 120, alturaDescripcion + 20)
-          .fillAndStroke(this.COLORS.lightGray, this.COLORS.border)
-          .lineWidth(0.5);
-
-        doc.fontSize(11)
-          .fillColor(this.COLORS.text)
-          .font('Helvetica')
-          .text(itinerario.descripcion, 75, y + 12, {
-            width: pageWidth - 150,
-            align: 'left',
-            lineGap: 4
-          });
-
-        y += alturaDescripcion + 35;
-      }
-    }
-
-    // Sección: Requisitos
-    if (paquete.requisitos && paquete.requisitos.trim()) {
-      doc.font('Helvetica').fontSize(11);
-      const contenidoAltura = this.calcularAlturaTexto(doc, paquete.requisitos, pageWidth - 130);
-
-      if (agregarSeccionConControl('REQUISITOS', contenidoAltura)) {
-        y = this.agregarTextoConViñetas(doc, paquete.requisitos, y, pageWidth);
-        y += 20;
-      }
-    }
-
-    // Sección: Notas
-    if (paquete.notas && paquete.notas.trim()) {
-      doc.font('Helvetica').fontSize(11);
-      const contenidoAltura = this.calcularAlturaTexto(doc, paquete.notas, pageWidth - 130);
-
-      if (agregarSeccionConControl('NOTAS IMPORTANTES', contenidoAltura)) {
-        y = this.agregarTextoConViñetas(doc, paquete.notas, y, pageWidth);
-        y += 20;
-      }
-    }
-
-    // Sección: Términos y Condiciones (SIEMPRE al final en la MISMA página)
-    // Calcular altura de términos
-    const terminos = `
-1. Los precios están sujetos a cambio sin previo aviso.
-2. Se requiere depósito del 50% para confirmar la reserva.
-3. Cancelaciones con menos de 30 días de anticipación pueden tener penalidades.
-4. Los itinerarios pueden estar sujetos a cambios por condiciones climáticas o de operación.
-5. Los precios no incluyen propinas ni gastos personales no especificados.
-    `.trim();
-
-    doc.font('Helvetica').fontSize(11);
-    const terminosAltura = this.calcularAlturaTexto(doc, terminos, pageWidth - 130);
-
-    // Forzar nueva página solo si no cabe en la actual
-    if (y + terminosAltura + 80 > pageHeight - marginBottom) {
-      doc.addPage();
-      y = 50;
-    }
-
-    // Agregar términos en la última página
-    y = this.agregarSeccion(doc, 'TÉRMINOS Y CONDICIONES', y);
     this.agregarTextoConViñetas(doc, terminos, y, pageWidth);
   }
+
+  // Métodos auxiliares
 
   private agregarSeccion(doc: PDFKit.PDFDocument, titulo: string, y: number): number {
     doc.strokeColor(this.COLORS.accent)
       .lineWidth(2)
-      .moveTo(40, y)
-      .lineTo(100, y)
+      .moveTo(40, y + 25)
+      .lineTo(doc.page.width - 40, y + 25)
       .stroke();
 
-    doc.fontSize(16)
+    doc.fontSize(14)
       .fillColor(this.COLORS.primary)
       .font('Helvetica-Bold')
-      .text(titulo, 40, y + 10);
+      .text(titulo.toUpperCase(), 40, y);
 
-    return y + 45;
+    return y + 35;
   }
 
-  private agregarTextoConViñetas(doc: PDFKit.PDFDocument, texto: string, y: number, pageWidth: number): number {
+  private agregarTextoConViñetas(doc: PDFKit.PDFDocument, texto: string, y: number, pageWidth: number, maxHeight?: number): number {
     const lineas = texto.split('\n').filter(l => l.trim().length > 0);
-    const maxWidth = pageWidth - 130;
+    const maxWidth = pageWidth - 80;
+    const startY = y;
 
-    lineas.forEach((linea) => {
-      // Configurar fuente ANTES de medir
-      doc.font('Helvetica').fontSize(11);
-      const alturaLinea = doc.heightOfString(linea.trim(), {
+    for (const linea of lineas) {
+      if (maxHeight && (y - startY) > maxHeight) break;
+
+      doc.font('Helvetica').fontSize(10).fillColor(this.COLORS.text);
+
+      const height = doc.heightOfString(linea, { width: maxWidth });
+
+      doc.text(linea, 40, y, {
         width: maxWidth,
-        lineGap: 4
+        align: 'justify',
+        lineGap: 2
       });
 
-      // Viñeta
-      doc.save();
-      doc.circle(50, y + 6, 3)
-        .fill(this.COLORS.accent);
-      doc.restore();
-
-      // Texto
-      doc.fontSize(11)
-        .fillColor(this.COLORS.text)
-        .font('Helvetica')
-        .text(linea.trim(), 65, y, {
-          width: maxWidth,
-          align: 'left',
-          lineGap: 4
-        });
-
-      y += alturaLinea + 8;
-    });
-
+      y += height + 5;
+    }
     return y;
-  }
-
-  private calcularAlturaTexto(doc: PDFKit.PDFDocument, texto: string, ancho: number): number {
-    // Configurar la fuente antes de medir
-    doc.font('Helvetica').fontSize(11);
-    return doc.heightOfString(texto, {
-      width: ancho,
-      lineGap: 4
-    });
   }
 
   private agregarPieDePagina(doc: PDFKit.PDFDocument) {
@@ -520,14 +251,12 @@ export class PdfService {
 
     for (let i = 0; i < pageCount; i++) {
       doc.switchToPage(i);
-      const pageHeight = doc.page.height;
-      const pageWidth = doc.page.width;
-      const y = pageHeight - 40;
+      const y = doc.page.height - 40;
 
       doc.strokeColor(this.COLORS.border)
         .lineWidth(1)
         .moveTo(40, y)
-        .lineTo(pageWidth - 40, y)
+        .lineTo(doc.page.width - 40, y)
         .stroke();
 
       doc.fontSize(9)
@@ -535,25 +264,16 @@ export class PdfService {
         .font('Helvetica')
         .text('contacto@viadca.com  |  www.viadca.app', 40, y + 10, {
           align: 'center',
-          width: pageWidth - 80
+          width: doc.page.width - 80
         });
     }
   }
 
   private agregarNumeroPaginas(doc: PDFKit.PDFDocument) {
     const pageCount = doc.bufferedPageRange().count;
-
     for (let i = 0; i < pageCount; i++) {
       doc.switchToPage(i);
-
-      doc.fontSize(9)
-        .fillColor(this.COLORS.text)
-        .text(
-          `Página ${i + 1} de ${pageCount}`,
-          doc.page.width - 60,
-          doc.page.height - 30,
-          { align: 'right' }
-        );
+      doc.fontSize(8).fillColor(this.COLORS.border).text(`${i + 1}/${pageCount}`, doc.page.width - 40, doc.page.height - 20, { align: 'right' });
     }
   }
 
