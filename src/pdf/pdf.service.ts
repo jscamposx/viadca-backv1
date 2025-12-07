@@ -57,8 +57,7 @@ export class PdfService {
         // Agregar número de páginas
         this.agregarNumeroPaginas(doc);
 
-        // Agregar pie de página a todas las páginas
-        this.agregarPieDePagina(doc);
+
 
         doc.end();
       } catch (error) {
@@ -246,28 +245,7 @@ export class PdfService {
     return y;
   }
 
-  private agregarPieDePagina(doc: PDFKit.PDFDocument) {
-    const pageCount = doc.bufferedPageRange().count;
 
-    for (let i = 0; i < pageCount; i++) {
-      doc.switchToPage(i);
-      const y = doc.page.height - 40;
-
-      doc.strokeColor(this.COLORS.border)
-        .lineWidth(1)
-        .moveTo(40, y)
-        .lineTo(doc.page.width - 40, y)
-        .stroke();
-
-      doc.fontSize(9)
-        .fillColor(this.COLORS.text)
-        .font('Helvetica')
-        .text('contacto@viadca.com  |  www.viadca.app', 40, y + 10, {
-          align: 'center',
-          width: doc.page.width - 80
-        });
-    }
-  }
 
   private agregarNumeroPaginas(doc: PDFKit.PDFDocument) {
     const pageCount = doc.bufferedPageRange().count;
