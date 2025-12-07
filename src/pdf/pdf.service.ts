@@ -138,7 +138,7 @@ export class PdfService {
     doc.fontSize(12)
       .fillColor(this.COLORS.text)
       .font('Helvetica')
-      .text(`Salida desde: ${paquete.origen}`, 40, y);
+
     y += 25;
 
     // Fechas
