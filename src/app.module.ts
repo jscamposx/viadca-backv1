@@ -145,11 +145,13 @@ import { PdfModule } from './pdf/pdf.module';
               rejectUnauthorized: false,
             }
             : undefined,
-          extra: {
-            ssl: {
-              rejectUnauthorized: false,
-            },
-          },
+          extra: sslEnabled
+            ? {
+              ssl: {
+                rejectUnauthorized: false,
+              },
+            }
+            : undefined,
         };
 
         console.log('🔌 DB Config:', {
