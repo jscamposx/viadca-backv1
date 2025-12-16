@@ -162,6 +162,8 @@ export class PdfService {
     }
   }
 
+  
+
   private generarPagina2(doc: PDFKit.PDFDocument, paquete: Paquete) {
     const pageWidth = doc.page.width;
     let y = 40;

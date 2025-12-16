@@ -7,6 +7,14 @@ import * as cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 
 async function bootstrap() {
+  console.log('--------------------------------------------------');
+  console.log('🚀 Iniciando aplicación...');
+  console.log('📂 Directorio actual (CWD):', process.cwd());
+  console.log('🌍 NODE_ENV:', process.env.NODE_ENV);
+  console.log('🔌 PORT:', process.env.PORT);
+  console.log('🔗 FRONTEND_URL:', process.env.FRONTEND_URL);
+  console.log('--------------------------------------------------');
+
   const app = await NestFactory.create(AppModule);
 
   // 🔒 Seguridad: Helmet.js - Cabeceras HTTP seguras
