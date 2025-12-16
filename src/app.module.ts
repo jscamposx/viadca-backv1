@@ -61,7 +61,7 @@ import { PdfModule } from './pdf/pdf.module';
       inject: [ConfigService],
       useFactory: (configService: ConfigService): TypeOrmModuleOptions => {
         const isProd = configService.get<string>('NODE_ENV') === 'production';
-        
+
         // ⚠️ PRODUCCIÓN: synchronize debe ser false y usar migraciones
         // 🔧 DESARROLLO: Sincronización forzada activada
         const synchronize = !isProd ? true : configService.get<string>('DB_SYNCHRONIZE') === 'true';
@@ -85,7 +85,7 @@ import { PdfModule } from './pdf/pdf.module';
         const rawDbEnvLog = {
           NODE_ENV: configService.get<string>('NODE_ENV'),
           DB_TYPE: configService.get<string>('DB_TYPE'),
-            DB_HOST: configService.get<string>('DB_HOST'),
+          DB_HOST: configService.get<string>('DB_HOST'),
           DB_PORT: configService.get<string>('DB_PORT'),
           DB_USERNAME: configService.get<string>('DB_USERNAME'),
           DB_PASSWORD: mask(configService.get<string>('DB_PASSWORD')),
@@ -142,16 +142,14 @@ import { PdfModule } from './pdf/pdf.module';
           logging,
           ssl: sslEnabled
             ? {
-                rejectUnauthorized: false,
-              }
+              rejectUnauthorized: false,
+            }
             : undefined,
-          extra: sslEnabled
-            ? {
-                ssl: {
-                  rejectUnauthorized: false,
-                },
-              }
-            : undefined,
+          extra: {
+            ssl: {
+              rejectUnauthorized: false,
+            },
+          },
         };
 
         console.log('🔌 DB Config:', {
@@ -186,4 +184,4 @@ import { PdfModule } from './pdf/pdf.module';
     { provide: APP_INTERCEPTOR, useClass: QueueInterceptor },
   ],
 })
-export class AppModule {}
+export class AppModule { }
