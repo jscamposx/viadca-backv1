@@ -49,11 +49,12 @@ async function bootstrap() {
     throw new Error('❌ Variable de entorno FRONTEND_URL no configurada en producción');
   }
 
+  // 🔥 AQUI ESTÁ EL CAMBIO CLAVE PARA CORS
   app.enableCors({
-    origin: isProd ? [frontendUrl as string] : true,
+    origin: true, // Refleja dinámicamente el origen exacto que hace la petición
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    // allowedHeaders eliminado para que cors refleje Access-Control-Request-Headers automáticamente
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: 'Content-Type, Accept, Authorization, X-Requested-With',
   });
 
   app.use(cookieParser());
