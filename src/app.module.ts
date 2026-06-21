@@ -64,7 +64,7 @@ import { PdfModule } from './pdf/pdf.module';
 
         // ⚠️ PRODUCCIÓN: synchronize debe ser false y usar migraciones
         // 🔧 DESARROLLO: Sincronización forzada activada
-        const synchronize = true; // Forzar synchronize=true en desarrollo para facilitar el desarrollo
+        const synchronize = !isProd ? true : configService.get<string>('DB_SYNCHRONIZE') === 'true';
         const logging = configService.get<string>('DB_LOGGING') === 'true';
         const sslEnabled = configService.get<string>('DB_SSL') === 'true';
 
